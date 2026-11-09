@@ -65,13 +65,14 @@ function beats(list, p) {
 
 // ------------------------------------------------------------------ grove (real-time 3D, loaded after first paint)
 const groveEl = $('#grove'), groveBeats = beatsOf(groveEl);
-let grove = null, groveP = 0, passed = [];
+let grove = null, groveP = 0, passed = [], lastMove = 0, groveDrawn = false;
 async function loadGrove() {
   try {
     const test = document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl');
     if (!test) throw new Error('no WebGL');
     const dbg = test.getExtension('WEBGL_debug_renderer_info');
     const low = /swiftshader|llvmpipe|software/i.test(dbg ? String(test.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '') || innerWidth < 700;
+    test.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
     const { createGrove } = await import('./assets/grove.js');
     grove = createGrove($('.grove-canvas'), { reduced, low });
     grove.setSize(innerWidth, innerHeight);
@@ -93,10 +94,14 @@ function tick(now = performance.now()) {
   beats(filmBeats, filmP);
 
   const g = progressOf(groveEl);
-  groveP = reduced ? g : groveP + (g - groveP) * 0.1;
+  groveP = reduced || Math.abs(g - groveP) < 1e-3 ? g : groveP + (g - groveP) * 0.1;
   const r = groveEl.getBoundingClientRect();
-  if (grove && r.bottom > 0 && r.top < innerHeight) passed = grove.render(groveP, now, pointer);
+  const busy = Math.abs(g - groveP) > 1e-4 || Math.abs(target[0] - pointer[0]) + Math.abs(target[1] - pointer[1]) > 1e-3;
+  if (busy) lastMove = now;
+  const live = now - lastMove < 1000 || !groveDrawn; // still scene: stop redrawing (battery), keep the last frame
+  if (grove && r.bottom > 0 && r.top < innerHeight && live) { passed = grove.render(groveP, now, pointer); groveDrawn = true; }
   else passed = [];
+  if (r.bottom <= 0 || r.top >= innerHeight) groveDrawn = false;
   beats(groveBeats, groveP);
 
   root.style.setProperty('--page', (scrollY / Math.max(1, root.scrollHeight - innerHeight)).toFixed(4));
@@ -167,10 +172,12 @@ addEventListener('DOMContentLoaded', () => {
   const M = window.Motion;
   $$('.products li').forEach((li, i) => { li.dataset.i = i; });
   if (M && !reduced) {
-    M.inView('.reveal', (el) => { M.animate(el, { opacity: 1, y: 0 }, { duration: 1.1, ease: [0.16, 1, 0.3, 1] }); }, { margin: '0px 0px -12% 0px' });
-    M.inView('.product', (el) => { M.animate(el, { opacity: [0, 1], y: [30, 0] }, { duration: 0.8, delay: (+el.closest('li').dataset.i % 5) * 0.06, ease: [0.16, 1, 0.3, 1] }); });
-  } else {
-    $$('.reveal').forEach((el) => { el.style.opacity = 1; el.style.transform = 'none'; });
+    const out = [0.16, 1, 0.3, 1]; // ease-out-expo-like; reveals stay at or under 0.5 s
+    // Content is visible by default; reveals start just before an element scrolls in (positive bottom margin),
+    // so nothing flashes and nothing stays hidden if an observer never fires.
+    const early = { margin: '0px 0px 20% 0px' };
+    M.inView('.reveal', (el) => { M.animate(el, { opacity: [0, 1], y: [32, 0] }, { duration: 0.5, ease: out }); }, early);
+    M.inView('.products', (list) => { M.animate(list.querySelectorAll('.product'), { opacity: [0, 1], y: [24, 0] }, { duration: 0.5, delay: M.stagger(0.04), ease: out }); }, early);
   }
 });
 if (fine && !reduced) {

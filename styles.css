@@ -133,7 +133,7 @@ section:not(.film){position:relative;padding:clamp(96px,14vh,160px) var(--gutter
 .foot p{margin:4px 0}
 
 /* reveals (Motion drives them; static without JS or with reduced motion) */
-html.js.motion .reveal{opacity:0;transform:translateY(40px)}
+/* reveals never gate visibility: Motion animates from an already-visible default (see site.js) */
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   .scroll-cue span{animation:none}
@@ -184,3 +184,7 @@ html.has-cursor .cursor{opacity:1}
 .cursor.is-link{width:56px;height:56px;margin:-28px 0 0 -28px;background:#d7be931f}
 html.lenis,html.lenis body{height:auto}
 .lenis.lenis-smooth{scroll-behavior:auto!important}
+
+/* keyboard focus on product cards (all:unset removed the default ring) */
+.product:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.catalogue .product:focus-visible{outline-color:var(--blue)}
