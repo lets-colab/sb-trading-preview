@@ -11,3 +11,4 @@ SB Trading — Materials in Motion | client review draft (non-production, `noind
 - `v1/`: the previous single-file draft, kept unchanged.
 - Enquiry form is preview-only: nothing is sent or stored.
 - Not used from the AI drafts: invented specifications (tensile grades, HS codes, moisture, lead times, Incoterms, certifications) and pricing. Add them only after SB Trading confirms.
+- `video/`: the SB Trading brand film in Remotion (React), 15 s, 16:9 and 9:16, built from the real logo and product photographs. `cd video && npm install && npm run render` writes `video/out/*.mp4` (set `REMOTION_BROWSER` to a local Chromium headless shell where downloads are blocked). Edit live with `npm run studio`.
