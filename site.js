@@ -70,6 +70,7 @@ async function loadGrove() {
   try {
     const test = document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl');
     if (!test) throw new Error('no WebGL');
+    if (innerWidth < 700) throw new Error('phone: still photograph instead of 3D');
     const dbg = test.getExtension('WEBGL_debug_renderer_info');
     const low = /swiftshader|llvmpipe|software/i.test(dbg ? String(test.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '') || innerWidth < 700;
     test.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
@@ -105,6 +106,7 @@ function tick(now = performance.now()) {
   beats(groveBeats, groveP);
 
   root.style.setProperty('--page', (scrollY / Math.max(1, root.scrollHeight - innerHeight)).toFixed(4));
+  root.classList.toggle('past-intro', groveEl.getBoundingClientRect().bottom < innerHeight * 0.6);
   pointer[0] += (target[0] - pointer[0]) * 0.06; pointer[1] += (target[1] - pointer[1]) * 0.06;
   const vel = (scrollY - yPrev) / dt / innerHeight; yPrev = scrollY;
   if (sound.on) sound.update({ zone: zoneAt(), p: groveP, vel: reduced ? 0 : vel, pointer, passed });
@@ -112,7 +114,7 @@ function tick(now = performance.now()) {
 }
 function zoneAt() {
   const mid = innerHeight / 2;
-  for (const [id, zone] of [['film', 'film'], ['grove', 'grove'], ['catalogue', 'light']]) {
+  for (const [id, zone] of [['film', 'film'], ['grove', 'grove'], ['materials', 'light']]) {
     const r = document.getElementById(id).getBoundingClientRect();
     if (r.top <= mid && r.bottom >= mid) return zone;
   }
@@ -122,13 +124,12 @@ function zoneAt() {
 // ------------------------------------------------------------------ sound (opt-in, spatial, generated in the browser)
 // Off until the visitor asks: the click creates the audio context (browsers require a gesture); sound.js loads then.
 const sound = (() => {
-  const btn = $('#soundToggle'), label = $('.sound-label', btn), hint = $('#soundHint');
+  const btn = $('#soundToggle'), hint = $('#soundHint');
   let actx = null, engine = null, on = false, hinted = false;
   const guard = (fn) => { try { fn(); } catch (e) { console.error('sound stopped:', e); engine = null; actx?.suspend().catch(() => {}); } };
   function set(v) {
     on = v;
     btn.setAttribute('aria-pressed', String(v));
-    label.textContent = v ? 'Sound on' : 'Sound off';
     if (v && !actx) {
       const C = window.AudioContext || window.webkitAudioContext;
       if (!C) return;
@@ -167,74 +168,65 @@ if (fine && !reduced) {
   }).catch(() => { /* native scrolling stays */ });
 }
 
-// ------------------------------------------------------------------ reveals, tilt, cursor, magnetic controls
+// ------------------------------------------------------------------ reveals (Motion), mobile menu
 addEventListener('DOMContentLoaded', () => {
   const M = window.Motion;
-  $$('.products li').forEach((li, i) => { li.dataset.i = i; });
   if (M && !reduced) {
-    const out = [0.16, 1, 0.3, 1]; // ease-out-expo-like; reveals stay at or under 0.5 s
+    const out = [0.16, 1, 0.3, 1]; // reveals stay at or under 0.5 s
     // Content is visible by default; reveals start just before an element scrolls in (positive bottom margin),
     // so nothing flashes and nothing stays hidden if an observer never fires.
     const early = { margin: '0px 0px 20% 0px' };
-    M.inView('.reveal', (el) => { M.animate(el, { opacity: [0, 1], y: [32, 0] }, { duration: 0.5, ease: out }); }, early);
-    M.inView('.products', (list) => { M.animate(list.querySelectorAll('.product'), { opacity: [0, 1], y: [24, 0] }, { duration: 0.5, delay: M.stagger(0.04), ease: out }); }, early);
+    M.inView('.reveal', (el) => { M.animate(el, { opacity: [0, 1], y: [28, 0] }, { duration: 0.5, ease: out }); }, early);
+    M.inView('.rows', (list) => { M.animate(list.querySelectorAll('li'), { opacity: [0, 1], x: [-12, 0] }, { duration: 0.4, delay: M.stagger(0.05), ease: out }); }, early);
   }
 });
-if (fine && !reduced) {
-  for (const card of $$('[data-tilt]')) {
-    card.addEventListener('pointermove', (e) => {
-      const r = card.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
-      card.style.transform = `rotateY(${(x * 10).toFixed(2)}deg) rotateX(${(-y * 8).toFixed(2)}deg)`;
-    });
-    card.addEventListener('pointerleave', () => { card.style.transform = ''; });
-  }
-  const cur = $('.cursor'), magnets = $$('.btn, .nav a, .sound-toggle');
-  let x = innerWidth / 2, y = innerHeight / 2, cx = x, cy = y;
-  addEventListener('pointermove', (e) => { x = e.clientX; y = e.clientY; root.classList.add('has-cursor'); cur.classList.toggle('is-link', !!e.target.closest('a, button, label, select')); }, { passive: true });
-  document.addEventListener('pointerleave', () => root.classList.remove('has-cursor'));
-  (function follow() {
-    cx += (x - cx) * 0.22; cy += (y - cy) * 0.22;
-    cur.style.transform = `translate3d(${cx.toFixed(1)}px, ${cy.toFixed(1)}px, 0)`;
-    for (const m of magnets) {
-      const r = m.getBoundingClientRect(), dx = x - (r.left + r.width / 2), dy = y - (r.top + r.height / 2);
-      m.style.translate = Math.hypot(dx, dy) < Math.max(r.width, r.height) * 0.9 ? `${(dx * 0.18).toFixed(1)}px ${(dy * 0.18).toFixed(1)}px` : '';
-    }
-    requestAnimationFrame(follow);
-  })();
-}
+const menuBtn = $('.menu-toggle'), nav = $('#mainNav');
+function setMenu(open) { nav.classList.toggle('open', open); menuBtn.setAttribute('aria-expanded', String(open)); }
+menuBtn.addEventListener('click', () => setMenu(!nav.classList.contains('open')));
+nav.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && nav.classList.contains('open')) { setMenu(false); menuBtn.focus(); } });
 
-// ------------------------------------------------------------------ catalogue filter, product sheet, enquiry
-const filterButtons = $$('[data-filter]');
-function filter(cat) {
-  for (const b of filterButtons) b.setAttribute('aria-pressed', String(b.dataset.filter === cat));
-  for (const li of $$('.products li')) li.hidden = cat !== 'all' && li.dataset.cat !== cat;
-}
-filterButtons.forEach((b) => b.addEventListener('click', () => { filter(b.dataset.filter); sound.cue('press', b); }));
-$$('[data-filter-link]').forEach((a) => a.addEventListener('click', () => filter(a.dataset.filterLink)));
-$$('.product, .filters button, .family, .palette label').forEach((el) => el.addEventListener('pointerenter', () => sound.cue('hover', el)));
-$$('.palette input').forEach((i) => i.addEventListener('change', () => sound.cue('press', i.parentElement)));
-
+// ------------------------------------------------------------------ product sheet
+$$('.product').forEach((el) => el.addEventListener('pointerenter', () => sound.cue('hover', el)));
 const sheet = $('#productSheet');
 for (const btn of $$('.product')) {
   btn.addEventListener('click', () => {
     const name = btn.querySelector('b').textContent;
     $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
-    $('#sheetKicker').textContent = btn.querySelector('.pn').textContent;
+    $('#sheetFamily').textContent = btn.dataset.family;
     $('#sheetTitle').textContent = name;
     $('#sheetNote').textContent = btn.dataset.note;
-    $('#sheetEnquire').onclick = () => { $('#productSelect').value = name; sheet.close(); };
+    $('#sheetEnquire').onclick = () => { $('#f-product').value = name; sheet.close(); };
     sheet.showModal();
     sound.cue('open', btn);
   });
 }
 sheet.addEventListener('click', (e) => { if (e.target === sheet) sheet.close(); });
 
-// Preview: nothing leaves the page.
-$('#enquiryForm').addEventListener('submit', (e) => {
+// ------------------------------------------------------------------ enquiry: inline validation (preview: nothing leaves the page)
+const form = $('#enquiryForm');
+const messages = {
+  product: 'Choose a product, or “Not sure yet”.',
+  name: 'Enter your name.',
+  email: 'Enter a business email, for example name@company.com.',
+  country: 'Enter the country the order should be delivered to.',
+};
+function check(field) {
+  const out = $(`#e-${field.name}`);
+  if (!out) return true;
+  const ok = field.checkValidity();
+  field.setAttribute('aria-invalid', String(!ok));
+  out.textContent = ok ? '' : messages[field.name];
+  return ok;
+}
+form.addEventListener('blur', (e) => { if (e.target.required && e.target.getAttribute('aria-invalid')) check(e.target); }, true);
+form.addEventListener('input', (e) => { if (e.target.getAttribute('aria-invalid') === 'true') check(e.target); });
+form.addEventListener('submit', (e) => {
   e.preventDefault();
-  const f = e.target, d = new FormData(f), out = $('#summary');
-  if (!f.reportValidity()) return;
-  const families = d.getAll('family').join(', ') || 'not selected';
-  out.textContent = `Enquiry ready for review (not sent):\nMaterials: ${families}\nProduct: ${d.get('product') || 'not selected'}\nFrom: ${d.get('name')}, ${d.get('company') || 'company not given'}, ${d.get('country') || 'country not given'}\nRequirements: ${d.get('notes') || '—'}`;
-  sound.cue('send', f.querySelector('button[type=submit]'));
+  const invalid = [...form.querySelectorAll('[required]')].filter((f) => !check(f));
+  if (invalid.length) { invalid[0].focus(); return; }
+  const d = new FormData(form);
+  const qty = d.get('quantity') ? `${d.get('quantity')} ${d.get('unit')}` : 'not given';
+  $('#summary').textContent = `Enquiry prepared (not sent):\nProduct: ${d.get('product')}\nQuantity: ${qty}\nDeliver to: ${d.get('country')}\nFrom: ${d.get('name')}, ${d.get('company') || 'company not given'}, ${d.get('email')}\nRequirements: ${d.get('notes') || 'none given'}`;
+  sound.cue('send', form.querySelector('button[type=submit]'));
 });
