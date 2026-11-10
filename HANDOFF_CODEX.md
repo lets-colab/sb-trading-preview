@@ -54,7 +54,7 @@ cd video && npm install && REMOTION_BROWSER=<path to chrome-headless-shell> npm 
 - Production Pages deployment `48347cc7-27ee-4568-8eb6-d8e58db4f36c` completed successfully from `main` commit `d1b126dea5a0e7de561cbec1a783186904883f47`; this proves deployment completion, not public readiness.
 - Pages custom domain `sb-trading.lastbenchbd.com` is active; DNS CNAME points to `sb-trading.pages.dev` and is proxied.
 - Fresh local build: `npm run build` passed.
-- Fresh browser smoke suite: 18/18 checks passed on macOS 12.7.6 / Chrome 150 using software WebGL. Desktop and phone checks covered validation, focus, audio opt-in, no external requests, no console errors, overflow, and idle grove rendering.
+- Fresh browser smoke suite: 20/20 checks passed on macOS 12.7.6 / Chrome 150 using software WebGL. Desktop and phone checks covered validation, focus, audio opt-in, no external requests, no console errors, overflow, idle grove rendering, and redraw/return-to-idle after viewport resize.
 - Playwright's bundled Chromium installer does not support this Mac's macOS 12.7.6. `tests/smoke.mjs` now accepts `CHROMIUM_PATH`; CI installs its own Chromium on Ubuntu.
 - GitHub Actions quality workflow is configured to run build + browser smoke tests on PRs and pushes to `main`; it is not a deployment workflow. Its first hosted run is still pending.
 - Not verified: real GPU / real phone performance, screen-reader pass, human listening test, production form delivery, Rifat assistant, and production commercial acceptance.
