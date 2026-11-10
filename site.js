@@ -113,6 +113,25 @@ function setFamily(i) {
   sound.cue(forward ? 'knock' : 'knock-soft', fams[i].querySelector('.arch'));
 }
 
+// Keyboard: only the visible family is focusable (the others are inert), so Tab past its last product moves the
+// stage to the next family and focuses its first product; Shift+Tab from a first product goes back.
+const famScrollY = (i) => explore.offsetTop + (explore.offsetHeight - innerHeight) * (i / fams.length + 0.12);
+explore.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab' || reduced) return;
+  const fam = e.target.closest('.fam');
+  if (!fam) return;
+  const i = Number(fam.dataset.i), list = $$('.product', fam);
+  const to = e.shiftKey ? (e.target === list[0] ? i - 1 : -1) : (e.target === list.at(-1) ? i + 1 : -1);
+  if (to < 0 || to >= fams.length) return;
+  e.preventDefault();
+  const y = famScrollY(to);
+  scrollTo(0, y); // synchronous, so the loop reads the same family on its next frame
+  lenis?.scrollTo(y, { immediate: true, force: true });
+  setFamily(to);
+  const next = $$('.product', fams[to]);
+  (e.shiftKey ? next.at(-1) : next[0]).focus({ preventScroll: true });
+});
+
 // 3D material studies (three.js), loaded after first paint. No WebGL, reduced motion or a lost context: the photos carry it.
 const studiesCanvas = $('.studies', explore), stage = $('.explore-stage', explore);
 let studies = null, settling = true, restDrawn = false;

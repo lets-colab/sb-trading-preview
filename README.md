@@ -11,7 +11,9 @@ SB Trading — Materials in Motion | client review draft (non-production, `noind
 - `assets/vendor/`: Motion 12, Lenis (bundled) and self-hosted fonts (Gloock, Schibsted Grotesk; OFL). No external requests from the page.
 - The plain quotation form (under "Prefer a form?") works without Rifat and without JavaScript submission; it fills the same enquiry.
 - `v1/`: the first single-file draft, kept unchanged.
-- Build and test: `npm ci`, `npm run build`, `npx playwright install chromium`, `npm test` (35 checks, desktop + phone). Set `CHROMIUM_PATH` where Playwright cannot install its own browser. GitHub Actions runs the same on pull requests and pushes to `main`; it does not deploy.
+- `DESIGN.md` (v1.0.0) + `.impeccable/design.json`: the design system recorded from the shipped code (28 semantic tokens, components and states, motion, type). `tests/tokens.mjs` fails the build if `styles.css :root` and DESIGN.md disagree.
+- `docs/user-journey.md`: buyer journey (current vs desired) and gap analysis; assumptions until tested with real buyers.
+- Build and test: `npm ci`, `npm run build`, `npx playwright install chromium`, `npm test` (token gate + 37 browser checks, desktop + phone). Set `CHROMIUM_PATH` where Playwright cannot install its own browser. GitHub Actions runs the same on pull requests and pushes to `main`; it does not deploy.
 - Operational notes, open items and the Access decision gate: `HANDOFF_CODEX.md`.
 - Not used from the AI drafts: invented specifications, certifications and pricing. Add them only after SB Trading confirms.
 - `video/`: the Remotion brand film (15 s, 16:9 and 9:16). `cd video && npm install && npm run render`.

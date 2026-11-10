@@ -1,0 +1,541 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-10T05:56:30.054Z",
+  "title": "Design System: SB Trading",
+  "version": "1.0.0",
+  "extensions": {
+    "colorMeta": {
+      "blue": {
+        "role": "reserve",
+        "displayName": "Brand Blue (reserve)",
+        "canonical": "#004a98",
+        "oklch": "oklch(41.9% 0.143 256.0)",
+        "tonalRamp": [
+          "#000a22",
+          "#00224d",
+          "#063e7d",
+          "#1a5cac",
+          "#3e7ed0",
+          "#67a0ed",
+          "#97c4ff",
+          "#d6f1ff"
+        ]
+      },
+      "blue-glow": {
+        "role": "reserve",
+        "displayName": "Brand Blue Glow (reserve)",
+        "canonical": "#1d64b3",
+        "oklch": "oklch(50.4% 0.143 254.5)",
+        "tonalRamp": [
+          "#000a22",
+          "#00234d",
+          "#003e7d",
+          "#145dab",
+          "#3a7ed0",
+          "#64a1ec",
+          "#96c4ff",
+          "#d5f1ff"
+        ]
+      },
+      "ink-0": {
+        "role": "neutral",
+        "displayName": "Night Ground",
+        "canonical": "#051222",
+        "oklch": "oklch(18.0% 0.039 253.3)",
+        "tonalRamp": [
+          "#070c12",
+          "#1c252f",
+          "#344151",
+          "#4e5f73",
+          "#6d7f94",
+          "#90a0b4",
+          "#b5c2d2",
+          "#e7eff9"
+        ]
+      },
+      "ink": {
+        "role": "reserve",
+        "displayName": "Deep Ink (reserve)",
+        "canonical": "#081c31",
+        "oklch": "oklch(22.3% 0.049 251.7)",
+        "tonalRamp": [
+          "#060c13",
+          "#192532",
+          "#304155",
+          "#496079",
+          "#68809a",
+          "#8ba1b9",
+          "#b2c3d6",
+          "#e5f0fc"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Raised Ink",
+        "canonical": "#102a43",
+        "oklch": "oklch(27.8% 0.056 249.8)",
+        "tonalRamp": [
+          "#050c14",
+          "#172534",
+          "#2c4258",
+          "#45607d",
+          "#64809e",
+          "#87a1bd",
+          "#afc3d9",
+          "#e4f0fe"
+        ]
+      },
+      "ink-3": {
+        "role": "reserve",
+        "displayName": "Deep Ink Three (reserve)",
+        "canonical": "#173a5c",
+        "oklch": "oklch(34.1% 0.072 250.2)",
+        "tonalRamp": [
+          "#030c17",
+          "#122539",
+          "#25425f",
+          "#3d6085",
+          "#5c81a7",
+          "#80a2c6",
+          "#aac4e0",
+          "#e1f1ff"
+        ]
+      },
+      "cloud": {
+        "role": "neutral",
+        "displayName": "Cloud",
+        "canonical": "#f3f8fc",
+        "oklch": "oklch(97.6% 0.008 241.7)",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#222426",
+          "#3d4043",
+          "#5a5e62",
+          "#797e81",
+          "#9b9fa2",
+          "#bec1c4",
+          "#edeff0"
+        ]
+      },
+      "mist": {
+        "role": "reserve",
+        "displayName": "Mist (reserve, alpha base)",
+        "canonical": "#dbeaf6",
+        "oklch": "oklch(92.9% 0.023 241.9)",
+        "tonalRamp": [
+          "#080c0f",
+          "#1e252a",
+          "#374149",
+          "#535f6a",
+          "#727f8a",
+          "#94a0aa",
+          "#b9c2ca",
+          "#e9eff4"
+        ]
+      },
+      "fibre": {
+        "role": "primary",
+        "displayName": "Natural Fibre",
+        "canonical": "#d7be93",
+        "oklch": "oklch(81.2% 0.064 81.0)",
+        "tonalRamp": [
+          "#110a01",
+          "#2e220c",
+          "#4e3d1c",
+          "#705a32",
+          "#917a51",
+          "#b19b76",
+          "#cfbfa2",
+          "#f7eddc"
+        ]
+      },
+      "fibre-2": {
+        "role": "primary",
+        "displayName": "Fibre Light",
+        "canonical": "#e7d6b6",
+        "oklch": "oklch(88.2% 0.046 83.3)",
+        "tonalRamp": [
+          "#0f0a04",
+          "#2b2313",
+          "#4a3e27",
+          "#6a5c3f",
+          "#8b7b5e",
+          "#ab9d81",
+          "#cbc0aa",
+          "#f5eee1"
+        ]
+      },
+      "fibre-3": {
+        "role": "primary",
+        "displayName": "Fibre Shade",
+        "canonical": "#a8875a",
+        "oklch": "oklch(64.4% 0.073 74.5)",
+        "tonalRamp": [
+          "#120901",
+          "#312007",
+          "#533a16",
+          "#76572b",
+          "#97774a",
+          "#b79970",
+          "#d4bd9e",
+          "#fbecd9"
+        ]
+      },
+      "dim": {
+        "role": "neutral",
+        "displayName": "Dim Mist",
+        "canonical": "#dbeaf6b8",
+        "baseHex": "#dbeaf6",
+        "baseOklch": "oklch(92.9% 0.023 241.9)",
+        "tonalRamp": [
+          "#080c0f",
+          "#1e252a",
+          "#374149",
+          "#535f6a",
+          "#727f8a",
+          "#94a0aa",
+          "#b9c2ca",
+          "#e9eff4"
+        ]
+      },
+      "faint": {
+        "role": "neutral",
+        "displayName": "Faint Mist",
+        "canonical": "#dbeaf673",
+        "baseHex": "#dbeaf6",
+        "baseOklch": "oklch(92.9% 0.023 241.9)",
+        "tonalRamp": [
+          "#080c0f",
+          "#1e252a",
+          "#374149",
+          "#535f6a",
+          "#727f8a",
+          "#94a0aa",
+          "#b9c2ca",
+          "#e9eff4"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Fibre Hairline",
+        "canonical": "#d7be9333",
+        "baseHex": "#d7be93",
+        "baseOklch": "oklch(81.2% 0.064 81.0)",
+        "tonalRamp": [
+          "#110a01",
+          "#2e220c",
+          "#4e3d1c",
+          "#705a32",
+          "#917a51",
+          "#b19b76",
+          "#cfbfa2",
+          "#f7eddc"
+        ]
+      },
+      "line-2": {
+        "role": "neutral",
+        "displayName": "Cool Hairline",
+        "canonical": "#dbeaf61f",
+        "baseHex": "#dbeaf6",
+        "baseOklch": "oklch(92.9% 0.023 241.9)",
+        "tonalRamp": [
+          "#080c0f",
+          "#1e252a",
+          "#374149",
+          "#535f6a",
+          "#727f8a",
+          "#94a0aa",
+          "#b9c2ca",
+          "#e9eff4"
+        ]
+      },
+      "glass": {
+        "role": "neutral",
+        "displayName": "Ink Glass",
+        "canonical": "#0c2440c7",
+        "baseHex": "#0c2440",
+        "baseOklch": "oklch(25.8% 0.061 254.1)",
+        "tonalRamp": [
+          "#050c15",
+          "#172536",
+          "#2d415a",
+          "#455f80",
+          "#647fa1",
+          "#87a1c0",
+          "#afc3dc",
+          "#e4f0ff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The single h1 in the opening film beat."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Film beat captions and section headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Material family headings; sheet and ticket titles scale down from it."
+      },
+      "subhead": {
+        "displayName": "Subhead",
+        "purpose": "Ordering step titles, family-card titles, Rifat name."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Base reading text."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "Intro paragraphs in dim, max 54ch."
+      },
+      "ui": {
+        "displayName": "UI",
+        "purpose": "Buttons, nav links, chips, toggles."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Chapter bar links and scroll cue, uppercase. Not a heading kicker."
+      }
+    },
+    "shadows": [
+      {
+        "name": "deep-float",
+        "value": "0 40px 120px #000a, 0 0 0 1px #d7be9326",
+        "purpose": "Arch window; chat panel uses 0 40px 120px #0008."
+      },
+      {
+        "name": "card-float",
+        "value": "0 20px 60px #0007, inset 0 1px 0 #ffffff1f",
+        "purpose": "Family glass cards with 14px backdrop blur."
+      },
+      {
+        "name": "dropdown",
+        "value": "0 24px 60px #0009",
+        "purpose": "Mobile nav panel."
+      },
+      {
+        "name": "accent-lift",
+        "value": "0 12px 32px #d7be9333",
+        "purpose": "Primary button hover only."
+      },
+      {
+        "name": "fibre-glow",
+        "value": "0 0 0 8px #d7be931f, 0 0 32px #d7be9366",
+        "purpose": "Lit ordering node."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.16,1,.3,1)",
+        "purpose": "Default expo-out for state changes and entrances."
+      },
+      {
+        "name": "ease-io",
+        "value": "cubic-bezier(.65,0,.35,1)",
+        "purpose": "Arch clip reveal and scroll cue."
+      },
+      {
+        "name": "fast",
+        "value": "0.25s-0.3s",
+        "purpose": "Chips, buttons, product chips."
+      },
+      {
+        "name": "state",
+        "value": "0.4s-0.5s",
+        "purpose": "Chapter ticks, card lift, nodes, sheet entry, message entry (0.45s)."
+      },
+      {
+        "name": "reveal",
+        "value": "0.6s-0.8s",
+        "purpose": "Text fades and rises, Motion.dev reveals (stagger 0.08s/0.1s)."
+      },
+      {
+        "name": "stage",
+        "value": "1.1s-1.2s",
+        "purpose": "Arch clip (ease-io) and transform, ambient fade."
+      },
+      {
+        "name": "reduced",
+        "value": "no motion class",
+        "purpose": "Prefers-reduced-motion: static document, loops stopped, no 3D, no smoothing."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "header-rifat",
+        "value": "900px"
+      },
+      {
+        "name": "explore-steps",
+        "value": "820px"
+      },
+      {
+        "name": "chapters",
+        "value": "720px"
+      },
+      {
+        "name": "sheet",
+        "value": "700px"
+      },
+      {
+        "name": "cards-form",
+        "value": "640px"
+      },
+      {
+        "name": "sound-label",
+        "value": "520px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Fibre pill CTA; ink text; lifts on hover.",
+      "html": "<a class=\"ds-btn\" href=\"#\">Prepare enquiry</a>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:50px;padding:0 26px;border:0;border-radius:var(--r-pill);background:var(--fibre);color:var(--ink-0);font:600 15px/1 var(--text);text-decoration:none;cursor:pointer;transition:background .3s var(--ease),transform .3s var(--ease),box-shadow .3s var(--ease)}.ds-btn:hover{background:var(--fibre-2);transform:translateY(-2px);box-shadow:0 12px 32px #d7be9333}.ds-btn:active{transform:translateY(0)}.ds-btn:focus-visible{outline:2px solid var(--fibre);outline-offset:3px}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Transparent pill with inset fibre hairline.",
+      "html": "<button class=\"ds-btn-ghost\" type=\"button\">Copy enquiry</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;min-height:50px;padding:0 26px;border:0;border-radius:var(--r-pill);background:transparent;color:var(--cloud);box-shadow:inset 0 0 0 1px var(--line);font:600 15px/1 var(--text);cursor:pointer;transition:background .3s var(--ease),box-shadow .3s var(--ease)}.ds-btn-ghost:hover{background:#d7be931a;box-shadow:inset 0 0 0 1px var(--fibre)}.ds-btn-ghost:focus-visible{outline:2px solid var(--fibre);outline-offset:3px}"
+    },
+    {
+      "name": "Disabled Button",
+      "kind": "button",
+      "refersTo": "button-disabled",
+      "description": "aria-disabled state of the primary button.",
+      "html": "<a class=\"ds-btn-off\" href=\"#\" aria-disabled=\"true\">Send on WhatsApp</a>",
+      "css": ".ds-btn-off{display:inline-flex;align-items:center;min-height:50px;padding:0 26px;border-radius:var(--r-pill);background:#dbeaf61a;color:var(--faint);font:600 15px/1 var(--text);text-decoration:none;cursor:not-allowed}"
+    },
+    {
+      "name": "Product Chip",
+      "kind": "chip",
+      "refersTo": "product-chip",
+      "description": "Opens a product sheet; fills fibre on hover.",
+      "html": "<button class=\"ds-product\" type=\"button\">Bamboo poles</button>",
+      "css": ".ds-product{display:inline-flex;align-items:center;gap:10px;min-height:46px;padding:0 18px;border-radius:var(--r-pill);border:1px solid var(--line);background:#05122266;color:var(--cloud);font:500 15px/1.2 var(--text);cursor:pointer;transition:background .3s var(--ease),color .3s var(--ease),transform .3s var(--ease)}.ds-product::after{content:\"+\";font-size:18px;color:var(--fibre);transition:transform .3s var(--ease)}.ds-product:hover{background:var(--fibre);border-color:var(--fibre);color:var(--ink-0);transform:translateY(-2px)}.ds-product:hover::after{color:var(--ink-0);transform:rotate(90deg)}.ds-product:focus-visible{outline:2px solid var(--fibre);outline-offset:3px}"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Form field with fibre focus and error state.",
+      "html": "<label class=\"ds-field\">Business email <span class=\"ds-req\">required</span><input class=\"ds-input\" type=\"email\" aria-invalid=\"true\"><span class=\"ds-err\">Enter a valid email.</span></label>",
+      "css": ".ds-field{display:grid;gap:8px;font:600 14px/1.4 var(--text);color:var(--cloud)}.ds-req{margin-left:6px;font-size:12px;font-weight:500;color:var(--fibre)}.ds-input{width:100%;min-height:48px;padding:10px 14px;border-radius:var(--r-sm);border:1px solid var(--line-2);background:#05122299;color:var(--cloud);font:400 16px var(--text)}.ds-input:focus{outline:2px solid var(--fibre);outline-offset:1px}.ds-input[aria-invalid=\"true\"]{border-color:#f0a58f}.ds-err{font-weight:400;font-size:14px;color:#f6b8a6}"
+    },
+    {
+      "name": "Header Nav",
+      "kind": "nav",
+      "refersTo": "nav",
+      "description": "Pill links in dim; cloud on hover.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\">Materials</a><a href=\"#\">How ordering works</a><a href=\"#\">Enquire</a></nav>",
+      "css": ".ds-nav{display:flex;gap:2px;background:var(--ink-0);padding:8px}.ds-nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:var(--r-pill);font:500 15px/1 var(--text);text-decoration:none;color:var(--dim)}.ds-nav a:hover{color:var(--cloud);background:#dbeaf614}.ds-nav a:focus-visible{outline:2px solid var(--fibre);outline-offset:3px}"
+    },
+    {
+      "name": "Chapter Bar",
+      "kind": "nav",
+      "refersTo": "chapters",
+      "description": "Uppercase chapter labels with ticks; active tick lengthens in fibre.",
+      "html": "<nav class=\"ds-ch\"><a href=\"#\"><i></i>Arrive</a><a class=\"on\" href=\"#\" aria-current=\"step\"><i></i>Explore</a><a href=\"#\"><i></i>Enquire</a></nav>",
+      "css": ".ds-ch{display:flex;gap:28px;padding:22px 16px 16px;background:var(--ink-0)}.ds-ch a{display:inline-flex;align-items:center;gap:8px;min-height:32px;font:600 12px/1 var(--text);letter-spacing:.14em;text-transform:uppercase;text-decoration:none;color:var(--faint);transition:color .4s var(--ease)}.ds-ch i{display:inline-block;width:14px;height:1px;background:currentColor;transition:width .5s var(--ease),background .5s var(--ease)}.ds-ch a:hover,.ds-ch a.on{color:var(--cloud)}.ds-ch a.on i{width:28px;background:var(--fibre)}"
+    },
+    {
+      "name": "Rifat Messages",
+      "kind": "custom",
+      "refersTo": "message-rifat",
+      "description": "Rifat and buyer bubbles plus typing indicator.",
+      "html": "<div class=\"ds-log\"><p class=\"ds-msg ds-r\">Which product do you need?</p><p class=\"ds-msg ds-u\">Bamboo poles</p><p class=\"ds-msg ds-r ds-typing\"><i></i><i></i><i></i></p></div>",
+      "css": ".ds-log{display:flex;flex-direction:column;gap:12px;padding:20px 18px;background:var(--glass);border:1px solid var(--line);border-radius:var(--r-lg)}.ds-msg{max-width:84%;margin:0;padding:12px 16px;border-radius:18px;font:400 16px/1.5 var(--text);color:var(--cloud)}.ds-r{align-self:flex-start;background:#13355a;border-bottom-left-radius:6px}.ds-u{align-self:flex-end;background:var(--fibre);color:var(--ink-0);border-bottom-right-radius:6px}.ds-typing{display:inline-flex;gap:5px;padding:16px}.ds-typing i{width:6px;height:6px;border-radius:50%;background:var(--fibre);animation:ds-dot 1s ease-in-out infinite}.ds-typing i:nth-child(2){animation-delay:.15s}.ds-typing i:nth-child(3){animation-delay:.3s}@keyframes ds-dot{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}@media (prefers-reduced-motion:reduce){.ds-typing i{animation:none}}"
+    },
+    {
+      "name": "Arch Window",
+      "kind": "card",
+      "refersTo": "arch",
+      "description": "Signature image frame: full round top, large radius base, deep float.",
+      "html": "<figure class=\"ds-arch\"></figure>",
+      "css": ".ds-arch{width:180px;aspect-ratio:73/120;margin:0;border-radius:999px 999px var(--r-lg) var(--r-lg);overflow:hidden;background:linear-gradient(160deg,var(--fibre-3),var(--ink-2));box-shadow:0 40px 120px #000a,0 0 0 1px #d7be9326}"
+    },
+    {
+      "name": "Orb",
+      "kind": "custom",
+      "refersTo": "orb",
+      "description": "Rifat mark: warm sphere with three orbiting fibre rings.",
+      "html": "<span class=\"ds-orb\"><i></i><i></i><i></i></span>",
+      "css": ".ds-orb{--s:44px;position:relative;display:inline-block;width:var(--s);height:var(--s);border-radius:50%;background:radial-gradient(circle at 36% 30%,#fff8ec 0 6%,var(--fibre-2) 22%,var(--fibre-3) 58%,#3a2a14 100%);box-shadow:0 0 22px #d7be9355}.ds-orb i{position:absolute;inset:-14%;border-radius:50%;border:1px solid #f3e6cc99;transform:rotate(var(--r)) scaleY(.34);animation:ds-orbit 9s linear infinite}.ds-orb i:nth-child(1){--r:0deg}.ds-orb i:nth-child(2){--r:60deg;animation-duration:12s}.ds-orb i:nth-child(3){--r:120deg;animation-duration:15s;animation-direction:reverse}@keyframes ds-orbit{to{transform:rotate(calc(var(--r) + 360deg)) scaleY(.34)}}@media (prefers-reduced-motion:reduce){.ds-orb i{animation:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Blue-Hour Showroom",
+    "overview": "One continuous dusk-blue world, lit by a single warm natural-fibre accent. The page is a dark navy ground (ink-0) under a faint blue radial glow, with real material photography and a scroll-scrubbed film doing the colour work. Interface chrome is translucent ink glass with hairline fibre borders, so the material stays the brightest thing on screen. The North Star is taken from the build's own stylesheet header (\"one continuous blue-hour world\") and has not been separately confirmed by the owner.\n\nDensity moves from cinematic to quiet. The opening chapters are full-viewport pinned stages with very large Gloock headlines; once the visitor reaches ordering and Rifat, the layout tightens into contained panels, pill controls and plain grotesk text. Motion is scroll-bound and pointer-bound rather than decorative looping, and every motion layer has a static document equivalent.",
+    "keyCharacteristics": [
+      "Dark navy ground with one warm accent (fibre); blue survives as glow and tint, not as a fill.",
+      "Gloock display at very large clamp sizes, upright only; emphasis is colour, never italic.",
+      "Pills and circles for every control; arches for image windows; large soft radii for panels.",
+      "Depth from translucency, blur and long soft shadows; no hard edges or offset shadows.",
+      "Motion gated on the `motion` class; reduced motion and no-JS read as a complete document."
+    ],
+    "rules": [
+      {
+        "name": "The One Warm Voice Rule",
+        "body": "fibre is the only accent. Anything actionable, active or emphasised is fibre or sits on fibre; there is no second accent hue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink-on-Fibre Rule",
+        "body": "Text on a fibre fill is always ink-0, never cloud.",
+        "section": "colors"
+      },
+      {
+        "name": "The Faint Is Not Copy Rule",
+        "body": "faint is for non-essential decoration, disabled text, large text and non-text indicators. Text a buyer needs to read at body size or smaller uses dim or cloud.",
+        "section": "colors"
+      },
+      {
+        "name": "The Colour Not Italic Rule",
+        "body": "Emphasis inside a heading is an upright `em` coloured fibre. Never italic, never synthesised; Gloock ships no italic and synthesis is off.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two Voices Rule",
+        "body": "Gloock for anything that is a name or a statement; Schibsted Grotesk for everything a buyer operates or reads at length. No third family.",
+        "section": "typography"
+      },
+      {
+        "name": "The Glass Over Ink Rule",
+        "body": "A floating panel is ink glass plus blur plus a hairline, never an opaque light card.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Warm Glow Is Earned Rule",
+        "body": "Fibre-tinted shadow appears only on hover or active state (button hover, lit node, orb); rest-state shadows are black.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** keep fibre as the only accent, with ink-0 text on every fibre fill.",
+      "**Do** set heading emphasis as an upright `em` in fibre.",
+      "**Do** make every control a pill or circle with a minimum 44px target (40px for chips and the restart button, as shipped).",
+      "**Do** float panels as ink glass with blur and a line hairline; reserve fibre glow for hover and active states.",
+      "**Do** gate every scroll, pointer or looping effect behind the motion class and give it a static equivalent.",
+      "**Do** use dim or cloud for any text a buyer must read below 18px.",
+      "**Do** label generated, stock or unconfirmed media and product facts in place, as the film and study labels do."
+    ],
+    "donts": [
+      "**Don't** set readable small text in faint; it measures 3.90:1 on the ground.",
+      "**Don't** italicise or synthesise Gloock.",
+      "**Don't** introduce a second accent hue or fill surfaces with Brand Blue; blue lives in the ground glow.",
+      "**Don't** use hard or offset shadows; depth here is soft and atmospheric.",
+      "**Don't** recolour or redraw the SB Trading logo or mark; the light knockout is the only derivative and awaits owner approval."
+    ]
+  }
+}

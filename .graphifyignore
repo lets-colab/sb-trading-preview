@@ -1,0 +1,10 @@
+# Generated or binary material that adds no structure to the graph
+assets/film/
+assets/img/
+assets/vendor/
+assets/materials3d.js
+functions/
+video/public/
+video/out/
+video/node_modules/
+package-lock.json

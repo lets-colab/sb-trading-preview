@@ -36,12 +36,16 @@ video/                Remotion project: 15 s brand film, 16:9 and 9:16
 tests/smoke.mjs       browser smoke test (35 checks)
 v1/                   the first single-file draft, kept unchanged
 PRODUCT.md            Impeccable brief (register: brand)
+DESIGN.md             design system v1.0.0 recorded from the code (tokens, components, states, motion); .impeccable/design.json sidecar
+tests/tokens.mjs      design-to-code gate: styles.css :root must match DESIGN.md token block exactly (runs first in npm test)
+docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions, untested with buyers)
+.graphifyignore       keeps film frames, photos, vendor and generated bundles out of /graphify (graphify-out/ is gitignored)
 ```
 
 ## Commands
 ```bash
 npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
-CHROMIUM_PATH=<chrome> npm test                          # 35 checks, desktop + phone (Rifat runs in guided mode on the local server)
+CHROMIUM_PATH=<chrome> npm test                          # token gate + 37 browser checks, desktop + phone (Rifat runs in guided mode on the local server)
 node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector, expect []
 cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
 ```
@@ -115,7 +119,7 @@ No Access, DNS, credential, or production permission changes were made during th
 ## Open items, in priority order
 1. **Owner content:** WhatsApp number (unblocks the hand-off), email and phone; origin, minimum order, shipping terms, lead times, certifications; confirmed product names, grades and per-product photos (banana bark and woven mats have none; "Ski poles" is an unverified label). Approval of the derived light logo.
 2. **Rifat AI key:** add `ANTHROPIC_API_KEY` in Cloudflare (steps above), then test five real buyer conversations, including attempts to get prices or a confirmed order (Rifat must refuse and hand to the team). Consider rate limiting per IP (Cloudflare WAF rule on `/api/rifat`) before any public launch.
-3. Write `DESIGN.md` for this direction (`/impeccable document`) and re-run `/impeccable critique` on the rebuild.
+3. Keep DESIGN.md in step with styles.css (the token gate enforces values); re-run `/impeccable critique` after each design pass.
 4. Real-device checks: frame rate of the 3D studies on a mid-range phone; screen reader; listen to the cues on headphones and laptop speakers.
 5. Replace the generated and stock film footage with real SB Trading footage when it exists. Stock sources (Pexels licence): videos 40042753 (bamboo), 37009850 (banana leaves), 11716405 (handloom weaving).
 6. Remotion film: re-render from `video/` with the transparent logo; add music only with a licensed track.
