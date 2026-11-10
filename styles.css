@@ -96,7 +96,23 @@ p{text-wrap:pretty}
 .beat h2{max-width:13ch}
 .beat-hero h1{max-width:9ch}
 .hero-logo{width:clamp(108px,11vw,168px);height:auto;margin:0 0 28px;filter:drop-shadow(0 10px 30px #000a)}
-.beat-end .btn{margin-top:30px}
+.fam-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:900px;margin-top:30px}
+.fam-cards a{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:150px;padding:20px;border-radius:var(--r-md);overflow:hidden;text-decoration:none;
+  background:linear-gradient(120deg,#0c2440cc 0%,#0c244066 60%,#0c244000 100%);border:1px solid #dbeaf633;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 20px 60px #0007,inset 0 1px 0 #ffffff1f;transition:transform .5s var(--ease),border-color .5s var(--ease)}
+.fam-cards img{position:absolute;inset:0 0 0 auto;width:62%;height:100%;object-fit:cover;z-index:-1;mask-image:linear-gradient(90deg,transparent,#000 55%);-webkit-mask-image:linear-gradient(90deg,transparent,#000 55%);transition:transform .8s var(--ease)}
+.fam-cards b{max-width:9ch;font:400 clamp(22px,2vw,28px)/1.05 var(--display)}
+.fam-cards .go{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;border:1px solid #f3f8fc8c;font-size:16px;transition:background .4s var(--ease),color .4s var(--ease)}
+.fam-cards a:hover{transform:translateY(-4px);border-color:var(--fibre)}
+.fam-cards a:hover img{transform:scale(1.06)}
+.fam-cards a:hover .go{background:var(--fibre);color:var(--ink-0);border-color:var(--fibre)}
+.fam-cards a{isolation:isolate}
+@media (max-width:640px){
+  .fam-cards{grid-template-columns:1fr;gap:8px;margin-top:20px}
+  .fam-cards a{flex-direction:row;align-items:center;min-height:64px;padding:12px 16px}
+  .fam-cards b{max-width:none;font-size:20px}
+  .fam-cards .go{width:32px;height:32px}
+}
 .scroll-cue{display:flex;align-items:center;gap:14px;margin:40px 0 0;font:600 12px/1 var(--text);letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
 .scroll-cue span{display:block;width:1px;height:40px;background:var(--fibre);animation:cue 2.2s var(--ease-io) infinite}
 @keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}

@@ -213,6 +213,17 @@ if (fine && !reduced) {
     requestAnimationFrame(raf);
   }).catch(() => { /* native scrolling stays */ });
 }
+// Family cards at the end of the film land on that family inside the pinned Explore stage.
+for (const a of $$('.fam-cards a')) {
+  a.addEventListener('click', (e) => {
+    if (reduced) return; // without the pinned stage the plain anchor is right
+    e.preventDefault();
+    const y = explore.offsetTop + (explore.offsetHeight - innerHeight) * (Number(a.dataset.fam) / 3 + 0.12);
+    if (lenis) lenis.scrollTo(y); else scrollTo({ top: y, behavior: 'smooth' });
+    sound.cue('open', a);
+  });
+  a.addEventListener('pointerenter', () => sound.cue('hover', a));
+}
 // Chapter links into the middle of the film jump to that stage's scroll position.
 for (const a of chapterLinks) {
   if (!a.dataset.p) continue;
