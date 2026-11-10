@@ -1,8 +1,9 @@
 // Browser smoke test for the SB Trading preview. Run: npm test (set CHROMIUM_PATH to an installed browser when needed).
-// Serves the repo root on a random local port, then checks desktop and phone in Chromium (software GL).
-// Passes only if: no console errors, no external requests, no horizontal overflow, no AudioContext before the Sound press,
-// inline form validation works (including quantity), focus lands on the product field after the product dialog, and
-// the grove stops drawing when the visitor is still.
+// Serves the repo root on a random local port (no /api/rifat here, so Rifat runs in guided mode), then checks desktop
+// and phone in Chromium with software GL. Passes only if: no page errors, no external requests, no horizontal overflow,
+// no AudioContext before the Sound press, the product sheet hands the product to Rifat, Rifat's guided flow fills the
+// enquiry and rejects a bad email, WhatsApp stays disabled while no number is configured, the plain form validates
+// inline, and (desktop) the 3D studies draw nothing while the visitor is still.
 import { createRequire } from 'node:module';
 import http from 'node:http';
 import fs from 'node:fs';
@@ -36,28 +37,51 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   const p = await ctx.newPage();
   const errors = [], external = [];
   p.on('pageerror', (e) => errors.push(e.message));
-  p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  p.on('console', (m) => { if (m.type() === 'error' && !/404/.test(m.text())) errors.push(m.text()); });
+  p.on('response', (r) => { if (r.status() >= 400 && !r.url().endsWith('/api/rifat')) errors.push(`${r.status()} ${r.url()}`); });
   p.on('request', (r) => { const u = r.url(); if (!u.startsWith(ORIGIN) && !u.startsWith('data:') && !u.startsWith('blob:')) external.push(u); });
-  await p.goto(ORIGIN + '/'); await p.waitForTimeout(3500);
+  await p.goto(ORIGIN + '/'); await p.waitForTimeout(3000);
   check((await p.evaluate(() => window.__ac)) === 0, `${name}: no AudioContext before the Sound press`);
-  const go = async (id) => { await p.evaluate((i) => scrollTo(0, document.getElementById(i).offsetTop), id); await p.waitForTimeout(1500); };
-  await go('materials');
-  await p.click('#bamboo .product >> nth=0'); await p.waitForTimeout(400); await p.click('#sheetEnquire'); await p.waitForTimeout(1200);
-  check((await p.evaluate(() => document.activeElement.id)) === 'f-product', `${name}: focus lands on the product field after the product dialog`);
-  await p.fill('#f-qty', '-3'); await p.click('#enquiryForm button[type=submit]'); await p.waitForTimeout(500);
-  check((await p.evaluate(() => document.querySelector('#e-quantity').textContent)).length > 0, `${name}: a negative quantity shows an inline error`);
+  const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
+
+  // product sheet -> Rifat
+  await toExplore(0.1);
+  await p.click('#bamboo.on .product >> nth=1'); await p.waitForTimeout(500);
+  check(await p.evaluate(() => document.getElementById('productSheet').open), `${name}: a product opens its sheet`);
+  await p.click('#sheetAsk'); await p.waitForTimeout(3500);
+  check((await p.evaluate(() => document.activeElement.id)) === 'rifatInput', `${name}: focus lands in Rifat's message field after "Ask Rifat"`);
+  check(/Bamboo splits/.test(await p.textContent('#ticketList')), `${name}: the product from the sheet is in "Your enquiry"`);
+  check(/guided mode/i.test(await p.textContent('#rifatMode')), `${name}: without the Pages Function Rifat says it is in guided mode`);
+
+  // guided flow
+  const say = async (t) => { await p.fill('#rifatInput', t); await p.press('#rifatInput', 'Enter'); await p.waitForTimeout(1500); };
+  await say('5 tonnes'); await say('Japan'); await say('Test Buyer'); await say('not-an-email');
+  check(/doesn.t look like an email/.test(await p.textContent('#rifatLog')), `${name}: Rifat rejects a malformed email`);
+  await say('buyer@example.com'); await say('Skip'); await say('Nothing else');
+  const ticket = await p.textContent('#ticketList');
+  check(/5 tonnes/.test(ticket) && /Japan/.test(ticket) && /buyer@example\.com/.test(ticket), `${name}: Rifat fills quantity, destination and email`);
+  check(/enquiry is ready/i.test(await p.textContent('#rifatLog')), `${name}: Rifat says the enquiry is ready`);
+  check((await p.getAttribute('#waSend', 'aria-disabled')) === 'true', `${name}: WhatsApp stays disabled while no number is configured`);
+  await p.click('#waSend', { force: true }); await p.waitForTimeout(200);
+  check(/number is added once confirmed/.test(await p.textContent('#ticketNote')), `${name}: pressing the disabled WhatsApp button explains why`);
+
+  // plain form alternative
+  await p.click('#formToggle'); await p.waitForTimeout(300);
+  await p.fill('#f-qty', '-3'); await p.click('#enquiryForm button[type=submit]'); await p.waitForTimeout(400);
+  check((await p.textContent('#e-quantity')).length > 0, `${name}: a negative quantity shows an inline error`);
   check((await p.evaluate(() => document.querySelectorAll('.err:not(:empty)').length)) >= 3, `${name}: empty required fields show inline errors`);
-  check((await p.evaluate(() => document.getElementById('summary').textContent)) === '', `${name}: an invalid form prepares no summary`);
+  check((await p.textContent('#summary')) === '', `${name}: an invalid form prepares nothing`);
   check((await p.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, `${name}: no horizontal overflow`);
+
   if (!touch) {
-    await p.click('#soundToggle'); await p.waitForTimeout(1500);
+    check(await p.evaluate(() => document.documentElement.classList.contains('has-3d')), `${name}: the 3D studies load`);
+    await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
-    await p.evaluate(() => { const s = document.getElementById('grove'); scrollTo(0, s.offsetTop + (s.offsetHeight - innerHeight) * 0.4); });
-    await p.waitForTimeout(5000);
+    await toExplore(0.5); await p.waitForTimeout(4000);
     const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(2000); const b = await p.evaluate(() => window.__draws);
-    check(b === a, `${name}: the 3D grove draws nothing while the visitor is still (${b - a} draw calls)`);
+    check(b === a, `${name}: the 3D studies draw nothing while the visitor is still (${b - a} draw calls)`);
   }
-  check(errors.length === 0, `${name}: no console or page errors${errors.length ? ' - ' + errors.slice(0, 2).join(' | ') : ''}`);
+  check(errors.length === 0, `${name}: no page errors or failed loads${errors.length ? ' - ' + errors.slice(0, 2).join(' | ') : ''}`);
   check(external.length === 0, `${name}: no external requests${external.length ? ' - ' + external.slice(0, 2).join(' | ') : ''}`);
   await ctx.close();
 }
