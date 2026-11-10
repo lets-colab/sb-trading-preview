@@ -27,6 +27,7 @@ function size() {
   canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
   shown = -1;
   grove?.setSize(innerWidth, innerHeight);
+  groveDrawn = false; // the resized canvas needs one fresh frame, even while the page is idle
 }
 function nearest(i) {
   for (let d = 0; d < FRAMES; d++) { if (frames[i - d]) return frames[i - d]; if (frames[i + d]) return frames[i + d]; }
