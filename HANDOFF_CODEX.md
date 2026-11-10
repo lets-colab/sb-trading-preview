@@ -61,7 +61,7 @@ cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run rend
 ### To switch Rifat's AI on (owner action; never paste keys in chat)
 1. Cloudflare dashboard -> Workers & Pages -> `sb-trading` -> Settings -> Variables and Secrets -> add an encrypted secret `ANTHROPIC_API_KEY` (Production). Redeploy.
 2. Check `https://sb-trading.lastbenchbd.com/api/rifat` returns `{"ai":true}` (behind Access, sign in first). Rifat's label then reads "AI assistant · online".
-3. Put SB Trading's WhatsApp number (international format, digits only) in `index.html` -> `<body data-whatsapp="...">` and merge.
+3. WhatsApp: set to +880 1878-707910 (`<body data-whatsapp="8801878707910">`, owner, 10 Nov 2026); also linked in the footer.
 Cost: each message is one or two Claude calls (about 2-4k input tokens). Change `MODEL` in `src/rifat-fn.js` and rebuild for a cheaper model only if the owner chooses.
 
 ## Verified (10 Nov 2026)
@@ -117,7 +117,7 @@ No Access, DNS, credential, or production permission changes were made during th
 - If evidence is missing, mark the item `NOT PROVEN` and stop at the smallest reversible diagnostic check.
 
 ## Open items, in priority order
-1. **Owner content:** WhatsApp number (unblocks the hand-off), email and phone; origin, minimum order, shipping terms, lead times, certifications; confirmed product names, grades and per-product photos (banana bark and woven mats have none; "Ski poles" is an unverified label). Approval of the derived light logo.
+1. **Owner content:** email and phone (WhatsApp +880 1878-707910 is live); origin, minimum order, shipping terms, lead times, certifications; confirmed product names, grades and per-product photos (banana bark and woven mats have none; "Ski poles" is an unverified label). Approval of the derived light logo.
 2. **Rifat AI key:** add `ANTHROPIC_API_KEY` in Cloudflare (steps above), then test five real buyer conversations, including attempts to get prices or a confirmed order (Rifat must refuse and hand to the team). Consider rate limiting per IP (Cloudflare WAF rule on `/api/rifat`) before any public launch.
 3. Keep DESIGN.md in step with styles.css (the token gate enforces values); re-run `/impeccable critique` after each design pass.
 4. Real-device checks: frame rate of the 3D studies on a mid-range phone; screen reader; listen to the cues on headphones and laptop speakers.

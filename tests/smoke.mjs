@@ -2,7 +2,7 @@
 // Serves the repo root on a random local port (no /api/rifat here, so Rifat runs in guided mode), then checks desktop
 // and phone in Chromium with software GL. Passes only if: no page errors, no external requests, no horizontal overflow,
 // no AudioContext before the Sound press, the product sheet hands the product to Rifat, Rifat's guided flow fills the
-// enquiry and rejects a bad email, WhatsApp stays disabled while no number is configured, the plain form validates
+// enquiry and rejects a bad email, WhatsApp opens SB Trading's number with the enquiry filled in, the plain form validates
 // inline, and (desktop) the 3D studies draw nothing while the visitor is still.
 import { createRequire } from 'node:module';
 import http from 'node:http';
@@ -61,9 +61,10 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   const ticket = await p.textContent('#ticketList');
   check(/5 tonnes/.test(ticket) && /Japan/.test(ticket) && /buyer@example\.com/.test(ticket), `${name}: Rifat fills quantity, destination and email`);
   check(/enquiry is ready/i.test(await p.textContent('#rifatLog')), `${name}: Rifat says the enquiry is ready`);
-  check((await p.getAttribute('#waSend', 'aria-disabled')) === 'true', `${name}: WhatsApp stays disabled while no number is configured`);
-  await p.click('#waSend', { force: true }); await p.waitForTimeout(200);
-  check(/number is added once confirmed/.test(await p.textContent('#ticketNote')), `${name}: pressing the disabled WhatsApp button explains why`);
+  check((await p.getAttribute('#waSend', 'aria-disabled')) === 'false', `${name}: WhatsApp is enabled once the enquiry is ready`);
+  const wa = new URL(await p.getAttribute('#waSend', 'href'));
+  check(wa.origin + wa.pathname === 'https://wa.me/8801878707910' && /Japan/.test(wa.searchParams.get('text') || ''), `${name}: WhatsApp opens SB Trading's number with the enquiry filled in`);
+  check((await p.getAttribute('#waSend', 'target')) === '_blank', `${name}: WhatsApp opens in a new tab`);
 
   // plain form alternative
   await p.click('#formToggle'); await p.waitForTimeout(300);
