@@ -184,7 +184,7 @@ The token block below is the source of truth and mirrors styles.css `:root` exac
 --fibre-2: #e7d6b6;         /* accent hover: primary button hover fill; orb highlight */
 --fibre-3: #a8875a;         /* accent shade: orb body only */
 --dim: #dbeaf6b8;           /* secondary text: ledes, nav links, notes, captions (Mist at 72%) */
---faint: #dbeaf673;         /* tertiary/decorative text: disclosure labels, inactive chapters, empty ticket values, disabled text (Mist at 45%) */
+--faint: #dbeaf699;         /* tertiary/decorative text: disclosure labels, inactive chapters, empty ticket values, disabled text (Mist at 60%; 6.05:1 on ink-0, 4.97:1 on the ticket, passes AA) */
 --line: #d7be9333;          /* fibre hairline: borders of pills, panels, sheet, ticket */
 --line-2: #dbeaf61f;        /* cool hairline: inner dividers, input borders, footer rule */
 --glass: #0c2440c7;         /* translucent ink panel: Rifat chat, plain form */

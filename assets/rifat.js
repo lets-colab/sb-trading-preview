@@ -9,12 +9,12 @@ export const PRODUCTS = [
   'Grade A: banana silk', 'Grade B: standard banana fibre yarn', 'Grade C: industrial banana fibre yarn',
   'Banana bark', 'Banana leaves', 'Not sure yet',
 ];
-const LABELS = { product: 'Product', quantity: 'Quantity', country: 'Deliver to', name: 'Name', email: 'Email', company: 'Company', notes: 'Requirements' };
-const REQUIRED = ['product', 'country', 'name', 'email'];
+const LABELS = { products: 'Products', quantity: 'Quantity', country: 'Deliver to', name: 'Name', email: 'Email', company: 'Company', notes: 'Requirements' };
+const REQUIRED = ['products', 'country', 'name', 'email'];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const STEPS = [
-  { key: 'product', ask: 'Which product are you interested in?', chips: PRODUCTS },
-  { key: 'quantity', ask: 'Roughly how much do you need? For example “5 tonnes” or “one 40 ft container”.', chips: ['One 20 ft container', 'One 40 ft container', 'Samples first', 'Not sure yet'] },
+  { key: 'products', ask: 'Which product are you interested in? You can add more later.', chips: PRODUCTS },
+  { key: 'quantity', ask: 'Roughly how much do you need? For example “5 tonnes” or “one 40 ft container”.', chips: ['One 20 ft container', 'One 40 ft container', 'Samples first', 'Not sure yet', 'Add another product'] },
   { key: 'country', ask: 'Which country should it be delivered to?' },
   { key: 'name', ask: 'Thank you. What is your name?' },
   { key: 'email', ask: 'And your business email, so SB Trading’s team can reply with the quotation?' },
@@ -39,6 +39,15 @@ export function matchProduct(text) {
   if (/lea(f|ves)/.test(t)) return 'Banana leaves';
   return null;
 }
+// Several products in one answer ("bamboo poles and banana leaves", "A, B").
+export function matchProducts(text) {
+  const found = [];
+  for (const part of String(text).split(/,|;|&|\+|\band\b|\balso\b/i)) {
+    const p = part.trim() && matchProduct(part.trim());
+    if (p && !found.includes(p)) found.push(p);
+  }
+  return found;
+}
 export function parseQuantity(text) {
   const t = text.toLowerCase().replace(/,/g, '');
   const words = { one: 1, a: 1, an: 1, two: 2, three: 3, four: 4, five: 5, ten: 10 };
@@ -60,28 +69,36 @@ export function quantityText(e) {
   if (e.quantity) return `${e.quantity} ${e.unit || ''}`.trim();
   return e.quantityText || '';
 }
+export const fieldText = (e, k) => (k === 'quantity' ? quantityText(e) : k === 'products' ? (e.products || []).join(', ') : e[k] || '');
 export function summaryText(e) {
   const lines = ['Quotation enquiry for SB Trading (prepared with Rifat on the website)'];
   for (const k of Object.keys(LABELS)) {
-    const v = k === 'quantity' ? quantityText(e) : e[k];
+    const v = fieldText(e, k);
     if (v) lines.push(`${LABELS[k]}: ${v}`);
   }
   return lines.join('\n');
 }
-const isReady = (e) => REQUIRED.every((k) => e[k]);
+const isReady = (e) => REQUIRED.every((k) => fieldText(e, k));
+// Adds products to a list; "Not sure yet" only stands alone.
+export function withProducts(list = [], add = []) {
+  const out = [...list];
+  for (const p of add) if (!out.includes(p)) out.push(p);
+  const real = out.filter((p) => p !== 'Not sure yet');
+  return real.length ? real : out;
+}
 
 export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = false, endpoint = 'api/rifat' }) {
   const $ = (s) => root.querySelector(s);
   const log = $('#rifatLog'), chips = $('#rifatChips'), form = $('#rifatForm'), input = $('#rifatInput');
   const modeLabel = $('#rifatMode'), list = $('#ticketList'), wa = $('#waSend'), copyBtn = $('#copyEnquiry'), note = $('#ticketNote');
   const number = String(whatsapp).replace(/\D/g, '');
-  let mode = 'guide', enquiry = {}, skipped = new Set(), history = [], busy = false, changing = null, started = false;
+  let mode = 'guide', enquiry = {}, skipped = new Set(), history = [], busy = false, changing = null, started = false, adding = false;
 
   // ---------------------------------------------------------------- rendering
   function renderTicket(changed = []) {
     list.replaceChildren();
     for (const [k, label] of Object.entries(LABELS)) {
-      const v = k === 'quantity' ? quantityText(enquiry) : enquiry[k];
+      const v = fieldText(enquiry, k);
       const dt = document.createElement('dt'); dt.textContent = label;
       const dd = document.createElement('dd');
       dd.textContent = v || (REQUIRED.includes(k) ? 'needed' : 'optional');
@@ -117,20 +134,22 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
       b.addEventListener('click', () => submit(label));
       return b;
     }));
+    log.scrollTop = log.scrollHeight; // the chip row shrinks the log; keep the newest message in view
   }
   const pause = (ms) => new Promise((r) => setTimeout(r, reduced ? 0 : ms));
+  // Guided replies are immediate (a short beat, no "typing" dots: nothing is being worked out). AI replies show
+  // the typing indicator while the request is really in flight.
   async function rifatSays(text, chipList) {
-    typing(true);
-    await pause(Math.min(1100, 380 + text.length * 6));
-    typing(false);
+    await pause(160);
     say(text);
     offer(chipList);
   }
   function merge(fields) {
     const changed = [];
     for (const [k, v] of Object.entries(fields)) {
-      if (v === undefined || v === null || v === '') continue;
-      if (enquiry[k] !== v) { enquiry[k] = v; changed.push(k); }
+      if (v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length)) continue;
+      const same = Array.isArray(v) ? (enquiry[k] || []).join('|') === v.join('|') : enquiry[k] === v;
+      if (!same) { enquiry[k] = v; changed.push(k); }
     }
     if (changed.includes('quantity')) delete enquiry.quantityText;
     if (changed.length) { renderTicket(changed); cue('tick', list); }
@@ -138,20 +157,20 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
   }
 
   // ---------------------------------------------------------------- guided mode
-  const nextStep = () => STEPS.find((s) => !(s.key === 'quantity' ? quantityText(enquiry) : enquiry[s.key]) && !skipped.has(s.key));
+  const nextStep = () => STEPS.find((s) => !fieldText(enquiry, s.key) && !skipped.has(s.key));
   async function askNext(prefix = '') {
     const step = changing ? STEPS.find((s) => s.key === changing) : nextStep();
     if (!step) {
       const text = number
         ? 'Your enquiry is ready. Check it under “Your enquiry”, then send it to SB Trading’s team on WhatsApp, or copy it.'
         : 'Your enquiry is ready. Check it under “Your enquiry”. SB Trading’s WhatsApp number is added once confirmed; until then, copy the enquiry.';
-      return rifatSays(prefix + text, [number ? 'Send on WhatsApp' : 'Copy enquiry', 'Change something']);
+      return rifatSays(prefix + text, [number ? 'Send on WhatsApp' : 'Copy enquiry', 'Add another product', 'Change something']);
     }
     return rifatSays(prefix + step.ask, step.chips);
   }
   function answerStep(key, text) {
     const t = text.trim();
-    if (key === 'product') { const p = matchProduct(t); return p ? { product: p } : null; }
+    if (key === 'products') { const ps = matchProducts(t); return ps.length ? { products: ps } : null; }
     if (key === 'quantity') {
       if (/^one 20 ft container$/i.test(t)) return { quantity: 1, unit: '20 ft containers' };
       if (/^one 40 ft container$/i.test(t)) return { quantity: 1, unit: '40 ft containers' };
@@ -167,7 +186,19 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
   async function guide(text) {
     if (/^send on whatsapp$/i.test(text)) { if (number && isReady(enquiry)) { wa.click(); return rifatSays('WhatsApp is opening with your enquiry filled in. Send it there, and SB Trading’s team replies on WhatsApp.'); } }
     if (/^copy enquiry$/i.test(text)) { await copy(); return rifatSays('Copied. Paste it into an email or message to SB Trading.', ['Change something']); }
-    if (/^change something$/i.test(text)) { changing = null; return rifatSays('What would you like to change?', Object.values(LABELS)); }
+    if (/^change something$/i.test(text)) { changing = null; adding = false; return rifatSays('What would you like to change?', Object.values(LABELS)); }
+    if (/^add another product$/i.test(text)) {
+      adding = true;
+      const rest = PRODUCTS.filter((p) => p !== 'Not sure yet' && !(enquiry.products || []).includes(p));
+      return rifatSays('Which other product should I add?', rest);
+    }
+    if (adding) {
+      const ps = matchProducts(text);
+      if (!ps.length) return rifatSays('I didn’t catch which product. Choose one below.', PRODUCTS.filter((p) => !(enquiry.products || []).includes(p)));
+      adding = false;
+      merge({ products: withProducts(enquiry.products, ps) });
+      return askNext(`Added ${ps.join(', ')}. `);
+    }
     const labelKey = Object.keys(LABELS).find((k) => LABELS[k].toLowerCase() === text.toLowerCase());
     if (labelKey && !nextStep() && !changing) { changing = labelKey; skipped.delete(labelKey); return askNext(); }
 
@@ -181,6 +212,7 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
       if (step.key === 'email') return rifatSays('That doesn’t look like an email address. Could you check it? For example name@company.com.');
       return rifatSays('I didn’t catch which product. Choose one below, or “Not sure yet”.', step.chips);
     }
+    if (got.products && !changing) got.products = withProducts(enquiry.products, got.products);
     if (got.skip) skipped.add(step.key);
     else if (got.quantityText) { delete enquiry.quantity; delete enquiry.unit; enquiry.quantityText = got.quantityText; renderTicket(['quantity']); cue('tick', list); }
     else merge(got);
@@ -230,7 +262,7 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
     if (wa.getAttribute('aria-disabled') === 'true') {
       e.preventDefault();
       note.textContent = !isReady(enquiry)
-        ? 'Rifat needs the product, destination country, your name and email first.'
+        ? 'Rifat needs at least one product, the destination country, your name and email first.'
         : 'SB Trading’s WhatsApp number is added once confirmed. Until then, copy the enquiry.';
     } else cue('send', wa);
   });
@@ -244,7 +276,19 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
     cue('tick', copyBtn);
   }
   copyBtn.addEventListener('click', copy);
-  $('#rifatRestart').addEventListener('click', () => { enquiry = {}; skipped = new Set(); history = []; changing = null; log.replaceChildren(); note.textContent = ''; renderTicket(); greet(); });
+  // "Start again" clears the enquiry, so it asks once: the first press arms it for four seconds.
+  const restart = $('#rifatRestart');
+  let armed = 0;
+  restart.addEventListener('click', () => {
+    if (!armed) {
+      restart.textContent = 'Clear enquiry?';
+      armed = setTimeout(() => { armed = 0; restart.textContent = 'Start again'; }, 4000);
+      return;
+    }
+    clearTimeout(armed); armed = 0; restart.textContent = 'Start again';
+    enquiry = {}; skipped = new Set(); history = []; changing = null; adding = false;
+    log.replaceChildren(); note.textContent = ''; renderTicket(); greet();
+  });
 
   // ---------------------------------------------------------------- start
   function setMode(m) {
@@ -278,14 +322,16 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
   return {
     async askAbout(product) {
       const p = matchProduct(product) || null;
-      if (p) merge({ product: p });
+      if (p) merge({ products: withProducts(enquiry.products, [p]) });
       if (!started) return start(); // the greeting carries on from the next missing detail
-      await pause(600);
-      if (mode === 'ai') return rifatSays(`You were looking at ${product}. I’ve added it to your enquiry. What would you like to know, or how much do you need?`);
-      return askNext(`You were looking at ${product}. I’ve added it to your enquiry. `);
+      await pause(400);
+      const now = fieldText(enquiry, 'products');
+      if (mode === 'ai') { say(`You were looking at ${product}. I’ve added it to your enquiry (${now}). What would you like to know, or how much do you need?`); return offer([]); }
+      return askNext(`You were looking at ${product}. I’ve added it to your enquiry (${now}). `);
     },
     setEnquiry(fields) {
-      const { quantity, unit, ...rest } = fields;
+      const { quantity, unit, product, ...rest } = fields;
+      if (product) rest.products = withProducts(enquiry.products, [product]);
       merge(quantity ? { ...rest, quantity, unit } : rest);
       note.textContent = number ? '' : 'SB Trading’s WhatsApp number is added once confirmed. Until then, copy the enquiry.';
     },
