@@ -56,6 +56,11 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.waitForTimeout(5000);
     const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(2000); const b = await p.evaluate(() => window.__draws);
     check(b === a, `${name}: the 3D grove draws nothing while the visitor is still (${b - a} draw calls)`);
+    await p.evaluate(() => window.dispatchEvent(new Event('resize'))); await p.waitForTimeout(300);
+    const resized = await p.evaluate(() => window.__draws);
+    check(resized > b, `${name}: the 3D grove redraws after a viewport resize`);
+    await p.waitForTimeout(1500);
+    check((await p.evaluate(() => window.__draws)) === resized, `${name}: the 3D grove returns to idle after resize`);
   }
   check(errors.length === 0, `${name}: no console or page errors${errors.length ? ' - ' + errors.slice(0, 2).join(' | ') : ''}`);
   check(external.length === 0, `${name}: no external requests${external.length ? ' - ' + external.slice(0, 2).join(' | ') : ''}`);
