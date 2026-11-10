@@ -61,23 +61,24 @@ cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run rend
 Cost: each message is one or two Claude calls (about 2-4k input tokens). Change `MODEL` in `src/rifat-fn.js` and rebuild for a cheaper model only if the owner chooses.
 
 ## Verified (10 Nov 2026)
-- Production Pages deployment `48347cc7-27ee-4568-8eb6-d8e58db4f36c` completed successfully from `main` commit `d1b126dea5a0e7de561cbec1a783186904883f47`; this proves deployment completion, not public readiness.
-- Pages custom domain `sb-trading.lastbenchbd.com` is active; DNS CNAME points to `sb-trading.pages.dev` and is proxied.
-- Fresh local build: `npm run build` passed.
-- Fresh browser smoke suite: 18/18 checks passed on macOS 12.7.6 / Chrome 150 using software WebGL. Desktop and phone checks covered validation, focus, audio opt-in, no external requests, no console errors, overflow, and idle grove rendering.
-- Playwright's bundled Chromium installer does not support this Mac's macOS 12.7.6. `tests/smoke.mjs` now accepts `CHROMIUM_PATH`; CI installs its own Chromium on Ubuntu.
-- GitHub Actions quality workflow is configured to run build + browser smoke tests on PRs and pushes to `main`; it is not a deployment workflow. Its first hosted run is still pending.
-- Rebuild (this branch): `npm run build` passed; `npm test` 35/35 on Linux / Chromium 1243 with software WebGL (desktop 1440 and phone 390): product sheet -> Rifat focus, guided flow fills the enquiry and rejects a bad email, WhatsApp disabled without a number, form validation, no overflow, no page errors, no external requests, audio only after the Sound press, 3D draws nothing at rest. Impeccable detector: `[]`.
-- Pages Function exercised locally: GET `{ai:false}` without a key; POST 503 without a key; 403 cross-origin; a dummy key reaches the Anthropic API and fails with 401 as expected (so the bundle runs). A real conversation with a real key is NOT PROVEN.
+- **Current canonical production deployment:** Pages deployment `0621ce84-960a-4ea6-9845-9b3a310da9e2` (`https://0621ce84.sb-trading.pages.dev`) from `main` commit `d5e765318a356a339613c6e78ff3fbf1a27ff0cc` completed every stage successfully. It is the active canonical deployment for `sb-trading.lastbenchbd.com`. Earlier PR #3 merge commit `c94bcf3a32e4b51efbcbd348ae803da51a8f3146` also deployed successfully; PR #4 subsequently replaced it with the current cinematic rebuild. Deployment success does not prove public reachability or commercial readiness.
+- **Public reachability:** fresh unauthenticated GETs to `https://sb-trading.lastbenchbd.com`, `https://sb-trading.pages.dev`, and the canonical deployment hostname all return HTTP 302 to `lastbenchbd.cloudflareaccess.com/cdn-cgi/access/login/...`; each response includes `www-authenticate: Cloudflare-Access`.
+- **Access root cause:** Cloudflare account application `All Workers` (`b7281231-8adb-412c-a513-45a770dc9427`) has destination `{type: all_workers}` and an allow policy named `Cloudflare account members`. There is no SB Trading-specific Access application in the account or zone. The global application is the verified gate. Do not delete or weaken it to expose one site.
+- **Rifat / enquiry readiness:** the Pages project's production `env_vars` are empty; `ANTHROPIC_API_KEY` is not configured, so Rifat remains in guided mode. The WhatsApp number is not configured. The enquiry form prepares a local summary only; no submission is sent or stored. This is still a client-review draft, not a production-ready commercial funnel.
+- **Hosted CI failure on current `main`:** run `42763891793` for `d5e7653` completed with failure. `npm ci`, `npm run build`, and Playwright installation passed; `npm test` failed two desktop checks: (1) focus after “Ask Rifat” was checked after a fixed 3.5-second sleep; (2) 3D studies continued drawing after input stopped (80 draw calls in the 2-second measurement window). The same focus flow passed locally, indicating a timing-sensitive test rather than a confirmed user-facing focus defect.
+- **3D idle root cause:** `site.js` kept calling `studies.render()` while `src/materials3d.js` returned `settling=true`. The material transition used frame-time easing capped at 0.1 seconds; on slow/software WebGL it could keep the page rendering for several seconds after the visitor stopped. Current repair adds a `settle` mode: after one second without input, the next frame snaps family visibility and camera position to their final values, returns `settling=false`, and lets the loop stop. The canvas exposes `data-render-state` (`active`, `idle`, `offscreen`) for deterministic verification.
+- **Regression coverage:** the focus test now waits for the actual `#rifatInput` focus (10-second ceiling) instead of a fixed sleep. The desktop test waits for the explicit idle state, confirms zero additional draw calls, triggers a viewport resize, and verifies a fresh render followed by a return to idle.
+- **Local verification on this repair branch:** `npm run build` passed; `npm test` passed all 36 desktop/phone assertions on macOS 12.7.6 / Chrome 150 with software WebGL. `npm ci` completed with zero reported vulnerabilities. Hosted CI for this repair branch is still pending.
+- No Cloudflare Access, DNS, credentials, production permissions, or deployment settings were changed during this repair.
 - Not verified: real GPU / real phone performance, screen-reader pass, human listening test, Rifat with a real key, WhatsApp delivery, and production commercial acceptance.
 
 ## Self-healing knowledge and incident runbook
 
 ### Incident: SB Trading receives a Cloudflare Access login instead of the showroom
 **Observed 10 Nov 2026 from an unauthenticated request on `LASTBENCH.local`:**
-- `https://sb-trading.lastbenchbd.com`, `https://sb-trading.pages.dev`, and the latest deployment hostname return HTTP 302 to `lastbenchbd.cloudflareaccess.com/cdn-cgi/access/login/...`.
-- The response includes `www-authenticate: Cloudflare-Access` and the same Access audience as the account's `All Workers` application.
-- Cloudflare API state: the account has an `All Workers` Access application with destination `all_workers` and an allow policy for Cloudflare account members. There is no SB Trading-specific Access application in the account or zone listings.
+- Canonical domain, Pages hostname, and current deployment hostname all return HTTP 302 to Cloudflare Access login.
+- `www-authenticate: Cloudflare-Access` confirms the response is an Access challenge.
+- Cloudflare account application `All Workers` targets all Workers and allows Cloudflare account members. No SB Trading-specific Access application exists.
 - **Verified root cause:** account-level `All Workers` Access is the gate. Do not delete or weaken this global application to fix one site.
 
 ### Separate controls — do not conflate them
@@ -88,7 +89,7 @@ Cost: each message is one or two Claude calls (about 2-4k input tokens). Change 
 ### Access decision gate — owner decision required
 Keep the global `All Workers` policy intact. Choose the intended audience before changing Access:
 1. **Client review only:** create a hostname-specific Access application for `sb-trading.lastbenchbd.com` that allows only confirmed reviewer email addresses. Keep `sb-trading.pages.dev` and deployment URLs protected.
-2. **Public launch:** only after content and commercial readiness are approved, create a hostname-specific public/bypass application for `sb-trading.lastbenchbd.com` only. Keep the Pages platform hostname and previews protected. Cloudflare documents that specific hostname / Worker destinations take precedence over account-level `all_workers` Access.
+2. **Public launch:** only after content and commercial readiness are approved, create a hostname-specific public/bypass application for `sb-trading.lastbenchbd.com` only. Keep the Pages platform hostname and previews protected.
 3. **No decision:** leave the current protection in place. Do not make the site public by deleting the global Access application.
 
 No Access, DNS, credential, or production permission changes were made during this investigation.
