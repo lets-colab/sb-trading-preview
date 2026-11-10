@@ -4,190 +4,227 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>SB Trading | Bamboo, banana fibre yarn, banana bark and leaves (client review draft)</title>
-<meta name="description" content="Client review draft: SB Trading's bamboo, banana fibre yarn and banana bark and leaves, with a direct quotation request for buyers.">
-<meta name="theme-color" content="#102a43">
-<link rel="icon" href="assets/img/sb-trading-logo.png">
+<title>SB Trading | Materials in Motion (client review draft)</title>
+<meta name="description" content="Client review draft: SB Trading's bamboo, banana fibre yarn and banana bark and leaves, with Rifat, an AI assistant that prepares quotation enquiries.">
+<meta name="theme-color" content="#071a2e">
+<link rel="icon" href="assets/img/sb-mark.webp" type="image/webp">
 <link rel="preload" href="assets/vendor/fonts/gloock-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/vendor/fonts/schibsted-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
-<noscript><style>.sound-toggle,.skip-products,.menu-toggle{display:none}</style></noscript>
+<noscript><style>.sound-toggle,.menu-toggle,.chapters,.rifat,.form-toggle{display:none!important}</style></noscript>
 </head>
-<body>
-<a class="skip" href="#materials">Skip to the materials</a>
-<svg class="thread" viewBox="0 0 20 1000" preserveAspectRatio="none" aria-hidden="true"><path d="M10 0 C 2 120, 18 240, 10 360 S 2 600, 10 720 S 18 900, 10 1000" pathLength="1"/></svg>
+<!-- data-whatsapp: SB Trading's WhatsApp number in international format, digits only (e.g. 8801XXXXXXXXX). Empty until confirmed. -->
+<body data-whatsapp="">
+<a class="skip" href="#explore">Skip to the materials</a>
 
 <header class="top">
-  <a class="brand" href="#top" aria-label="SB Trading, back to top">
-    <span class="brand-chip"><img src="assets/img/sb-trading-logo.png" alt="" width="40" height="40"></span>
+  <a class="brand" href="#top" aria-label="SB Trading, back to the start">
+    <img class="brand-mark" src="assets/img/sb-mark-light.webp" alt="" width="256" height="215">
     <span class="brand-name">SB Trading</span>
   </a>
   <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mainNav">Menu</button>
   <nav class="nav" id="mainNav" aria-label="Main">
-    <a href="#materials">Materials</a>
+    <a href="#explore">Materials</a>
     <a href="#ordering">How ordering works</a>
-    <a href="#contact">Contact</a>
+    <a href="#enquire">Enquire</a>
   </nav>
   <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="false"><span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="sound-label">Sound</span></button>
   <p class="sound-hint" id="soundHint" role="status"></p>
-  <a class="btn btn-small" href="#enquire"><span class="long">Request a quotation</span><span class="short" aria-hidden="true">Quote</span></a>
+  <a class="btn btn-small" href="#enquire"><span class="orb orb-xs" aria-hidden="true"><i></i><i></i><i></i></span>Ask Rifat</a>
 </header>
 
-<a class="skip-products" href="#materials">Jump to the materials <span aria-hidden="true">↓</span></a>
-
 <main id="top">
-  <!-- The film: the scroll is the playhead -->
+  <!-- 01 Arrive · 02 Discover · 03 Transition: the scroll is the playhead of the film -->
   <section class="film" id="film" aria-label="Introduction">
     <div class="film-stage">
       <canvas class="film-canvas" aria-hidden="true"></canvas>
-      <img class="film-poster" src="assets/film/d/100.webp" alt="" aria-hidden="true">
+      <img class="film-poster" src="assets/film/d/020.webp" alt="" aria-hidden="true">
       <div class="film-shade" aria-hidden="true"></div>
-      <div class="beat beat-0" data-at="0,0.12">
-        <img class="beat-logo" src="assets/img/sb-trading-logo.png" alt="SB Trading" width="160" height="163">
-        <h1>Bamboo and banana fibre, supplied to buyers.</h1>
-        <p class="lede">SB Trading supplies bamboo, banana fibre yarn, and banana bark and leaves. See the material, then ask for a quotation.</p>
-        <p class="scroll-cue" aria-hidden="true"><span></span>Scroll</p>
+      <div class="beat beat-hero" data-at="0,0.05">
+        <img class="hero-logo" src="assets/img/sb-logo-light.webp" alt="SB Trading, forestry and agricultural products" width="568" height="575">
+        <p class="eyebrow">SB Trading · Forestry and agricultural products</p>
+        <h1>Materials <em>in Motion.</em></h1>
+        <p class="lede">Bamboo, banana fibre yarn, and banana bark and leaves, supplied to business buyers. Scroll through the material, then ask Rifat for a quotation.</p>
+        <p class="scroll-cue" aria-hidden="true"><span></span>Scroll to explore</p>
       </div>
-      <div class="beat" data-at="0.14,0.24"><h2>Bamboo, up close.</h2></div>
-      <div class="beat" data-at="0.25,0.38"><h2>Banana fibre, twisted into yarn.</h2></div>
-      <div class="beat" data-at="0.45,0.74"><h2>Cut, split and stacked.</h2><p class="beat-note">Bamboo poles, splits, ski poles and woven mats.</p></div>
-      <div class="beat beat-end" data-at="0.8,1.01"><h2>Three families. Nine products.</h2><a class="btn" href="#materials">See the materials</a></div>
-      <div class="film-bar" aria-hidden="true"><span></span></div>
+      <div class="beat" data-at="0.062,0.144"><p class="eyebrow">Discover</p><h2>Bamboo, <em>up close.</em></h2></div>
+      <div class="beat" data-at="0.155,0.236"><p class="eyebrow">Discover</p><h2>Fibre, <em>twisted together.</em></h2></div>
+      <div class="beat" data-at="0.258,0.336"><p class="eyebrow">Discover</p><h2>Whole poles, <em>stacked.</em></h2></div>
+      <div class="beat" data-at="0.357,0.55"><p class="eyebrow">Transition</p><h2>Cut, split <em>and opened.</em></h2></div>
+      <div class="beat" data-at="0.575,0.675"><p class="eyebrow">Transition</p><h2>Drawn out <em>into fibre.</em></h2></div>
+      <div class="beat" data-at="0.7,0.845"><p class="eyebrow">Transition</p><h2>Lifted, <em>strand by strand.</em></h2></div>
+      <div class="beat beat-end" data-at="0.87,1.01"><p class="eyebrow">Transition</p><h2>Wound <em>into yarn.</em></h2><a class="btn" href="#explore">Explore the materials <span aria-hidden="true">↓</span></a></div>
+      <p class="film-label">Generated film for this concept, not SB Trading's own stock.</p>
     </div>
   </section>
 
-  <!-- The grove: a short real-time 3D passage (desktop and tablet) -->
-  <section class="grove" id="grove" aria-labelledby="h-grove">
-    <div class="grove-stage">
-      <canvas class="grove-canvas" aria-hidden="true"></canvas>
-      <img class="grove-fallback" src="assets/img/bamboo-poles.webp" alt="" aria-hidden="true">
-      <div class="grove-shade" aria-hidden="true"></div>
-      <div class="beat" data-at="0,0.45"><h2 id="h-grove">Through the grove.</h2></div>
-      <div class="beat beat-end" data-at="0.55,1.01"><h2>From the grove to your enquiry.</h2><a class="btn" href="#materials">See the materials</a></div>
-      <p class="look-hint" aria-hidden="true">Move your pointer to look around.</p>
+  <!-- 04 Explore: three families, nine products -->
+  <section class="explore" id="explore" aria-labelledby="h-explore">
+    <h2 class="sr" id="h-explore">Three material families, nine products</h2>
+    <div class="explore-stage">
+      <canvas class="studies" aria-hidden="true"></canvas>
+      <p class="study-label" aria-hidden="true">3D visual study of the material · not a product photo</p>
+      <div class="ambient" aria-hidden="true"><img src="assets/img/bamboo-poles.webp" alt=""><img src="assets/img/banana-fibre.webp" alt=""><img src="assets/img/banana-leaves.webp" alt=""></div>
+
+      <article class="fam" id="bamboo" data-i="0" aria-labelledby="h-bamboo">
+        <div class="fam-text">
+          <p class="eyebrow">Explore · Bamboo</p>
+          <h3 id="h-bamboo">Enter <em>the bamboo.</em></h3>
+          <p class="fam-lede">Poles, splits, ski poles and woven mats. Open a product for its photo and notes.</p>
+          <ul class="products">
+            <li><button type="button" class="product" data-img="bamboo-poles" data-family="Bamboo" data-note="Diameter, lengths and treatment are confirmed by SB Trading with the quotation.">Bamboo poles</button></li>
+            <li><button type="button" class="product" data-img="bamboo-sections" data-family="Bamboo" data-note="Split widths and lengths are confirmed by SB Trading with the quotation.">Bamboo splits</button></li>
+            <li><button type="button" class="product" data-img="bamboo-poles" data-family="Bamboo" data-note="“Ski poles” is an unconfirmed product label; the photograph shows general bamboo stock.">Ski poles</button></li>
+            <li><button type="button" class="product" data-img="bamboo-sections" data-family="Bamboo" data-note="No photograph of woven mats yet; weave, size and finish are to be confirmed.">Woven mats</button></li>
+          </ul>
+        </div>
+        <figure class="arch"><img src="assets/img/bamboo-sections.webp" alt="Cut bamboo sections bundled and tied, ends facing the camera" width="727" height="1300" loading="lazy"><img src="assets/img/bamboo-poles.webp" alt="Long bamboo poles stacked in daylight" width="730" height="1300" loading="lazy"></figure>
+      </article>
+
+      <article class="fam" id="fibre" data-i="1" aria-labelledby="h-fibre">
+        <div class="fam-text">
+          <p class="eyebrow">Explore · Banana fibre yarn</p>
+          <h3 id="h-fibre">From plant <em>to fibre.</em></h3>
+          <p class="fam-lede">Banana fibre yarn in three grades, from fine banana silk to industrial yarn.</p>
+          <ul class="products">
+            <li><button type="button" class="product" data-img="banana-fibre" data-family="Banana fibre yarn" data-note="Which photograph shows Grade A is still to be confirmed.">Grade A: banana silk</button></li>
+            <li><button type="button" class="product" data-img="banana-fibre-loose" data-family="Banana fibre yarn" data-note="Which photograph shows Grade B is still to be confirmed.">Grade B: standard banana fibre yarn</button></li>
+            <li><button type="button" class="product" data-img="banana-fibre" data-family="Banana fibre yarn" data-note="Which photograph shows Grade C is still to be confirmed.">Grade C: industrial banana fibre yarn</button></li>
+          </ul>
+        </div>
+        <figure class="arch"><img src="assets/img/banana-fibre.webp" alt="Hanks of natural banana fibre laid out on grass" width="975" height="1300" loading="lazy"><img src="assets/img/banana-fibre-loose.webp" alt="Loose banana fibre strands drying in the open" width="975" height="1300" loading="lazy"></figure>
+      </article>
+
+      <article class="fam" id="bark" data-i="2" aria-labelledby="h-bark">
+        <div class="fam-text">
+          <p class="eyebrow">Explore · Banana bark and leaves</p>
+          <h3 id="h-bark">Layers <em>of the leaf.</em></h3>
+          <p class="fam-lede">Banana bark and banana leaves, the third family of the range.</p>
+          <ul class="products">
+            <li><button type="button" class="product" data-img="banana-leaves" data-family="Banana bark and leaves" data-note="No photograph of banana bark yet; the image shows banana leaves.">Banana bark</button></li>
+            <li><button type="button" class="product" data-img="banana-leaves" data-family="Banana bark and leaves" data-note="Packing, sizes and availability are confirmed by SB Trading with the quotation.">Banana leaves</button></li>
+          </ul>
+        </div>
+        <figure class="arch"><img src="assets/img/banana-leaves.webp" alt="Green banana leaves, folded and packed in clear bags" width="987" height="1300" loading="lazy"></figure>
+      </article>
+      <p class="explore-note">Product names, grades and photographs are being confirmed by SB Trading.</p>
     </div>
   </section>
 
-  <!-- Materials: three families, each with its products -->
-  <section class="materials" id="materials" aria-labelledby="h-materials">
-    <div class="head reveal">
-      <h2 id="h-materials">Three families, nine products.</h2>
-      <p class="lede">Open a product for its details, then ask for a quotation. Specifications, grades and sizes are confirmed with each quotation.</p>
-    </div>
-
-    <article class="family reveal" id="bamboo" aria-labelledby="h-bamboo">
-      <figure><img src="assets/img/bamboo-poles.webp" alt="Bamboo poles stacked and tied in natural daylight" loading="lazy" width="730" height="1300"></figure>
-      <div class="family-body">
-        <h3 id="h-bamboo">Bamboo</h3>
-        <p>Four product types, from whole poles to woven mats.</p>
-        <ul class="rows">
-          <li><button type="button" class="product" data-img="bamboo-poles" data-family="Bamboo" data-note="Diameter, lengths and treatment to be confirmed with SB Trading."><b>Bamboo poles</b><span>Photo and notes</span></button></li>
-          <li><button type="button" class="product" data-img="bamboo-sections" data-family="Bamboo" data-note="Split widths and lengths to be confirmed with SB Trading."><b>Bamboo splits</b><span>Photo and notes</span></button></li>
-          <li><button type="button" class="product" data-img="bamboo-poles" data-family="Bamboo" data-note="“Ski poles” is an unverified product label; the photograph is general bamboo stock."><b>Ski poles</b><span>Photo and notes</span></button></li>
-          <li><button type="button" class="product" data-img="bamboo-sections" data-family="Bamboo" data-note="No photograph of woven mats yet; weave, size and finish to be confirmed."><b>Woven mats</b><span>Photo and notes</span></button></li>
-        </ul>
-      </div>
-    </article>
-
-    <article class="family family-flip reveal" id="fibre" aria-labelledby="h-fibre">
-      <figure><img src="assets/img/banana-fibre.webp" alt="Hanks of natural banana fibre laid on grass" loading="lazy" width="975" height="1300"></figure>
-      <div class="family-body">
-        <h3 id="h-fibre">Banana fibre yarn</h3>
-        <p>Three grades, from fine banana silk to industrial yarn.</p>
-        <ul class="rows">
-          <li><button type="button" class="product" data-img="banana-fibre" data-family="Banana fibre yarn" data-note="Grade A mapping to this photograph is unverified."><b>Grade A: banana silk</b><span>Photo and notes</span></button></li>
-          <li><button type="button" class="product" data-img="banana-fibre-loose" data-family="Banana fibre yarn" data-note="Grade B mapping to this photograph is unverified."><b>Grade B: standard banana fibre yarn</b><span>Photo and notes</span></button></li>
-          <li><button type="button" class="product" data-img="banana-fibre" data-family="Banana fibre yarn" data-note="Grade C mapping to this photograph is unverified."><b>Grade C: industrial banana fibre yarn</b><span>Photo and notes</span></button></li>
-        </ul>
-      </div>
-    </article>
-
-    <article class="family reveal" id="bark" aria-labelledby="h-bark">
-      <figure><img src="assets/img/banana-leaves.webp" alt="Packaged green banana leaves" loading="lazy" width="987" height="1300"></figure>
-      <div class="family-body">
-        <h3 id="h-bark">Banana bark and leaves</h3>
-        <p>Two products from the banana plant.</p>
-        <ul class="rows">
-          <li><button type="button" class="product" data-img="banana-leaves" data-family="Banana bark and leaves" data-note="No photograph of banana bark yet; the image shows banana leaves."><b>Banana bark</b><span>Photo and notes</span></button></li>
-          <li><button type="button" class="product" data-img="banana-leaves" data-family="Banana bark and leaves" data-note="Packaging, sizes and availability to be confirmed."><b>Banana leaves</b><span>Photo and notes</span></button></li>
-        </ul>
-      </div>
-    </article>
-    <p class="source">Product names, grades and photographs are subject to confirmation by SB Trading.</p>
-  </section>
-
-  <!-- How ordering works: a real sequence, so it is numbered -->
+  <!-- How ordering works -->
   <section class="ordering" id="ordering" aria-labelledby="h-ordering">
-    <h2 id="h-ordering" class="reveal">How ordering works.</h2>
-    <ol class="steps reveal">
-      <li><b>Tell us what you need.</b><p>The product, the quantity and where it should be delivered.</p></li>
-      <li><b>Receive a quotation.</b><p>SB Trading's team replies with price, specification and shipping options for your order.</p></li>
-      <li><b>Confirm samples or the order.</b><p>Agree the details with the team before anything is shipped.</p></li>
-    </ol>
-    <p class="pending reveal">To be confirmed by SB Trading before publication: minimum order quantities, origin and export ports, shipping terms, lead times and certifications.</p>
-  </section>
-
-  <!-- Enquiry -->
-  <section class="enquire" id="enquire" aria-labelledby="h-enquire">
-    <div class="head reveal">
-      <h2 id="h-enquire">Request a quotation.</h2>
-      <p class="lede">Fields marked “required” are needed for a quotation. Everything else helps the team answer faster.</p>
+    <p class="eyebrow reveal">Enquire</p>
+    <h2 id="h-ordering" class="reveal">How ordering <em>works.</em></h2>
+    <div class="steps-wrap">
+      <svg class="fibre-line" viewBox="0 0 1000 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 20 C 120 4, 220 36, 340 20 S 560 4, 680 20 S 880 36, 1000 20" pathLength="1"/></svg>
+      <ol class="steps">
+        <li><span class="node" aria-hidden="true"></span><b>Tell us what you need.</b><p>The product, the quantity and where it should be delivered. Rifat helps you put it together.</p></li>
+        <li><span class="node" aria-hidden="true"></span><b>Receive a quotation.</b><p>SB Trading's team replies with price, specification and shipping options.</p></li>
+        <li><span class="node" aria-hidden="true"></span><b>Confirm samples or the order.</b><p>Agree the details with the team before anything is shipped.</p></li>
+      </ol>
     </div>
-    <form class="form reveal" id="enquiryForm" novalidate>
-      <div class="row">
-        <div class="field"><label for="f-product">Product <span class="req">required</span></label>
-          <select id="f-product" name="product" required aria-describedby="e-product">
-            <option value="">Choose a product</option>
-            <optgroup label="Bamboo"><option>Bamboo poles</option><option>Bamboo splits</option><option>Ski poles</option><option>Woven mats</option></optgroup>
-            <optgroup label="Banana fibre yarn"><option>Grade A: banana silk</option><option>Grade B: standard banana fibre yarn</option><option>Grade C: industrial banana fibre yarn</option></optgroup>
-            <optgroup label="Banana bark and leaves"><option>Banana bark</option><option>Banana leaves</option></optgroup>
-            <option>Not sure yet</option>
-          </select>
-          <p class="err" id="e-product"></p></div>
-        <div class="field qty"><label for="f-qty">Quantity</label>
-          <div class="qty-in"><input id="f-qty" name="quantity" type="number" min="0.01" step="any" inputmode="decimal" aria-describedby="e-quantity">
-          <select name="unit" aria-label="Unit"><option>kg</option><option>tonnes</option><option>pieces</option><option>20 ft containers</option><option>40 ft containers</option></select></div><p class="err" id="e-quantity"></p></div>
-      </div>
-      <div class="row">
-        <div class="field"><label for="f-name">Your name <span class="req">required</span></label><input id="f-name" name="name" autocomplete="name" required aria-describedby="e-name"><p class="err" id="e-name"></p></div>
-        <div class="field"><label for="f-email">Business email <span class="req">required</span></label><input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="e-email"><p class="err" id="e-email"></p></div>
-      </div>
-      <div class="row">
-        <div class="field"><label for="f-company">Company</label><input id="f-company" name="company" autocomplete="organization"></div>
-        <div class="field"><label for="f-country">Destination country <span class="req">required</span></label><input id="f-country" name="country" autocomplete="country-name" required aria-describedby="e-country"><p class="err" id="e-country"></p></div>
-      </div>
-      <div class="field"><label for="f-notes">Requirements</label><textarea id="f-notes" name="notes" rows="4" placeholder="Sizes, grade, packing, delivery date…"></textarea></div>
-      <p class="notice" role="note">Preview: sending is not connected yet. Your enquiry is prepared on this page and is not transmitted or stored.</p>
-      <button class="btn" type="submit">Prepare enquiry</button>
-      <output class="summary" id="summary" aria-live="polite"></output>
-    </form>
+    <p class="pending reveal">Still to be confirmed by SB Trading: minimum order quantities, origin and export ports, shipping terms, lead times and certifications.</p>
   </section>
 
-  <!-- Contact -->
-  <section class="contact" id="contact" aria-labelledby="h-contact">
-    <h2 id="h-contact" class="reveal">Talk to SB Trading.</h2>
-    <p class="lede reveal">Email, phone and WhatsApp details will be published here once SB Trading confirms them. Until then, use the quotation request above.</p>
+  <!-- 05 Enquire: Rifat -->
+  <section class="enquire" id="enquire" aria-labelledby="h-enquire">
+    <div class="enq-head">
+      <h2 id="h-enquire">Ask <em>Rifat.</em></h2>
+      <p class="lede">Rifat is SB Trading's AI assistant. Tell Rifat what you need: it answers questions about the range, prepares your enquiry and hands it to SB Trading's team on WhatsApp. Prices, stock and lead times come from the team, not from Rifat.</p>
+    </div>
+
+    <div class="rifat" id="rifat" data-mode="guide">
+      <div class="rifat-chat">
+        <div class="rifat-top">
+          <span class="orb" aria-hidden="true"><i></i><i></i><i></i></span>
+          <p><b>Rifat</b><span class="rifat-mode" id="rifatMode">AI assistant · guided mode</span></p>
+          <button class="rifat-restart" id="rifatRestart" type="button">Start again</button>
+        </div>
+        <div class="rifat-log" id="rifatLog" role="log" aria-live="polite" aria-label="Conversation with Rifat"></div>
+        <div class="rifat-chips" id="rifatChips" aria-label="Suggested answers"></div>
+        <form class="rifat-input" id="rifatForm" autocomplete="off">
+          <label class="sr" for="rifatInput">Message Rifat</label>
+          <input id="rifatInput" maxlength="1500" placeholder="Type your answer">
+          <button class="send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12 5l7 7-7 7"/></svg></button>
+        </form>
+      </div>
+
+      <aside class="ticket" aria-labelledby="h-ticket">
+        <p class="eyebrow">Prepared by Rifat</p>
+        <h3 id="h-ticket">Your enquiry</h3>
+        <dl class="ticket-list" id="ticketList"></dl>
+        <div class="ticket-actions">
+          <a class="btn" id="waSend" href="#enquire" aria-disabled="true">Send on WhatsApp</a>
+          <button class="btn btn-ghost" id="copyEnquiry" type="button">Copy enquiry</button>
+        </div>
+        <p class="ticket-note" id="ticketNote" role="status"></p>
+      </aside>
+    </div>
+
+    <noscript><p class="lede">Rifat needs JavaScript. The quotation form below works on its own.</p></noscript>
+
+    <div class="form-alt">
+      <button class="form-toggle" id="formToggle" type="button" aria-expanded="false" aria-controls="enquiryForm">Prefer a form? <span aria-hidden="true">↓</span></button>
+      <form class="form" id="enquiryForm" novalidate>
+        <div class="row">
+          <div class="field"><label for="f-product">Product <span class="req">required</span></label>
+            <select id="f-product" name="product" required aria-describedby="e-product">
+              <option value="">Choose a product</option>
+              <optgroup label="Bamboo"><option>Bamboo poles</option><option>Bamboo splits</option><option>Ski poles</option><option>Woven mats</option></optgroup>
+              <optgroup label="Banana fibre yarn"><option>Grade A: banana silk</option><option>Grade B: standard banana fibre yarn</option><option>Grade C: industrial banana fibre yarn</option></optgroup>
+              <optgroup label="Banana bark and leaves"><option>Banana bark</option><option>Banana leaves</option></optgroup>
+              <option>Not sure yet</option>
+            </select>
+            <p class="err" id="e-product"></p></div>
+          <div class="field qty"><label for="f-qty">Quantity</label>
+            <div class="qty-in"><input id="f-qty" name="quantity" type="number" min="0.01" step="any" inputmode="decimal" aria-describedby="e-quantity">
+            <select name="unit" id="f-unit" aria-label="Unit"><option>kg</option><option>tonnes</option><option>pieces</option><option>20 ft containers</option><option>40 ft containers</option></select></div><p class="err" id="e-quantity"></p></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="f-name">Your name <span class="req">required</span></label><input id="f-name" name="name" autocomplete="name" required aria-describedby="e-name"><p class="err" id="e-name"></p></div>
+          <div class="field"><label for="f-email">Business email <span class="req">required</span></label><input id="f-email" name="email" type="email" autocomplete="email" required aria-describedby="e-email"><p class="err" id="e-email"></p></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="f-company">Company</label><input id="f-company" name="company" autocomplete="organization"></div>
+          <div class="field"><label for="f-country">Destination country <span class="req">required</span></label><input id="f-country" name="country" autocomplete="country-name" required aria-describedby="e-country"><p class="err" id="e-country"></p></div>
+        </div>
+        <div class="field"><label for="f-notes">Requirements</label><textarea id="f-notes" name="notes" rows="3" placeholder="Sizes, grade, packing, delivery date"></textarea></div>
+        <button class="btn" type="submit">Prepare enquiry</button>
+        <output class="summary" id="summary" aria-live="polite"></output>
+      </form>
+    </div>
   </section>
 </main>
 
+<nav class="chapters" aria-label="Chapters">
+  <ol>
+    <li><a href="#top" data-ch="0"><span class="tick" aria-hidden="true"></span>Arrive</a></li>
+    <li><a href="#film" data-ch="1" data-p="0.065"><span class="tick" aria-hidden="true"></span>Discover</a></li>
+    <li><a href="#film" data-ch="2" data-p="0.36"><span class="tick" aria-hidden="true"></span>Transition</a></li>
+    <li><a href="#explore" data-ch="3"><span class="tick" aria-hidden="true"></span>Explore</a></li>
+    <li><a href="#ordering" data-ch="4"><span class="tick" aria-hidden="true"></span>Enquire</a></li>
+  </ol>
+  <i class="chapters-bar" aria-hidden="true"></i>
+</nav>
+
 <dialog class="sheet" id="productSheet" aria-labelledby="sheetTitle">
   <form method="dialog" class="sheet-close"><button aria-label="Close">✕</button></form>
-  <img id="sheetImg" src="assets/img/bamboo-poles.webp" alt="">
+  <figure class="sheet-img"><img id="sheetImg" src="assets/img/bamboo-poles.webp" alt=""></figure>
   <div class="sheet-body">
-    <p class="sheet-family" id="sheetFamily"></p>
+    <p class="eyebrow" id="sheetFamily"></p>
     <h3 id="sheetTitle"></h3>
-    <p>Specifications, sizes, grades and availability are confirmed with each quotation.</p>
+    <p>Specifications, sizes, grades and availability are confirmed by SB Trading's team with each quotation.</p>
     <p class="source" id="sheetNote"></p>
-    <a class="btn" href="#enquire" id="sheetEnquire">Request a quotation for this product</a>
+    <button class="btn" type="button" id="sheetAsk"><span class="orb orb-xs" aria-hidden="true"><i></i><i></i><i></i></span>Ask Rifat about this product</button>
   </div>
 </dialog>
 
 <footer class="foot">
-  <p><b>SB Trading</b> · forestry and agricultural products.</p>
-  <p>Client review draft, not a live commercial website. The film and the 3D grove are generated for this concept and do not show SB Trading's own stock. <a href="v1/">Previous draft</a></p>
+  <p><b>SB Trading</b> · forestry and agricultural products. Email, phone and WhatsApp details appear here once SB Trading confirms them.</p>
+  <p>Client review draft, not a live commercial website. The scroll film is generated for this concept and does not show SB Trading's own stock; product photographs are SB Trading's. <a href="v1/">Previous draft</a></p>
 </footer>
 
 <script src="assets/vendor/motion.js" defer></script>
-<script src="site.js" defer></script>
+<script src="site.js" type="module"></script>
 </body>
 </html>

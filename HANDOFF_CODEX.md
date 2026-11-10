@@ -1,9 +1,9 @@
-# Handoff: SB Trading website (for Codex / ChatGPT), 10 Nov 2026
+# Handoff: SB Trading website (for Codex / ChatGPT), updated 10 Nov 2026 (rebuild)
 
 Read this file, then `PRODUCT.md` (brand and product brief) and `README.md` (file map). This repo is the SB Trading client-review site.
 
 ## State in one paragraph
-A scroll-led showroom for SB Trading (bamboo, banana fibre yarn, banana bark and leaves; nine products). Static HTML/CSS/JS, no framework, no external requests. A scroll-scrubbed film, a short real-time 3D bamboo grove, a materials section with real photographs, "How ordering works", a quotation form (preview only: nothing is sent), contact placeholders, opt-in spatial sound, and a Remotion brand film project in `video/`. It is a client-review draft, not a live commercial site.
+A cinematic scroll story for SB Trading (bamboo, banana fibre yarn, banana bark and leaves; nine products), rebuilt on 10 Nov 2026 after the owner rejected the previous version. Static HTML/CSS/JS plus one Cloudflare Pages Function. Five stages from the owner's proposal deck (Arrive, Discover, Transition, Explore, Enquire) in one continuous blue-hour palette: a scroll-scrubbed film (bamboo → fibre → wound yarn), a pinned Explore stage with real photographs in tilting arched windows and real-time 3D material studies (three.js) breaking out of the frames, "How ordering works" with a drawn fibre line, and **Rifat**, the enquiry assistant, with "Your enquiry" and a WhatsApp hand-off. Opt-in tactile sound. A Remotion brand film project lives in `video/`. It is a client-review draft, not a live commercial site.
 
 - Live address: https://sb-trading.lastbenchbd.com (DNS on Cloudflare, behind a Cloudflare Access login, so only approved people can open it). The repo is built from `main` (`_headers` is a Cloudflare Pages file; `CNAME` is also present).
 - Branch for work: `claude/dreamy-turing-gwgukx`. After a PR merges, restart the branch from the latest `origin/main` before adding new commits.
@@ -14,41 +14,51 @@ A scroll-led showroom for SB Trading (bamboo, banana fibre yarn, banana bark and
 2. **Real photographs only for products.** There is no photo of banana bark or woven mats yet; the rows say so. Label any generated or illustrative image as such.
 3. **Sound is opt-in** (no autoplay). Every immersive layer (film, 3D, sound, smooth scroll) must have a reduced-motion and no-JavaScript path.
 4. **Self-hosted only:** no CDNs, fonts or analytics from third parties.
-5. **WCAG 2.2 AA.** No logo or wordmark redrawing: use `assets/img/sb-trading-logo.png` as is.
+5. **WCAG 2.2 AA.** No logo or wordmark redrawing. `assets/img/sb-logo*.webp` / `sb-mark*.webp` are the owner's original file with only the white background removed; `-light` is the same mark knocked out to Cloud White for dark grounds (derived, awaiting owner approval). Never recolour or redraw beyond that.
 6. Do not deploy to a new place, add paid services or keys, or change DNS without the owner's approval. Never put secrets in the repo or in chat.
 7. Never claim a pass without evidence (run the checks below).
 
 ## Files
 ```
-index.html          all content (semantic; readable without JS)
-styles.css          tokens (:root), layout, sections, form
-site.js             film (WebP frames on a canvas), grove loader, loop, sound controller, reveals (Motion), menu, product dialog, form validation
-src/grove.js        three.js source for the 3D grove  -> assets/grove.js  (npm install && node build.mjs)
-src/smooth.js       Lenis re-export                    -> assets/vendor/smooth.js
-assets/sound.js     spatial sound engine (hand-written ES module, lazy-loaded on the Sound press)
-assets/film/{d,m}/  173 WebP frames (desktop 1280x720, phone 405x720 crop)
-assets/img/         logo + five real product photographs
-assets/vendor/      Motion 12, Lenis, three.js licence, fonts (Gloock, Schibsted Grotesk; OFL)
-video/              Remotion project: 15 s brand film, 16:9 and 9:16 (cd video && npm install && npm run render)
-tests/smoke.mjs     browser smoke test
-v1/                 the first single-file draft, kept unchanged
-PRODUCT.md          Impeccable brief (register: brand)
+index.html            all content (semantic; readable without JS); <body data-whatsapp=""> holds SB Trading's WhatsApp number once confirmed
+styles.css            tokens (:root), stages, Rifat, form, chapter bar
+site.js               film loop, Explore stage controller, 3D loader + idle logic, chapter bar, sound controller, reveals, product sheet, plain form
+assets/rifat.js       Rifat on the page: AI mode (calls /api/rifat) or labelled guided mode; "Your enquiry"; WhatsApp + copy
+src/rifat-fn.js       Pages Function source (Anthropic TypeScript SDK) -> functions/api/rifat.js (generated, committed; edit the source)
+src/materials3d.js    3D studies (three.js r187)        -> assets/materials3d.js
+src/smooth.js         Lenis re-export                   -> assets/vendor/smooth.js
+assets/sound.js       tactile sound cues (lazy-loaded on the Sound press)
+assets/film/{d,m}/    252 WebP frames (desktop 1280x720, phone 405x720 crop); 174-252 are the fibre-to-yarn sequence
+assets/img/           five real product photographs + logo variants (see rule 5)
+assets/vendor/        Motion 12, Lenis, three.js licence, fonts (Gloock, Schibsted Grotesk; OFL)
+functions/api/rifat.js  GET -> { ai }, POST -> { reply, enquiry, ready }; 503 without ANTHROPIC_API_KEY
+video/                Remotion project: 15 s brand film, 16:9 and 9:16
+tests/smoke.mjs       browser smoke test (35 checks)
+v1/                   the first single-file draft, kept unchanged
+PRODUCT.md            Impeccable brief (register: brand)
 ```
 
 ## Commands
 ```bash
-npm install && node build.mjs                      # rebuild assets/grove.js and assets/vendor/smooth.js after editing src/
-NODE_PATH=$(npm root -g) node tests/smoke.mjs      # 18 checks, desktop + phone (needs playwright + chromium)
-node .claude/skills/impeccable/scripts/detect.mjs --json index.html   # Impeccable detector (if the skill is installed), expect []
-cd video && npm install && REMOTION_BROWSER=<path to chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
+npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
+CHROMIUM_PATH=<chrome> npm test                          # 35 checks, desktop + phone (Rifat runs in guided mode on the local server)
+node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector, expect []
+cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
 ```
 
 ## How it works (essentials)
-- **Film:** `#film` is 340vh with a sticky stage. `site.js` maps scroll progress to a frame, drawn on a canvas; beats are `.beat[data-at="a,b"]` (progress ranges). Frames load coarse to fine.
-- **Grove:** `#grove` (200vh). `loadGrove()` skips 3D on phones (<700px), without WebGL or on context loss (class `no-3d` shows a photograph). The grove stops drawing after 1 s without scroll or pointer movement.
-- **Sound:** `#soundToggle` creates the AudioContext inside the click; `assets/sound.js` loads then. Engine calls are wrapped so a failure goes quiet. Levels were measured offline (peak -7 dBFS) but never heard by a person.
-- **Form:** `#enquiryForm` validates inline (`check()` in `site.js`); required: product, name, email, country; quantity must be above zero. Submit only builds a text summary; nothing is transmitted.
-- **Reveals:** Motion `inView` animates from a visible default (never hides content first).
+- **Film (stages 01-03):** `#film` is 620vh with a sticky stage. `site.js` maps scroll progress to one of 252 frames, drawn on a canvas; captions are `.beat[data-at="a,b"]` progress ranges. Frames load coarse to fine. Labelled as generated.
+- **Explore (04):** `#explore` is 420vh with one sticky stage; progress thirds pick the family (`.fam.on`, inactive ones `inert`). CSS wipes and tilts the arched photo windows (`--t`, `--ry`, `--rx`); the blurred photo is the background.
+- **3D studies:** `loadStudies()` imports `assets/materials3d.js` after first paint (WebGL2 only; reduced motion, no WebGL or a lost context leave photographs only, class `no-3d`). `render()` runs only while the visitor scrolls or moves the pointer, while a family transition settles, and once more at rest; then nothing is drawn (the smoke test counts draw calls).
+- **Rifat (05):** `assets/rifat.js` probes `GET /api/rifat` when the section approaches. `{ ai: true }` -> AI mode (POST with the conversation and enquiry; the function calls `claude-opus-5-5` at effort `low` with server-side fallbacks, records fields through the `update_enquiry` tool and validates them). Anything else -> guided mode, labelled "AI not connected yet". Both fill "Your enquiry"; "Send on WhatsApp" opens `wa.me/<number>?text=<enquiry>` only when product, country, name and email are present and `data-whatsapp` is set; otherwise it explains and offers Copy.
+- **Plain form:** hidden behind "Prefer a form?" (visible without JS). Inline validation (`check()`); on success it fills Rifat's "Your enquiry". Nothing is transmitted by the page itself.
+- **Sound:** `#soundToggle` creates the AudioContext inside the click. Cue peaks measured offline: knock -15.8, open -17.6, reply -16.8, send -22.1, tick -28.8, hover about -31 dBFS. Never heard by a person yet.
+
+### To switch Rifat's AI on (owner action; never paste keys in chat)
+1. Cloudflare dashboard -> Workers & Pages -> `sb-trading` -> Settings -> Variables and Secrets -> add an encrypted secret `ANTHROPIC_API_KEY` (Production). Redeploy.
+2. Check `https://sb-trading.lastbenchbd.com/api/rifat` returns `{"ai":true}` (behind Access, sign in first). Rifat's label then reads "AI assistant · online".
+3. Put SB Trading's WhatsApp number (international format, digits only) in `index.html` -> `<body data-whatsapp="...">` and merge.
+Cost: each message is one or two Claude calls (about 2-4k input tokens). Change `MODEL` in `src/rifat-fn.js` and rebuild for a cheaper model only if the owner chooses.
 
 ## Verified (10 Nov 2026)
 - Production Pages deployment `48347cc7-27ee-4568-8eb6-d8e58db4f36c` completed successfully from `main` commit `d1b126dea5a0e7de561cbec1a783186904883f47`; this proves deployment completion, not public readiness.
@@ -57,7 +67,9 @@ cd video && npm install && REMOTION_BROWSER=<path to chrome-headless-shell> npm 
 - Fresh browser smoke suite: 18/18 checks passed on macOS 12.7.6 / Chrome 150 using software WebGL. Desktop and phone checks covered validation, focus, audio opt-in, no external requests, no console errors, overflow, and idle grove rendering.
 - Playwright's bundled Chromium installer does not support this Mac's macOS 12.7.6. `tests/smoke.mjs` now accepts `CHROMIUM_PATH`; CI installs its own Chromium on Ubuntu.
 - GitHub Actions quality workflow is configured to run build + browser smoke tests on PRs and pushes to `main`; it is not a deployment workflow. Its first hosted run is still pending.
-- Not verified: real GPU / real phone performance, screen-reader pass, human listening test, production form delivery, Rifat assistant, and production commercial acceptance.
+- Rebuild (this branch): `npm run build` passed; `npm test` 35/35 on Linux / Chromium 1243 with software WebGL (desktop 1440 and phone 390): product sheet -> Rifat focus, guided flow fills the enquiry and rejects a bad email, WhatsApp disabled without a number, form validation, no overflow, no page errors, no external requests, audio only after the Sound press, 3D draws nothing at rest. Impeccable detector: `[]`.
+- Pages Function exercised locally: GET `{ai:false}` without a key; POST 503 without a key; 403 cross-origin; a dummy key reaches the Anthropic API and fails with 401 as expected (so the bundle runs). A real conversation with a real key is NOT PROVEN.
+- Not verified: real GPU / real phone performance, screen-reader pass, human listening test, Rifat with a real key, WhatsApp delivery, and production commercial acceptance.
 
 ## Self-healing knowledge and incident runbook
 
@@ -101,14 +113,12 @@ No Access, DNS, credential, or production permission changes were made during th
 - If evidence is missing, mark the item `NOT PROVEN` and stop at the smallest reversible diagnostic check.
 
 ## Open items, in priority order
-1. **Owner content:** real contact channels (email, phone, WhatsApp), origin, minimum order, shipping terms, lead times, certifications; confirmed product names, grades and per-product photos (banana bark and woven mats have none; "Ski poles" is an unverified label). The owner also promised five more photos that never arrived as files; two looked AI-generated and need an "illustrative" label.
-2. **Rifat, the AI assistant** (the owner's stated success goal: a buyer talks to Rifat, who answers questions and prepares enquiry or order requests). Always present as an AI; never confirm price, stock, lead time or an order itself; hand commitments to a person; the plain form must keep working without it. Needs owner decisions before any code: AI provider and who pays, a server-side function (e.g. Cloudflare Pages Functions) so no key is in the page, and where enquiries go (email or WhatsApp). Plan with `/impeccable shape Rifat assistant` first.
-3. Send real enquiries (email routing); then add the analytics events from the telemetry plan (privacy-first, no form contents, cookieless) once the owner picks a tool.
-4. Write `DESIGN.md` for the bold, cinematic direction (`/impeccable document`).
-5. Re-run the Impeccable critique after the last fixes; open critique items: dark first frame, flat low-poly grove next to real footage, product dialogs carry little until real specs exist.
-6. Replace or label generated film and grove before client use; consider real SB Trading footage.
-7. Check on a real phone and with a screen reader; listen to the sound on headphones and laptop speakers.
-8. Remotion film: the MP4s were sent to the owner but are not committed; re-render from `video/`. Add music only with a licensed or generated track.
+1. **Owner content:** WhatsApp number (unblocks the hand-off), email and phone; origin, minimum order, shipping terms, lead times, certifications; confirmed product names, grades and per-product photos (banana bark and woven mats have none; "Ski poles" is an unverified label). Approval of the derived light logo.
+2. **Rifat AI key:** add `ANTHROPIC_API_KEY` in Cloudflare (steps above), then test five real buyer conversations, including attempts to get prices or a confirmed order (Rifat must refuse and hand to the team). Consider rate limiting per IP (Cloudflare WAF rule on `/api/rifat`) before any public launch.
+3. Write `DESIGN.md` for this direction (`/impeccable document`) and re-run `/impeccable critique` on the rebuild.
+4. Real-device checks: frame rate of the 3D studies on a mid-range phone; screen reader; listen to the cues on headphones and laptop speakers.
+5. Replace the generated film with real SB Trading footage when it exists.
+6. Remotion film: re-render from `video/` with the transparent logo; add music only with a licensed track.
 
 ## Related project
 MutualBD voyage (a separate client): see `lets-colab/letscolab`, `projectx/clients/mutualbd/voyage/HANDOFF_CODEX.md`. Do not mix the two clients' content.
