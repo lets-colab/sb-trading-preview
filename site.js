@@ -196,7 +196,7 @@ for (const btn of $$('.product')) {
     $('#sheetFamily').textContent = btn.dataset.family;
     $('#sheetTitle').textContent = name;
     $('#sheetNote').textContent = btn.dataset.note;
-    $('#sheetEnquire').onclick = () => { $('#f-product').value = name; sheet.close(); };
+    $('#sheetEnquire').onclick = () => { $('#f-product').value = name; sheet.close(); setTimeout(() => $('#f-product').focus({ preventScroll: true }), 60); };
     sheet.showModal();
     sound.cue('open', btn);
   });
@@ -210,6 +210,7 @@ const messages = {
   name: 'Enter your name.',
   email: 'Enter a business email, for example name@company.com.',
   country: 'Enter the country the order should be delivered to.',
+  quantity: 'Enter a quantity greater than zero, or leave it empty.',
 };
 function check(field) {
   const out = $(`#e-${field.name}`);
@@ -223,7 +224,7 @@ form.addEventListener('blur', (e) => { if (e.target.required && e.target.getAttr
 form.addEventListener('input', (e) => { if (e.target.getAttribute('aria-invalid') === 'true') check(e.target); });
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  const invalid = [...form.querySelectorAll('[required]')].filter((f) => !check(f));
+  const invalid = [...form.querySelectorAll('[required], #f-qty')].filter((f) => !check(f));
   if (invalid.length) { invalid[0].focus(); return; }
   const d = new FormData(form);
   const qty = d.get('quantity') ? `${d.get('quantity')} ${d.get('unit')}` : 'not given';
