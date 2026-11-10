@@ -189,10 +189,11 @@ function tick(now = performance.now()) {
       const phone = innerWidth < 820;
       const at = phone ? [(a.right - a.width * 0.2) / innerWidth, (a.bottom - a.height * 0.16) / innerHeight]
                        : [(a.left + a.width * 0.02) / innerWidth, (a.top + a.height * 0.74) / innerHeight];
-      settling = studies.render({ fam: idx, t, p: e, pointer, at, now });
+      settling = studies.render({ fam: idx, t, p: e, pointer, at, now, settle: !active });
       restDrawn = !active && !settling;
     }
     if (!inView) restDrawn = false;
+    studiesCanvas.dataset.renderState = !inView ? 'offscreen' : restDrawn ? 'idle' : 'active';
     stage.style.setProperty('--ry', `${(pointer[0] * 10).toFixed(2)}deg`);
     stage.style.setProperty('--rx', `${(-pointer[1] * 7).toFixed(2)}deg`);
   }

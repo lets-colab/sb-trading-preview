@@ -48,7 +48,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await toExplore(0.1);
   await p.click('#bamboo.on .product >> nth=1'); await p.waitForTimeout(500);
   check(await p.evaluate(() => document.getElementById('productSheet').open), `${name}: a product opens its sheet`);
-  await p.click('#sheetAsk'); await p.waitForTimeout(3500);
+  await p.click('#sheetAsk');
+  await p.waitForFunction(() => document.activeElement?.id === 'rifatInput', null, { timeout: 10000 }).catch(() => {});
   check((await p.evaluate(() => document.activeElement.id)) === 'rifatInput', `${name}: focus lands in Rifat's message field after "Ask Rifat"`);
   check(/Bamboo splits/.test(await p.textContent('#ticketList')), `${name}: the product from the sheet is in "Your enquiry"`);
   check(/guided mode/i.test(await p.textContent('#rifatMode')), `${name}: without the Pages Function Rifat says it is in guided mode`);
@@ -84,8 +85,14 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
     await toExplore(0.5); await p.waitForTimeout(4000);
-    const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(2000); const b = await p.evaluate(() => window.__draws);
-    check(b === a, `${name}: the 3D studies draw nothing while the visitor is still (${b - a} draw calls)`);
+    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
+    const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500); const b = await p.evaluate(() => window.__draws);
+    check(b === a, `${name}: the 3D studies stop drawing after settling (${b - a} draw calls)`);
+    await p.evaluate(() => window.dispatchEvent(new Event('resize')));
+    await p.waitForFunction((before) => document.querySelector('.studies')?.dataset.renderState === 'active' && window.__draws > before, b, { timeout: 10000 });
+    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
+    const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500);
+    check((await p.evaluate(() => window.__draws)) === resized, `${name}: the 3D studies redraw after resize, then return to idle`);
   }
   check(errors.length === 0, `${name}: no page errors or failed loads${errors.length ? ' - ' + errors.slice(0, 2).join(' | ') : ''}`);
   check(external.length === 0, `${name}: no external requests${external.length ? ' - ' + external.slice(0, 2).join(' | ') : ''}`);

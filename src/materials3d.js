@@ -223,17 +223,20 @@ export function createMaterials(canvas, { low = false } = {}) {
   /**
    * Draws one frame. state: { fam: 0..2, t: 0..1 within the family, p: 0..1 across the stage,
    * pointer: [-0.5..0.5, -0.5..0.5], at: [fx, fy] viewport fraction for the study, now: ms }.
-   * Returns true while a family transition is still settling (the page keeps drawing until it is false).
+   * Returns true while a family transition is still settling. When settle=true, snap to the final state and draw once.
    */
-  function render({ fam, t, p, pointer, at, now }) {
+  function render({ fam, t, p, pointer, at, now, settle = false }) {
     const time = now / 1000, dt = Math.min(0.1, Math.max(0.001, time - (lastTime || time))); lastTime = time;
     placeAt(at[0], at[1]);
     const scale = phone ? 0.62 : Math.min(1.15, 0.8 + width / 4800);
     let settling = false;
     studies.forEach((s, i) => {
       const target = i === fam ? 1 : 0;
-      s.vis += (target - s.vis) * Math.min(1, dt * 4.5);
-      if (Math.abs(target - s.vis) < 0.002) s.vis = target; else settling = true;
+      if (settle) s.vis = target;
+      else {
+        s.vis += (target - s.vis) * Math.min(1, dt * 4.5);
+        if (Math.abs(target - s.vis) < 0.002) s.vis = target; else settling = true;
+      }
       s.holder.visible = s.vis > 0.003;
       if (!s.holder.visible) return;
       const e = s.vis * s.vis * (3 - 2 * s.vis);
@@ -245,8 +248,12 @@ export function createMaterials(canvas, { low = false } = {}) {
     });
     field.material.uniforms.uTime.value = time;
     field.material.uniforms.uLift.value = p * 3;
-    camera.position.x += (pointer[0] * 0.5 - camera.position.x) * 0.08;
-    camera.position.y += (-pointer[1] * 0.3 - camera.position.y) * 0.08;
+    const cameraX = pointer[0] * 0.5, cameraY = -pointer[1] * 0.3;
+    if (settle) { camera.position.x = cameraX; camera.position.y = cameraY; }
+    else {
+      camera.position.x += (cameraX - camera.position.x) * 0.08;
+      camera.position.y += (cameraY - camera.position.y) * 0.08;
+    }
     camera.lookAt(0, 0, 0);
     renderer.render(scene, camera);
     return settling;
