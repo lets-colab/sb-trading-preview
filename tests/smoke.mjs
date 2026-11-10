@@ -2,7 +2,7 @@
 // Serves the repo root on a random local port (no /api/rifat here, so Rifat runs in guided mode), then checks desktop
 // and phone in Chromium with software GL. Passes only if: no page errors, no external requests, no horizontal overflow,
 // no AudioContext before the Sound press, the product sheet hands the product to Rifat, Rifat's guided flow fills the
-// enquiry and rejects a bad email, WhatsApp stays disabled while no number is configured, the plain form validates
+// enquiry and rejects a bad email, WhatsApp opens SB Trading's number with the enquiry filled in, the plain form validates
 // inline, and (desktop) the 3D studies draw nothing while the visitor is still.
 import { createRequire } from 'node:module';
 import http from 'node:http';
@@ -48,7 +48,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await toExplore(0.1);
   await p.click('#bamboo.on .product >> nth=1'); await p.waitForTimeout(500);
   check(await p.evaluate(() => document.getElementById('productSheet').open), `${name}: a product opens its sheet`);
-  await p.click('#sheetAsk'); await p.waitForTimeout(3500);
+  await p.click('#sheetAsk');
+  await p.waitForFunction(() => document.activeElement?.id === 'rifatInput', null, { timeout: 10000 }).catch(() => {});
   check((await p.evaluate(() => document.activeElement.id)) === 'rifatInput', `${name}: focus lands in Rifat's message field after "Ask Rifat"`);
   check(/Bamboo splits/.test(await p.textContent('#ticketList')), `${name}: the product from the sheet is in "Your enquiry"`);
   check(/guided mode/i.test(await p.textContent('#rifatMode')), `${name}: without the Pages Function Rifat says it is in guided mode`);
@@ -61,9 +62,10 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   const ticket = await p.textContent('#ticketList');
   check(/5 tonnes/.test(ticket) && /Japan/.test(ticket) && /buyer@example\.com/.test(ticket), `${name}: Rifat fills quantity, destination and email`);
   check(/enquiry is ready/i.test(await p.textContent('#rifatLog')), `${name}: Rifat says the enquiry is ready`);
-  check((await p.getAttribute('#waSend', 'aria-disabled')) === 'true', `${name}: WhatsApp stays disabled while no number is configured`);
-  await p.click('#waSend', { force: true }); await p.waitForTimeout(200);
-  check(/number is added once confirmed/.test(await p.textContent('#ticketNote')), `${name}: pressing the disabled WhatsApp button explains why`);
+  check((await p.getAttribute('#waSend', 'aria-disabled')) === 'false', `${name}: WhatsApp is enabled once the enquiry is ready`);
+  const wa = new URL(await p.getAttribute('#waSend', 'href'));
+  check(wa.origin + wa.pathname === 'https://wa.me/8801878707910' && /Japan/.test(wa.searchParams.get('text') || ''), `${name}: WhatsApp opens SB Trading's number with the enquiry filled in`);
+  check((await p.getAttribute('#waSend', 'target')) === '_blank', `${name}: WhatsApp opens in a new tab`);
 
   // plain form alternative
   await p.click('#formToggle'); await p.waitForTimeout(300);
@@ -75,11 +77,22 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
 
   if (!touch) {
     check(await p.evaluate(() => document.documentElement.classList.contains('has-3d')), `${name}: the 3D studies load`);
+    // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
+    await toExplore(0.1); await p.focus('#bamboo .product >> nth=3'); await p.keyboard.press('Tab'); await p.waitForTimeout(300);
+    check((await p.evaluate(() => document.activeElement.textContent.trim())) === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products into the fibre products`);
+    await p.keyboard.press('Shift+Tab'); await p.waitForTimeout(300);
+    check((await p.evaluate(() => document.activeElement.textContent.trim())) === 'Woven mats', `${name}: Shift+Tab returns to the bamboo products`);
     await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
     await toExplore(0.5); await p.waitForTimeout(4000);
-    const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(2000); const b = await p.evaluate(() => window.__draws);
-    check(b === a, `${name}: the 3D studies draw nothing while the visitor is still (${b - a} draw calls)`);
+    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
+    const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500); const b = await p.evaluate(() => window.__draws);
+    check(b === a, `${name}: the 3D studies stop drawing after settling (${b - a} draw calls)`);
+    await p.evaluate(() => window.dispatchEvent(new Event('resize')));
+    await p.waitForFunction((before) => document.querySelector('.studies')?.dataset.renderState === 'active' && window.__draws > before, b, { timeout: 10000 });
+    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
+    const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500);
+    check((await p.evaluate(() => window.__draws)) === resized, `${name}: the 3D studies redraw after resize, then return to idle`);
   }
   check(errors.length === 0, `${name}: no page errors or failed loads${errors.length ? ' - ' + errors.slice(0, 2).join(' | ') : ''}`);
   check(external.length === 0, `${name}: no external requests${external.length ? ' - ' + external.slice(0, 2).join(' | ') : ''}`);

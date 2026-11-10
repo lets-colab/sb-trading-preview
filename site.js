@@ -49,7 +49,7 @@ const sound = (() => {
 })();
 
 // ------------------------------------------------------------------ film (stages 01–03)
-const FRAMES = 252;
+const FRAMES = 279;
 const SET = innerWidth / innerHeight < 0.9 ? 'm' : 'd';
 const film = $('#film'), canvas = $('.film-canvas'), ctx = canvas.getContext('2d');
 const frames = new Array(FRAMES);
@@ -113,6 +113,25 @@ function setFamily(i) {
   sound.cue(forward ? 'knock' : 'knock-soft', fams[i].querySelector('.arch'));
 }
 
+// Keyboard: only the visible family is focusable (the others are inert), so Tab past its last product moves the
+// stage to the next family and focuses its first product; Shift+Tab from a first product goes back.
+const famScrollY = (i) => explore.offsetTop + (explore.offsetHeight - innerHeight) * (i / fams.length + 0.12);
+explore.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab' || reduced) return;
+  const fam = e.target.closest('.fam');
+  if (!fam) return;
+  const i = Number(fam.dataset.i), list = $$('.product', fam);
+  const to = e.shiftKey ? (e.target === list[0] ? i - 1 : -1) : (e.target === list.at(-1) ? i + 1 : -1);
+  if (to < 0 || to >= fams.length) return;
+  e.preventDefault();
+  const y = famScrollY(to);
+  scrollTo(0, y); // synchronous, so the loop reads the same family on its next frame
+  lenis?.scrollTo(y, { immediate: true, force: true });
+  setFamily(to);
+  const next = $$('.product', fams[to]);
+  (e.shiftKey ? next.at(-1) : next[0]).focus({ preventScroll: true });
+});
+
 // 3D material studies (three.js), loaded after first paint. No WebGL, reduced motion or a lost context: the photos carry it.
 const studiesCanvas = $('.studies', explore), stage = $('.explore-stage', explore);
 let studies = null, settling = true, restDrawn = false;
@@ -170,10 +189,11 @@ function tick(now = performance.now()) {
       const phone = innerWidth < 820;
       const at = phone ? [(a.right - a.width * 0.2) / innerWidth, (a.bottom - a.height * 0.16) / innerHeight]
                        : [(a.left + a.width * 0.02) / innerWidth, (a.top + a.height * 0.74) / innerHeight];
-      settling = studies.render({ fam: idx, t, p: e, pointer, at, now });
+      settling = studies.render({ fam: idx, t, p: e, pointer, at, now, settle: !active });
       restDrawn = !active && !settling;
     }
     if (!inView) restDrawn = false;
+    studiesCanvas.dataset.renderState = !inView ? 'offscreen' : restDrawn ? 'idle' : 'active';
     stage.style.setProperty('--ry', `${(pointer[0] * 10).toFixed(2)}deg`);
     stage.style.setProperty('--rx', `${(-pointer[1] * 7).toFixed(2)}deg`);
   }
@@ -186,7 +206,7 @@ function tick(now = performance.now()) {
   // chapters: 01 Arrive, 02 Discover, 03 Transition (film), 04 Explore, 05 Enquire
   const mid = innerHeight / 2, fr = film.getBoundingClientRect(), er = explore.getBoundingClientRect();
   let c = 4;
-  if (fr.bottom > mid) c = p < 0.055 ? 0 : p < 0.35 ? 1 : 2;
+  if (fr.bottom > mid) c = p < 0.105 ? 0 : p < 0.365 ? 1 : 2;
   else if (er.bottom > mid) c = 3;
   setChapter(c);
   const max = Math.max(1, root.scrollHeight - innerHeight);
