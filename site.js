@@ -95,11 +95,21 @@ function tick(now = performance.now()) {
   beats(filmBeats, filmP);
 
   const g = progressOf(groveEl);
-  groveP = reduced || Math.abs(g - groveP) < 1e-3 ? g : groveP + (g - groveP) * 0.1;
   const r = groveEl.getBoundingClientRect();
-  const busy = Math.abs(g - groveP) > 1e-4 || Math.abs(target[0] - pointer[0]) + Math.abs(target[1] - pointer[1]) > 1e-3;
-  if (busy) lastMove = now;
-  const live = now - lastMove < 1000 || !groveDrawn; // still scene: stop redrawing (battery), keep the last frame
+  const inputActive = now - lastMove < 1000;
+  const previousGroveP = groveP;
+  const pointerDelta = Math.abs(target[0] - pointer[0]) + Math.abs(target[1] - pointer[1]);
+  if (reduced || !inputActive) {
+    // Settle to the exact final scroll/pointer state once the visitor stops; idle time is input-based.
+    groveP = g;
+    pointer[0] = target[0]; pointer[1] = target[1];
+  } else {
+    groveP = Math.abs(g - groveP) < 1e-3 ? g : groveP + (g - groveP) * 0.1;
+    pointer[0] += (target[0] - pointer[0]) * 0.06;
+    pointer[1] += (target[1] - pointer[1]) * 0.06;
+  }
+  const needsFinalDraw = !inputActive && (Math.abs(g - previousGroveP) > 1e-4 || pointerDelta > 1e-3);
+  const live = inputActive || !groveDrawn || needsFinalDraw; // stop after 1 s without input, after one exact final frame
   if (grove && r.bottom > 0 && r.top < innerHeight && live) { passed = grove.render(groveP, now, pointer); groveDrawn = true; }
   else passed = [];
   if (r.bottom <= 0 || r.top >= innerHeight) groveDrawn = false;
@@ -107,7 +117,6 @@ function tick(now = performance.now()) {
 
   root.style.setProperty('--page', (scrollY / Math.max(1, root.scrollHeight - innerHeight)).toFixed(4));
   root.classList.toggle('past-intro', groveEl.getBoundingClientRect().bottom < innerHeight * 0.6);
-  pointer[0] += (target[0] - pointer[0]) * 0.06; pointer[1] += (target[1] - pointer[1]) * 0.06;
   const vel = (scrollY - yPrev) / dt / innerHeight; yPrev = scrollY;
   if (sound.on) sound.update({ zone: zoneAt(), p: groveP, vel: reduced ? 0 : vel, pointer, passed });
   if (!reduced) requestAnimationFrame(tick);
@@ -156,11 +165,11 @@ const sound = (() => {
 size();
 addEventListener('resize', size);
 loadFrames();
-if (reduced) addEventListener('scroll', () => requestAnimationFrame(tick), { passive: true });
+addEventListener('scroll', () => { lastMove = performance.now(); if (reduced) requestAnimationFrame(tick); }, { passive: true });
 requestAnimationFrame(tick);
 (window.requestIdleCallback || setTimeout)(() => loadGrove().then(() => { if (reduced) tick(); }));
 if (fine && !reduced) {
-  addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; }, { passive: true });
+  addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; lastMove = performance.now(); }, { passive: true });
   import('./assets/vendor/smooth.js').then(({ default: Lenis }) => {
     const lenis = new Lenis({ lerp: 0.1, anchors: true });
     const raf = (t) => { lenis.raf(t); requestAnimationFrame(raf); };

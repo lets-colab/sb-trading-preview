@@ -1,4 +1,4 @@
-// Browser smoke test for the SB Trading preview. Run: NODE_PATH=$(npm root -g) node tests/smoke.mjs
+// Browser smoke test for the SB Trading preview. Run: npm test (set CHROMIUM_PATH to an installed browser when needed).
 // Serves the repo root on a random local port, then checks desktop and phone in Chromium (software GL).
 // Passes only if: no console errors, no external requests, no horizontal overflow, no AudioContext before the Sound press,
 // inline form validation works (including quantity), focus lands on the product field after the product dialog, and
@@ -22,7 +22,7 @@ const server = http.createServer((q, r) => {
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const ORIGIN = `http://127.0.0.1:${server.address().port}`;
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 let failures = 0;
 const check = (ok, msg) => { console.log(ok ? 'ok  ' : 'FAIL', msg); if (!ok) failures++; };
 

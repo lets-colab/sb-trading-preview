@@ -10,5 +10,8 @@ SB Trading — Materials in Motion | client review draft (non-production, `noind
 - Desktop extras (fine pointer, motion allowed): Lenis smooth scrolling (MIT, `assets/vendor/smooth.js`); a golden thread on the right edge fills with page progress.
 - `v1/`: the previous single-file draft, kept unchanged.
 - Enquiry form is preview-only: nothing is sent or stored.
+- Quality gates: `npm ci`, `npm run build`, `npx playwright install chromium`, `npm test`. GitHub Actions runs the build and desktop/phone smoke suite on pull requests and pushes to `main`; it does not deploy.
+- On macOS versions where Playwright cannot install its bundled Chromium, set `CHROMIUM_PATH` to an installed Chrome/Chromium executable before `npm test`.
+- Operational incident evidence, Access decision gates, recovery steps and rollback guidance live in `HANDOFF_CODEX.md` (the single operational handoff).
 - Not used from the AI drafts: invented specifications (tensile grades, HS codes, moisture, lead times, Incoterms, certifications) and pricing. Add them only after SB Trading confirms.
 - `video/`: the SB Trading brand film in Remotion (React), 15 s, 16:9 and 9:16, built from the real logo and product photographs. `cd video && npm install && npm run render` writes `video/out/*.mp4` (set `REMOTION_BROWSER` to a local Chromium headless shell where downloads are blocked). Edit live with `npm run studio`.

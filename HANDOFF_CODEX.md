@@ -51,9 +51,54 @@ cd video && npm install && REMOTION_BROWSER=<path to chrome-headless-shell> npm 
 - **Reveals:** Motion `inView` animates from a visible default (never hides content first).
 
 ## Verified (10 Nov 2026)
-- `tests/smoke.mjs`: 18/18 passing (no console errors, no external requests, no overflow, no audio before the Sound press, form validation, dialog focus, idle grove).
-- Detector: 0 findings. Impeccable design review: 28/40 before the last P2 fixes.
-- Not verified: how it looks on a real GPU or real phones; frame rate on a mid-range phone; screen-reader pass; a human listening test of the sound; the live Cloudflare deployment (behind Access, so not viewable from the build session).
+- Production Pages deployment `48347cc7-27ee-4568-8eb6-d8e58db4f36c` completed successfully from `main` commit `d1b126dea5a0e7de561cbec1a783186904883f47`; this proves deployment completion, not public readiness.
+- Pages custom domain `sb-trading.lastbenchbd.com` is active; DNS CNAME points to `sb-trading.pages.dev` and is proxied.
+- Fresh local build: `npm run build` passed.
+- Fresh browser smoke suite: 18/18 checks passed on macOS 12.7.6 / Chrome 150 using software WebGL. Desktop and phone checks covered validation, focus, audio opt-in, no external requests, no console errors, overflow, and idle grove rendering.
+- Playwright's bundled Chromium installer does not support this Mac's macOS 12.7.6. `tests/smoke.mjs` now accepts `CHROMIUM_PATH`; CI installs its own Chromium on Ubuntu.
+- GitHub Actions quality workflow is configured to run build + browser smoke tests on PRs and pushes to `main`; it is not a deployment workflow. Its first hosted run is still pending.
+- Not verified: real GPU / real phone performance, screen-reader pass, human listening test, production form delivery, Rifat assistant, and production commercial acceptance.
+
+## Self-healing knowledge and incident runbook
+
+### Incident: SB Trading receives a Cloudflare Access login instead of the showroom
+**Observed 10 Nov 2026 from an unauthenticated request on `LASTBENCH.local`:**
+- `https://sb-trading.lastbenchbd.com`, `https://sb-trading.pages.dev`, and the latest deployment hostname return HTTP 302 to `lastbenchbd.cloudflareaccess.com/cdn-cgi/access/login/...`.
+- The response includes `www-authenticate: Cloudflare-Access` and the same Access audience as the account's `All Workers` application.
+- Cloudflare API state: the account has an `All Workers` Access application with destination `all_workers` and an allow policy for Cloudflare account members. There is no SB Trading-specific Access application in the account or zone listings.
+- **Verified root cause:** account-level `All Workers` Access is the gate. Do not delete or weaken this global application to fix one site.
+
+### Separate controls — do not conflate them
+- The zone has an `AI Crawl Control - Block AI bots by User Agent` firewall rule that blocks named crawlers, including Googlebot and AI crawlers. It is not the cause of the human-facing Access redirect. Review it separately only if the owner approves a public/indexable launch.
+- The current page explicitly says client-review draft, has `noindex,nofollow`, says the enquiry is not sent or stored, and has contact placeholders. `PRODUCT.md` and this handoff also mark company facts and contact channels as unconfirmed. A public Access exception alone would not make this a production-ready commercial site.
+- No SB Trading enquiry recipient or contact details for the intended Rifat assistant were confirmed in the connected Gmail / Contacts searches. Do not invent an enquiry destination.
+
+### Access decision gate — owner decision required
+Keep the global `All Workers` policy intact. Choose the intended audience before changing Access:
+1. **Client review only:** create a hostname-specific Access application for `sb-trading.lastbenchbd.com` that allows only confirmed reviewer email addresses. Keep `sb-trading.pages.dev` and deployment URLs protected.
+2. **Public launch:** only after content and commercial readiness are approved, create a hostname-specific public/bypass application for `sb-trading.lastbenchbd.com` only. Keep the Pages platform hostname and previews protected. Cloudflare documents that specific hostname / Worker destinations take precedence over account-level `all_workers` Access.
+3. **No decision:** leave the current protection in place. Do not make the site public by deleting the global Access application.
+
+No Access, DNS, credential, or production permission changes were made during this investigation.
+
+### Recovery loop (required for every incident)
+| Step | Operator action | Evidence required |
+|---|---|---|
+| 1. Capture | Record UTC time, hostname, status, response headers, Cloudflare Ray ID and redirect host. Never record signed redirect query strings, cookies, or tokens. | Redacted request/response summary |
+| 2. Reproduce | Test the exact hostname without an authenticated browser session. | Repeatable HTTP result |
+| 3. Localise | Read Pages project/deployment, custom-domain status, DNS record, account + zone Access applications, Worker routes, and relevant rulesets. | Authoritative Cloudflare API state |
+| 4. Classify | 302 + `www-authenticate: Cloudflare-Access` = Access gate; 403 = Access/WAF/BIC policy; 404/1016 = route/DNS; 5xx = deployment/runtime; form summary only = preview-only form by design. | Root-cause category and evidence |
+| 5. Change | Apply the smallest reversible, host-scoped fix. Preserve global controls. Require explicit approval for Access, DNS, credential, publishing, or external-delivery changes. | Before/after config and approval scope |
+| 6. Guard | Add a regression test and keep `npm run build` + `npm test` in CI. | Green CI run on the exact commit |
+| 7. Verify | Test the unauthenticated canonical host, intended reviewer access, desktop/mobile flows, console, network, and form delivery where configured. | Final-state HTTP + browser + delivery evidence |
+| 8. Recover | If the change fails, remove only the new host-specific exception and verify the original global Access gate is active again. | Rollback receipt and repeat test |
+| 9. Learn | Update this handoff with symptom → root cause → correction → regression guard → rollback. | Dated incident record |
+
+### Safe failure handling
+- Never claim an enquiry is received while the form only prepares a local summary.
+- Never claim Rifat is live until an authenticated server-side assistant is deployed and tested with the approved knowledge source and human handoff.
+- Never turn off `All Workers`, change DNS, publish the draft, or expose the Pages preview hostname as a shortcut for a single-host problem.
+- If evidence is missing, mark the item `NOT PROVEN` and stop at the smallest reversible diagnostic check.
 
 ## Open items, in priority order
 1. **Owner content:** real contact channels (email, phone, WhatsApp), origin, minimum order, shipping terms, lead times, certifications; confirmed product names, grades and per-product photos (banana bark and woven mats have none; "Ski poles" is an unverified label). The owner also promised five more photos that never arrived as files; two looked AI-generated and need an "illustrative" label.
