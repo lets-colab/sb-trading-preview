@@ -79,8 +79,12 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     check(await p.evaluate(() => document.documentElement.classList.contains('has-3d')), `${name}: the 3D studies load`);
     // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
     // Use the buyer's actual Products link. Native scrollTo() races Lenis after a long enquiry interaction.
-    await p.click('#mainNav a[href="#explore"]');
-    await p.waitForFunction(() => Math.abs(document.getElementById('explore').getBoundingClientRect().top) < 30, null, { timeout: 10000 });
+    // Start this keyboard regression from an actual shareable catalogue URL,
+    // avoiding a pending Lenis animation from the earlier Rifat conversation.
+    await p.goto(ORIGIN + '/#explore');
+    await p.waitForFunction(() => !document.getElementById('bamboo').inert &&
+      Math.abs(document.getElementById('explore').getBoundingClientRect().top) < 500,
+      null, { timeout: 15000 });
     await p.focus('#bamboo .product >> nth=3'); await p.keyboard.press('Tab'); await p.waitForTimeout(300);
     check((await p.evaluate(() => document.activeElement.textContent.trim())) === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products into the fibre products`);
     await p.keyboard.press('Shift+Tab'); await p.waitForTimeout(300);
@@ -88,15 +92,26 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
     await toExplore(0.5); await p.waitForTimeout(4000);
-    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
-    const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500); const b = await p.evaluate(() => window.__draws);
+    // Idle must be sustained: a transient 'idle' flag while Lenis finishes an
+    // earlier scroll is not evidence that the 3D renderer stopped drawing.
+    const waitForSustainedIdle = () => p.waitForFunction(() => {
+      const state = document.querySelector('.studies')?.dataset.renderState;
+      const now = performance.now();
+      const last = window.__idleSample ||= { draw: window.__draws, scroll: scrollY, since: now };
+      if (state !== 'idle' || last.draw !== window.__draws || Math.abs(last.scroll - scrollY) > 0.5) {
+        last.draw = window.__draws; last.scroll = scrollY; last.since = now;
+      }
+      return state === 'idle' && now - last.since >= 1600;
+    }, null, { timeout: 30000 });
+    await waitForSustainedIdle();
+    const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(450); const b = await p.evaluate(() => window.__draws);
     check(b === a, `${name}: the 3D studies stop drawing after settling (${b - a} draw calls)`);
     // Resize the actual viewport. Check the observable redraw rather than a transient
     // 'active' label that slow software WebGL may leave before Playwright polls it.
     await p.setViewportSize({ width: 1420, height: 900 });
     await p.waitForFunction((before) => window.__draws > before, b, { timeout: 15000 });
-    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
-    const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500);
+    await waitForSustainedIdle();
+    const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(450);
     check((await p.evaluate(() => window.__draws)) === resized, `${name}: the 3D studies redraw after resize, then return to idle`);
   }
   // A direct product link works independently, then returns to Rifat with the exact product.
