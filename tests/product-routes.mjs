@@ -35,4 +35,9 @@ assert.match(site, /new URLSearchParams\(location\.search\)/, 'homepage recogniz
 assert.match(site, /rifat\.setEnquiry\(\{ product: selectedProduct \}\)/, 'returning from detail preselects exact product');
 assert.match(site, /\$\$\('\.product'\)\.some\(/, 'query deep-link validation scans the full catalogue, not a single element');
 assert.match(site, /e\.preventDefault\(\)/, 'JS quick-view overrides link navigation while available');
+for (const slug of ['ski-poles', 'woven-mats', 'banana-bark']) {
+  assert.ok(home.includes('href="products/' + slug + '/" class="product" data-img=""'), slug + ' must not show misleading substitute photo in modal');
+}
+assert.match(home, /id="sheetPhotoUnavailable"/, 'modal has an accessible missing-photo state');
+assert.match(site, /photoPending\.hidden = hasPhoto/, 'modal shows provenance-safe missing-photo state');
 console.log('Product-route contract: PASS (9 direct pages, no-JS links, enquiry handoff)');
