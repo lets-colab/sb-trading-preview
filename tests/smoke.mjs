@@ -124,6 +124,16 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   check(external.length === 0, `${name}: no external requests${external.length ? ' - ' + external.slice(0, 2).join(' | ') : ''}`);
   await ctx.close();
 }
+// No-JavaScript buyer journey: links remain usable and there is no misleading
+// form that can submit personal details through a URL when scripts are disabled.
+const noJsContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, javaScriptEnabled: false });
+const noJsPage = await noJsContext.newPage();
+await noJsPage.goto(ORIGIN + '/');
+check(!(await noJsPage.locator('#enquiryForm').isVisible()), 'no-JS buyer is not offered a non-operational form');
+check(await noJsPage.locator('.no-js-enquiry a[href="https://wa.me/8801878707910"]').isVisible(), 'no-JS buyer can contact SB Trading directly');
+check(await noJsPage.locator('.hero-actions a[href="#explore"]').isVisible(), 'no-JS homepage retains a direct catalogue shortcut');
+check(await noJsPage.locator('#mainNav a[href="#explore"]').isVisible(), 'no-JS mobile navigation remains visible');
+await noJsContext.close();
 await browser.close(); server.close();
 console.log(failures ? `\n${failures} failing` : '\nall passing');
 process.exit(failures ? 1 : 0);
