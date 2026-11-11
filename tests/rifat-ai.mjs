@@ -66,6 +66,7 @@ await p.goto(ORIGIN + '/');
 await p.evaluate(() => document.getElementById('enquire').scrollIntoView());
 await p.waitForFunction(() => /AI assistant · online/.test(document.getElementById('rifatMode').textContent), null, { timeout: 15000 }).catch(() => {});
 check(/AI assistant · online/.test(await p.textContent('#rifatMode')), 'Rifat reports AI mode when the function has a key');
+check(!(await p.locator('#rifatAiTag').evaluate(el => el.hidden)), 'AI badge appears only after the live mode probe succeeds');
 await p.waitForFunction(() => document.querySelectorAll('#rifatLog .msg.r').length >= 1, null, { timeout: 10000 }).catch(() => {});
 check(/AI assistant/.test(await p.textContent('#rifatLog')), 'Rifat introduces itself as an AI assistant');
 
@@ -86,6 +87,7 @@ check(seen.length === 2 && seen[1].body.messages.some((m) => Array.isArray(m.con
 await p.fill('#rifatInput', 'FAIL please'); await p.press('#rifatInput', 'Enter');
 await p.waitForFunction(() => /lost my connection/.test(document.getElementById('rifatLog').textContent), null, { timeout: 15000 }).catch(() => {});
 check(/guided mode/i.test(await p.textContent('#rifatMode')) && /lost my connection/.test(await p.textContent('#rifatLog')), 'an API failure falls back to guided mode and says so');
+check(await p.locator('#rifatAiTag').evaluate(el => el.hidden), 'AI badge hides after a provider failure');
 check(errors.length === 0, `no page errors${errors.length ? ' - ' + errors[0] : ''}`);
 check(external.length === 0, `the page makes no external requests${external.length ? ' - ' + external[0] : ''}`);
 
