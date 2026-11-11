@@ -13,6 +13,10 @@ assert.match(noScriptStyle, /#enquiryForm/, 'no-JS fallback suppresses a non-ope
 const fallback = html.match(/<noscript><p class="lede no-js-enquiry">([\s\S]*?)<\/p><\/noscript>/)?.[1] || '';
 assert.match(fallback, /https:\/\/wa\.me\/8801878707910/, 'no-JS buyer has working direct contact route');
 assert.doesNotMatch(fallback, /form (works|can be sent|is available)/i, 'no fabricated no-JS form delivery claim');
+const hero = html.match(/<div class="beat beat-hero"[\\s\\S]*?<p class="lede">([^<]+)<\\/p>/)?.[1] || '';
+for (const family of ['Bamboo', 'banana fibre yarn', 'banana bark and leaves']) {
+  assert.ok(hero.toLowerCase().includes(family.toLowerCase()), 'hero identifies product family: ' + family);
+}
 assert.match(html, /<div class="hero-actions">\s*<a[^>]*href="#explore"/, 'first-viewport hero has a direct Products shortcut');
 assert.match(css, /\.hero-actions\s*\{/, 'fast path has explicit visible layout');
 assert.match(html, /id="rifatAiTag"[^>]*\bhidden\b/, 'AI badge is not shown until runtime confirmation');
