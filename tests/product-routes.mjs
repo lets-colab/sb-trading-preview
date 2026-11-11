@@ -33,5 +33,6 @@ for (const [slug, title] of cases) {
 }
 assert.match(site, /new URLSearchParams\(location\.search\)/, 'homepage recognizes query parameters');
 assert.match(site, /rifat\.setEnquiry\(\{ product: selectedProduct \}\)/, 'returning from detail preselects exact product');
+assert.match(site, /\$\$\('\.product'\)\.some\(/, 'query deep-link validation scans the full catalogue, not a single element');
 assert.match(site, /e\.preventDefault\(\)/, 'JS quick-view overrides link navigation while available');
 console.log('Product-route contract: PASS (9 direct pages, no-JS links, enquiry handoff)');
