@@ -2,6 +2,22 @@
 
 Read this file, then `PRODUCT.md` (brand and product brief) and `README.md` (file map). This repo is the SB Trading client-review site.
 
+## Start here, Codex / ChatGPT (latest state, 10 Nov 2026)
+- **Live:** `main` at merge `11ab83d` (PR #7) is deployed to https://sb-trading.lastbenchbd.com (still behind the Cloudflare Access login). It includes the Pexels footage, WhatsApp +880 1878-707910, DESIGN.md + token gate, keyboard family switching and the 3D idle fix.
+- **This branch, not yet merged:** Rifat AI build plus critique fixes (see its PR). It adds:
+  - enquiries with several products (`products` list on the page and in the Pages Function, "Add another product");
+  - no fake "typing" dots in guided mode, newest message kept in view above the chips, "Start again" asks once ("Clear enquiry?");
+  - `tests/rifat-ai.mjs`: the real Pages Function against a simulated Anthropic API (AI mode detected, tool loop fills "Your enquiry", key only server-side, fallbacks on, outage falls back to guided mode);
+  - contrast: `--faint` raised to 60% (6.05:1), backed labels over film/3D, styled placeholder; chapter bar hides once #enquire is on screen; hover effects only on hover-capable devices; button and node glows removed; "AI" tag on the header "Ask Rifat"; phone Sound button keeps an accessible name.
+- **To switch Rifat's AI on (owner action):** Cloudflare dashboard → Pages project `sb-trading` → Settings → Variables and secrets → add encrypted `ANTHROPIC_API_KEY` for Production → redeploy. Never set `ANTHROPIC_BASE_URL` there (test only). Then check a real conversation; that has not been proven yet.
+- **Next design work (from the Impeccable critique, 27/40):**
+  1. Remove the ~14 uppercase kicker labels above headings and the white/gold two-tone on every heading (keep it for the hero).
+  2. 3D studies must never cover the real photographs or headings: move them into the text column or behind the arch; drop 3D below 820px.
+  3. Shorten the film (680vh → about 300vh) and put the three family cards plus "Ask Rifat" right after the hero; add a visible "See the materials" shortcut and one plain fact line (where SB Trading is, that it exports).
+  4. Re-caption the film's fibre beats so they read as banana fibre, not bamboo; "From fibre to weave" implies woven cloth they do not sell.
+  5. Phone: sticky collapsed "Your enquiry" summary above Rifat's input.
+  Re-run `/impeccable critique` and the detector after each pass; keep `npm test` green.
+
 ## State in one paragraph
 A cinematic scroll story for SB Trading (bamboo, banana fibre yarn, banana bark and leaves; nine products), rebuilt on 10 Nov 2026 after the owner rejected the previous version. Static HTML/CSS/JS plus one Cloudflare Pages Function. Five stages from the owner's proposal deck (Arrive, Discover, Transition, Explore, Enquire) in one continuous blue-hour palette: a scroll-scrubbed film (bamboo canopy → bamboo to fibre → banana leaves → hand-weaving; generated footage plus credited Pexels stock), a pinned Explore stage with real photographs in tilting arched windows and real-time 3D material studies (three.js) breaking out of the frames, "How ordering works" with a drawn fibre line, and **Rifat**, the enquiry assistant, with "Your enquiry" and a WhatsApp hand-off. Opt-in tactile sound. A Remotion brand film project lives in `video/`. It is a client-review draft, not a live commercial site.
 
@@ -45,7 +61,7 @@ docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions
 ## Commands
 ```bash
 npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
-CHROMIUM_PATH=<chrome> npm test                          # token gate + 37 browser checks, desktop + phone (Rifat runs in guided mode on the local server)
+CHROMIUM_PATH=<chrome> npm test                          # token gate + Rifat AI end-to-end (simulated API) + browser smoke, desktop + phone
 node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector, expect []
 cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
 ```
@@ -55,7 +71,7 @@ cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run rend
 - **Explore (04):** `#explore` is 420vh with one sticky stage; progress thirds pick the family (`.fam.on`, inactive ones `inert`). CSS wipes and tilts the arched photo windows (`--t`, `--ry`, `--rx`); the blurred photo is the background.
 - **3D studies:** `loadStudies()` imports `assets/materials3d.js` after first paint (WebGL2 only; reduced motion, no WebGL or a lost context leave photographs only, class `no-3d`). `render()` runs only while the visitor scrolls or moves the pointer, while a family transition settles, and once more at rest; then nothing is drawn (the smoke test counts draw calls).
 - **Rifat (05):** `assets/rifat.js` probes `GET /api/rifat` when the section approaches. `{ ai: true }` -> AI mode (POST with the conversation and enquiry; the function calls `claude-opus-5-5` at effort `low` with server-side fallbacks, records fields through the `update_enquiry` tool and validates them). Anything else -> guided mode, labelled "AI not connected yet". Both fill "Your enquiry"; "Send on WhatsApp" opens `wa.me/<number>?text=<enquiry>` only when product, country, name and email are present and `data-whatsapp` is set; otherwise it explains and offers Copy.
-- **Plain form:** hidden behind "Prefer a form?" (visible without JS). Inline validation (`check()`); on success it fills Rifat's "Your enquiry". Nothing is transmitted by the page itself.
+- **Plain form:** hidden behind "Prefer a form?" and requires JavaScript for enquiry preparation. Inline validation (`check()`); on success it fills Rifat's "Your enquiry". Nothing is transmitted by the page itself. Without JavaScript, the nonfunctional form is hidden; direct WhatsApp contact is provided instead. The form uses explicit POST semantics as defense-in-depth against accidental GET leakage.
 - **Sound:** `#soundToggle` creates the AudioContext inside the click. Cue peaks measured offline: knock -15.8, open -17.6, reply -16.8, send -22.1, tick -28.8, hover about -31 dBFS. Never heard by a person yet.
 
 ### To switch Rifat's AI on (owner action; never paste keys in chat)

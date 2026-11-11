@@ -157,6 +157,7 @@ async function loadStudies() {
 // ------------------------------------------------------------------ ordering line, chapters, page progress
 const ordering = $('#ordering'), steps = $$('.steps li', ordering), line = $('.fibre-line', ordering);
 const chapterLinks = $$('.chapters a');
+const enquireEl = $('#enquire');
 let chapter = -1;
 function setChapter(c) {
   if (c === chapter) return;
@@ -211,7 +212,8 @@ function tick(now = performance.now()) {
   setChapter(c);
   const max = Math.max(1, root.scrollHeight - innerHeight);
   root.style.setProperty('--page', (scrollY / max).toFixed(4));
-  root.classList.toggle('at-end', scrollY > max - innerHeight * 0.15);
+  // the chapter bar steps aside once Rifat's section is on screen, so it never covers the chat or its buttons
+  root.classList.toggle('at-end', enquireEl.getBoundingClientRect().top < innerHeight * 0.75);
 
   if (!reduced) requestAnimationFrame(tick);
 }
@@ -272,18 +274,36 @@ addEventListener('keydown', (e) => { if (e.key === 'Escape' && nav.classList.con
 // ------------------------------------------------------------------ Rifat (stage 05)
 const rifat = createRifat({ root: $('#rifat'), whatsapp: document.body.dataset.whatsapp || '', cue: sound.cue, reduced });
 
+const selectedProduct = new URLSearchParams(location.search).get('product');
+if (selectedProduct && $$('.product').some(el => el.textContent.trim() === selectedProduct)) {
+  // Rifat v2 merges this into its multi-product enquiry.
+  rifat.setEnquiry({ product: selectedProduct });
+}
+
 // ------------------------------------------------------------------ product sheet
 $$('.product').forEach((el) => el.addEventListener('pointerenter', () => sound.cue('hover', el)));
 const sheet = $('#productSheet');
 let sheetProduct = '';
 for (const btn of $$('.product')) {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault(); // Modal with JS; static detail route without JS.
     sheetProduct = btn.textContent.trim();
-    $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
-    $('#sheetImg').alt = `${btn.dataset.family} photograph`;
+    const image = $('#sheetImg');
+    const photoPending = $('#sheetPhotoUnavailable');
+    const hasPhoto = Boolean(btn.dataset.img);
+    if (hasPhoto) {
+      image.src = `assets/img/${btn.dataset.img}.webp`;
+      image.alt = `${btn.dataset.family} material reference photograph`;
+    } else {
+      image.removeAttribute('src');
+      image.alt = '';
+    }
+    image.hidden = !hasPhoto;
+    photoPending.hidden = hasPhoto;
     $('#sheetFamily').textContent = btn.dataset.family;
     $('#sheetTitle').textContent = sheetProduct;
     $('#sheetNote').textContent = btn.dataset.note;
+    $('#sheetDetails').href = btn.getAttribute('href');
     sheet.showModal();
     sound.cue('open', btn);
   });

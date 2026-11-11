@@ -78,26 +78,62 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   if (!touch) {
     check(await p.evaluate(() => document.documentElement.classList.contains('has-3d')), `${name}: the 3D studies load`);
     // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
-    await toExplore(0.1); await p.focus('#bamboo .product >> nth=3'); await p.keyboard.press('Tab'); await p.waitForTimeout(300);
+    // Use the buyer's actual Products link. Native scrollTo() races Lenis after a long enquiry interaction.
+    // Start this keyboard regression from an actual shareable catalogue URL,
+    // avoiding a pending Lenis animation from the earlier Rifat conversation.
+    await p.goto(ORIGIN + '/#explore');
+    await p.waitForFunction(() => !document.getElementById('bamboo').inert &&
+      Math.abs(document.getElementById('explore').getBoundingClientRect().top) < 500,
+      null, { timeout: 15000 });
+    await p.focus('#bamboo .product >> nth=3'); await p.keyboard.press('Tab'); await p.waitForTimeout(300);
     check((await p.evaluate(() => document.activeElement.textContent.trim())) === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products into the fibre products`);
     await p.keyboard.press('Shift+Tab'); await p.waitForTimeout(300);
     check((await p.evaluate(() => document.activeElement.textContent.trim())) === 'Woven mats', `${name}: Shift+Tab returns to the bamboo products`);
     await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
     await toExplore(0.5); await p.waitForTimeout(4000);
-    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
-    const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500); const b = await p.evaluate(() => window.__draws);
+    // Idle must be sustained: a transient 'idle' flag while Lenis finishes an
+    // earlier scroll is not evidence that the 3D renderer stopped drawing.
+    const waitForSustainedIdle = () => p.waitForFunction(() => {
+      const state = document.querySelector('.studies')?.dataset.renderState;
+      const now = performance.now();
+      const last = window.__idleSample ||= { draw: window.__draws, scroll: scrollY, since: now };
+      if (state !== 'idle' || last.draw !== window.__draws || Math.abs(last.scroll - scrollY) > 0.5) {
+        last.draw = window.__draws; last.scroll = scrollY; last.since = now;
+      }
+      return state === 'idle' && now - last.since >= 1600;
+    }, null, { timeout: 30000 });
+    await waitForSustainedIdle();
+    const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(450); const b = await p.evaluate(() => window.__draws);
     check(b === a, `${name}: the 3D studies stop drawing after settling (${b - a} draw calls)`);
-    await p.evaluate(() => window.dispatchEvent(new Event('resize')));
-    await p.waitForFunction((before) => document.querySelector('.studies')?.dataset.renderState === 'active' && window.__draws > before, b, { timeout: 10000 });
-    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
-    const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500);
+    // Resize the actual viewport. Check the observable redraw rather than a transient
+    // 'active' label that slow software WebGL may leave before Playwright polls it.
+    await p.setViewportSize({ width: 1420, height: 900 });
+    await p.waitForFunction((before) => window.__draws > before, b, { timeout: 15000 });
+    await waitForSustainedIdle();
+    const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(450);
     check((await p.evaluate(() => window.__draws)) === resized, `${name}: the 3D studies redraw after resize, then return to idle`);
   }
+  // A direct product link works independently, then returns to Rifat with the exact product.
+  await p.goto(ORIGIN + '/products/bamboo-poles/');
+  check((await p.locator('h1').textContent())?.trim() === 'Bamboo poles', `${name}: product page opens directly`);
+  await p.click('a.quote');
+  await p.waitForFunction(() => document.querySelector('#ticketList')?.textContent?.includes('Bamboo poles'), null, { timeout: 10000 });
+  check((await p.textContent('#ticketList')).includes('Bamboo poles'), `${name}: direct product enquiry preserves selection`);
   check(errors.length === 0, `${name}: no page errors or failed loads${errors.length ? ' - ' + errors.slice(0, 2).join(' | ') : ''}`);
   check(external.length === 0, `${name}: no external requests${external.length ? ' - ' + external.slice(0, 2).join(' | ') : ''}`);
   await ctx.close();
 }
+// No-JavaScript buyer journey: links remain usable and there is no misleading
+// form that can submit personal details through a URL when scripts are disabled.
+const noJsContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, javaScriptEnabled: false });
+const noJsPage = await noJsContext.newPage();
+await noJsPage.goto(ORIGIN + '/');
+check(!(await noJsPage.locator('#enquiryForm').isVisible()), 'no-JS buyer is not offered a non-operational form');
+check(await noJsPage.locator('.no-js-enquiry a[href="https://wa.me/8801878707910"]').isVisible(), 'no-JS buyer can contact SB Trading directly');
+check(await noJsPage.locator('.hero-actions a[href="#explore"]').isVisible(), 'no-JS homepage retains a direct catalogue shortcut');
+check(await noJsPage.locator('#mainNav a[href="#explore"]').isVisible(), 'no-JS mobile navigation remains visible');
+await noJsContext.close();
 await browser.close(); server.close();
 console.log(failures ? `\n${failures} failing` : '\nall passing');
 process.exit(failures ? 1 : 0);
