@@ -302,6 +302,10 @@ html.at-end .chapters{opacity:0;pointer-events:none}
 @keyframes sheet-in{from{opacity:0;transform:translateY(24px) scale(.98)}}
 .sheet-img{margin:0;min-height:100%;max-height:72svh;overflow:hidden}
 .sheet-img img{width:100%;height:100%;object-fit:cover}
+.sheet-img img[hidden],.sheet-photo-unavailable[hidden]{display:none!important}
+.sheet-photo-unavailable{min-height:360px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:16px;padding:32px;text-align:center;background:radial-gradient(circle at 50% 25%,var(--ink-3),var(--ink-0) 80%);border:1px solid var(--line)}
+.sheet-photo-unavailable strong{font:400 clamp(24px,3vw,36px)/1.12 var(--display);color:var(--fibre)}
+.sheet-photo-unavailable span{font-size:15px;color:var(--dim);max-width:32ch}
 .sheet-body{padding:clamp(24px,4vw,44px);display:flex;flex-direction:column;justify-content:center}
 .sheet-body h3{font-size:clamp(32px,3.6vw,48px)}
 .sheet-body p{color:var(--dim)}
