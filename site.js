@@ -288,8 +288,18 @@ for (const btn of $$('.product')) {
   btn.addEventListener('click', (e) => {
     e.preventDefault(); // Modal with JS; static detail route without JS.
     sheetProduct = btn.textContent.trim();
-    $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
-    $('#sheetImg').alt = `${btn.dataset.family} photograph`;
+    const image = $('#sheetImg');
+    const photoPending = $('#sheetPhotoUnavailable');
+    const hasPhoto = Boolean(btn.dataset.img);
+    if (hasPhoto) {
+      image.src = `assets/img/${btn.dataset.img}.webp`;
+      image.alt = `${btn.dataset.family} material reference photograph`;
+    } else {
+      image.removeAttribute('src');
+      image.alt = '';
+    }
+    image.hidden = !hasPhoto;
+    photoPending.hidden = hasPhoto;
     $('#sheetFamily').textContent = btn.dataset.family;
     $('#sheetTitle').textContent = sheetProduct;
     $('#sheetNote').textContent = btn.dataset.note;
