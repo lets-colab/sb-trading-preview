@@ -24,9 +24,9 @@
   </a>
   <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mainNav">Menu</button>
   <nav class="nav" id="mainNav" aria-label="Main">
-    <a href="#explore">Materials</a>
-    <a href="#ordering">How ordering works</a>
-    <a href="#enquire">Enquire</a>
+    <a href="#about">About Us</a>
+    <a href="#explore">Products</a>
+    <a href="#contact">Contact Us</a>
   </nav>
   <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="false"><span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="sound-label">Sound</span></button>
   <p class="sound-hint" id="soundHint" role="status"></p>
@@ -78,10 +78,10 @@
           <h3 id="h-bamboo">Enter <em>the bamboo.</em></h3>
           <p class="fam-lede">Poles, splits, ski poles and woven mats. Open a product for its photo and notes.</p>
           <ul class="products">
-            <li><button type="button" class="product" data-img="bamboo-poles" data-family="Bamboo" data-note="Diameter, lengths and treatment are confirmed by SB Trading with the quotation.">Bamboo poles</button></li>
-            <li><button type="button" class="product" data-img="bamboo-sections" data-family="Bamboo" data-note="Split widths and lengths are confirmed by SB Trading with the quotation.">Bamboo splits</button></li>
-            <li><button type="button" class="product" data-img="bamboo-poles" data-family="Bamboo" data-note="“Ski poles” is an unconfirmed product label; the photograph shows general bamboo stock.">Ski poles</button></li>
-            <li><button type="button" class="product" data-img="bamboo-sections" data-family="Bamboo" data-note="No photograph of woven mats yet; weave, size and finish are to be confirmed.">Woven mats</button></li>
+            <li><a href="products/bamboo-poles/" class="product" data-img="bamboo-poles" data-family="Bamboo" data-note="Diameter, lengths and treatment are confirmed by SB Trading with the quotation.">Bamboo poles</a></li>
+            <li><a href="products/bamboo-splits/" class="product" data-img="bamboo-sections" data-family="Bamboo" data-note="Split widths and lengths are confirmed by SB Trading with the quotation.">Bamboo splits</a></li>
+            <li><a href="products/ski-poles/" class="product" data-img="bamboo-poles" data-family="Bamboo" data-note="“Ski poles” is an unconfirmed product label; the photograph shows general bamboo stock.">Ski poles</a></li>
+            <li><a href="products/woven-mats/" class="product" data-img="bamboo-sections" data-family="Bamboo" data-note="No photograph of woven mats yet; weave, size and finish are to be confirmed.">Woven mats</a></li>
           </ul>
         </div>
         <figure class="arch"><img src="assets/img/bamboo-sections.webp" alt="Cut bamboo sections bundled and tied, ends facing the camera" width="727" height="1300" loading="lazy"><img src="assets/img/bamboo-poles.webp" alt="Long bamboo poles stacked in daylight" width="730" height="1300" loading="lazy"></figure>
@@ -93,9 +93,9 @@
           <h3 id="h-fibre">From plant <em>to fibre.</em></h3>
           <p class="fam-lede">Banana fibre yarn in three grades, from fine banana silk to industrial yarn.</p>
           <ul class="products">
-            <li><button type="button" class="product" data-img="banana-fibre" data-family="Banana fibre yarn" data-note="Which photograph shows Grade A is still to be confirmed.">Grade A: banana silk</button></li>
-            <li><button type="button" class="product" data-img="banana-fibre-loose" data-family="Banana fibre yarn" data-note="Which photograph shows Grade B is still to be confirmed.">Grade B: standard banana fibre yarn</button></li>
-            <li><button type="button" class="product" data-img="banana-fibre" data-family="Banana fibre yarn" data-note="Which photograph shows Grade C is still to be confirmed.">Grade C: industrial banana fibre yarn</button></li>
+            <li><a href="products/grade-a-banana-silk/" class="product" data-img="banana-fibre" data-family="Banana fibre yarn" data-note="Which photograph shows Grade A is still to be confirmed.">Grade A: banana silk</a></li>
+            <li><a href="products/grade-b-standard-banana-fibre-yarn/" class="product" data-img="banana-fibre-loose" data-family="Banana fibre yarn" data-note="Which photograph shows Grade B is still to be confirmed.">Grade B: standard banana fibre yarn</a></li>
+            <li><a href="products/grade-c-industrial-banana-fibre-yarn/" class="product" data-img="banana-fibre" data-family="Banana fibre yarn" data-note="Which photograph shows Grade C is still to be confirmed.">Grade C: industrial banana fibre yarn</a></li>
           </ul>
         </div>
         <figure class="arch"><img src="assets/img/banana-fibre.webp" alt="Hanks of natural banana fibre laid out on grass" width="975" height="1300" loading="lazy"><img src="assets/img/banana-fibre-loose.webp" alt="Loose banana fibre strands drying in the open" width="975" height="1300" loading="lazy"></figure>
@@ -107,13 +107,26 @@
           <h3 id="h-bark">Layers <em>of the leaf.</em></h3>
           <p class="fam-lede">Banana bark and banana leaves, the third family of the range.</p>
           <ul class="products">
-            <li><button type="button" class="product" data-img="banana-leaves" data-family="Banana bark and leaves" data-note="No photograph of banana bark yet; the image shows banana leaves.">Banana bark</button></li>
-            <li><button type="button" class="product" data-img="banana-leaves" data-family="Banana bark and leaves" data-note="Packing, sizes and availability are confirmed by SB Trading with the quotation.">Banana leaves</button></li>
+            <li><a href="products/banana-bark/" class="product" data-img="banana-leaves" data-family="Banana bark and leaves" data-note="No photograph of banana bark yet; the image shows banana leaves.">Banana bark</a></li>
+            <li><a href="products/banana-leaves/" class="product" data-img="banana-leaves" data-family="Banana bark and leaves" data-note="Packing, sizes and availability are confirmed by SB Trading with the quotation.">Banana leaves</a></li>
           </ul>
         </div>
         <figure class="arch"><img src="assets/img/banana-leaves.webp" alt="Green banana leaves, folded and packed in clear bags" width="987" height="1300" loading="lazy"></figure>
       </article>
       <p class="explore-note">Product names, grades and photographs are being confirmed by SB Trading.</p>
+    </div>
+  </section>
+
+  <!-- About Us: client-approved product families only; no unverified company claims -->
+  <section class="about" id="about" aria-labelledby="h-about">
+    <div>
+      <p class="eyebrow">About SB Trading</p>
+      <h2 id="h-about">Natural materials. <em>For business.</em></h2>
+    </div>
+    <div class="about-copy">
+      <p>SB Trading presents forestry and agricultural products to business buyers: bamboo, banana fibre yarn, and banana bark and leaves.</p>
+      <p>Explore the three material families, then share your requirements. Sizes, specifications and shipping terms are confirmed by the SB Trading team with each quotation.</p>
+      <a href="#explore" class="about-link">Explore the products <span aria-hidden="true">→</span></a>
     </div>
   </section>
 
@@ -200,6 +213,20 @@
       </form>
     </div>
   </section>
+
+  <!-- Contact Us: approved WhatsApp channel; other details stay unconfirmed -->
+  <section class="contact" id="contact" aria-labelledby="h-contact">
+    <div class="contact-copy">
+      <p class="eyebrow">Contact SB Trading</p>
+      <h2 id="h-contact">Start a <em>conversation.</em></h2>
+      <p>Tell us what material you need. Prepare a quotation enquiry with Rifat, or contact SB Trading through WhatsApp.</p>
+      <p class="contact-note">Business email and other contact details will be added after SB Trading confirms them.</p>
+    </div>
+    <div class="contact-actions">
+      <a class="btn" href="https://wa.me/8801878707910" rel="noopener">Contact via WhatsApp</a>
+      <a class="about-link" href="#enquire">Prepare a quotation <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
 </main>
 
 <nav class="chapters" aria-label="Chapters">
@@ -221,6 +248,7 @@
     <h3 id="sheetTitle"></h3>
     <p>Specifications, sizes, grades and availability are confirmed by SB Trading's team with each quotation.</p>
     <p class="source" id="sheetNote"></p>
+    <a class="sheet-detail-link" id="sheetDetails" href="products/bamboo-poles/">View the product detail page <span aria-hidden="true">→</span></a>
     <button class="btn" type="button" id="sheetAsk"><span class="orb orb-xs" aria-hidden="true"><i></i><i></i><i></i></span>Ask Rifat about this product</button>
   </div>
 </dialog>

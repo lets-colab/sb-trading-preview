@@ -274,18 +274,26 @@ addEventListener('keydown', (e) => { if (e.key === 'Escape' && nav.classList.con
 // ------------------------------------------------------------------ Rifat (stage 05)
 const rifat = createRifat({ root: $('#rifat'), whatsapp: document.body.dataset.whatsapp || '', cue: sound.cue, reduced });
 
+const selectedProduct = new URLSearchParams(location.search).get('product');
+if (selectedProduct && $$('.product').some(el => el.textContent.trim() === selectedProduct)) {
+  // Rifat v2 merges this into its multi-product enquiry.
+  rifat.setEnquiry({ product: selectedProduct });
+}
+
 // ------------------------------------------------------------------ product sheet
 $$('.product').forEach((el) => el.addEventListener('pointerenter', () => sound.cue('hover', el)));
 const sheet = $('#productSheet');
 let sheetProduct = '';
 for (const btn of $$('.product')) {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault(); // Modal with JS; static detail route without JS.
     sheetProduct = btn.textContent.trim();
     $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
     $('#sheetImg').alt = `${btn.dataset.family} photograph`;
     $('#sheetFamily').textContent = btn.dataset.family;
     $('#sheetTitle').textContent = sheetProduct;
     $('#sheetNote').textContent = btn.dataset.note;
+    $('#sheetDetails').href = btn.getAttribute('href');
     sheet.showModal();
     sound.cue('open', btn);
   });
