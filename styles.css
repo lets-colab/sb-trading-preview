@@ -114,6 +114,22 @@ p{text-wrap:pretty}
   .fam-cards b{max-width:none;font-size:20px}
   .fam-cards .go{width:32px;height:32px}
 }
+
+/* Two buyer journeys: watch the film, or go directly to the real catalogue. */
+.hero-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px}
+.hero-actions .btn{min-height:48px;gap:18px}
+.beat-hero .scroll-cue{margin-top:20px}
+.ai-tag[hidden]{display:none!important}
+@media (max-width:520px) {
+  .hero-actions{margin-top:16px}
+  .hero-actions .btn{min-height:44px;padding:0 20px;font-size:14px}
+}
+@media (max-width:520px) and (max-height:720px) {
+  .beat-hero .hero-logo{width:80px;margin-bottom:14px}
+  .beat-hero .scroll-cue{display:none}
+  .beat-hero .lede{margin-top:12px}
+}
+
 .scroll-cue{display:flex;align-items:center;gap:14px;margin:40px 0 0;font:600 12px/1 var(--text);letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
 .scroll-cue span{display:block;width:1px;height:40px;background:var(--fibre);animation:cue 2.2s var(--ease-io) infinite}
 @keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
