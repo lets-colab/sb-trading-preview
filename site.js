@@ -275,7 +275,7 @@ const rifat = createRifat({ root: $('#rifat'), whatsapp: document.body.dataset.w
 // A product detail can return directly to the enquiry, without losing its selection.
 // Only exact catalogue labels are accepted; arbitrary query text is not inserted.
 const selectedProduct = new URLSearchParams(location.search).get('product');
-if (selectedProduct && $('.product').some((el) => el.textContent.trim() === selectedProduct)) {
+if (selectedProduct && $$('.product').some((el) => el.textContent.trim() === selectedProduct)) {
   rifat.setEnquiry({ product: selectedProduct });
 }
 
