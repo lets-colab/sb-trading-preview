@@ -295,6 +295,8 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
     mode = m;
     root.dataset.mode = m;
     modeLabel.textContent = m === 'ai' ? 'AI assistant · online' : 'Guided mode · AI not connected yet';
+    const aiBadge = document.getElementById('rifatAiTag');
+    if (aiBadge) aiBadge.hidden = m !== 'ai';
   }
   async function greet() {
     if (mode === 'ai') {
