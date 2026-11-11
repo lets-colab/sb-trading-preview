@@ -13,7 +13,10 @@ assert.match(noScriptStyle, /#enquiryForm/, 'no-JS fallback suppresses a non-ope
 const fallback = html.match(/<noscript><p class="lede no-js-enquiry">([\s\S]*?)<\/p><\/noscript>/)?.[1] || '';
 assert.match(fallback, /https:\/\/wa\.me\/8801878707910/, 'no-JS buyer has working direct contact route');
 assert.doesNotMatch(fallback, /form (works|can be sent|is available)/i, 'no fabricated no-JS form delivery claim');
-const hero = html.match(/<div class="beat beat-hero"[\\s\\S]*?<p class="lede">([^<]+)<\\/p>/)?.[1] || '';
+const heroStart = html.indexOf('<div class="beat beat-hero"');
+const ledeStart = html.indexOf('<p class="lede">', heroStart);
+assert.ok(heroStart >= 0 && ledeStart > heroStart, 'hero introduction is present');
+const hero = html.slice(ledeStart + '<p class="lede">'.length, html.indexOf('</p>', ledeStart));
 for (const family of ['Bamboo', 'banana fibre yarn', 'banana bark and leaves']) {
   assert.ok(hero.toLowerCase().includes(family.toLowerCase()), 'hero identifies product family: ' + family);
 }
