@@ -9,7 +9,7 @@ SB Trading — Materials in Motion | client review draft (non-production, `noind
 - `assets/sound.js`: opt-in tactile sound, loaded only when the visitor presses Sound. Synthesised cues, no background bed: a hollow bamboo knock per family, a fibre brush on product hover, a soft chime when Rifat replies, a pluck when a message is sent.
 - `assets/img/`: real product photographs; `sb-logo*.webp` and `sb-mark*.webp` are the original SB Trading logo with its white background removed (`-light` = the same mark knocked out to Cloud White for dark grounds; derived from the owner's file, awaiting approval).
 - `assets/vendor/`: Motion 12, Lenis (bundled) and self-hosted fonts (Gloock, Schibsted Grotesk; OFL). No external requests from the page.
-- The plain quotation form (under "Prefer a form?") works without Rifat and without JavaScript submission; it fills the same enquiry.
+- The plain quotation form (under "Prefer a form?") prepares an enquiry in the browser when JavaScript is enabled; it does **not** send or store it. Without JavaScript the form is hidden and buyers are directed to SB Trading's confirmed WhatsApp channel. No personal details are submitted through a URL query.
 - `v1/`: the first single-file draft, kept unchanged.
 - `DESIGN.md` (v1.0.0) + `.impeccable/design.json`: the design system recorded from the shipped code (28 semantic tokens, components and states, motion, type). `tests/tokens.mjs` fails the build if `styles.css :root` and DESIGN.md disagree.
 - `docs/user-journey.md`: buyer journey (current vs desired) and gap analysis; assumptions until tested with real buyers.
