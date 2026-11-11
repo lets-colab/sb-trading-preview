@@ -91,8 +91,10 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
     const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500); const b = await p.evaluate(() => window.__draws);
     check(b === a, `${name}: the 3D studies stop drawing after settling (${b - a} draw calls)`);
-    await p.evaluate(() => window.dispatchEvent(new Event('resize')));
-    await p.waitForFunction((before) => document.querySelector('.studies')?.dataset.renderState === 'active' && window.__draws > before, b, { timeout: 10000 });
+    // Resize the actual viewport. Check the observable redraw rather than a transient
+    // 'active' label that slow software WebGL may leave before Playwright polls it.
+    await p.setViewportSize({ width: 1420, height: 900 });
+    await p.waitForFunction((before) => window.__draws > before, b, { timeout: 15000 });
     await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
     const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500);
     check((await p.evaluate(() => window.__draws)) === resized, `${name}: the 3D studies redraw after resize, then return to idle`);
