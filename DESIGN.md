@@ -267,7 +267,7 @@ All h1 to h3 use `text-wrap: balance`; paragraphs use `text-wrap: pretty`; `font
 
 A single scroll story in five chapters (Arrive, Discover, Transition, Explore, Enquire). Every section and both fixed bars are inset by the gutter token; html sets `scroll-padding-top: 88px` for the fixed header.
 
-- **Film (chapters 1 to 3):** a 680vh section with a sticky 100svh stage. Scroll position is the playhead of a canvas frame sequence; beat captions sit bottom-left at `bottom: clamp(96px, 16vh, 170px)`, max-width 1000px, over a left-and-bottom ink shade.
+- **Film (chapters 1 to 3):** a 460vh section with a sticky 100svh stage. Scroll position is the playhead of a canvas frame sequence; beat captions sit bottom-left at `bottom: clamp(96px, 16vh, 170px)`, max-width 1000px, over a left-and-bottom ink shade. The end beat carries its own linear ink scrim (it sits over the brightest frames); `tests/contrast.mjs` holds every caption at 4.5:1 or better against the brightest footage behind it.
 - **Explore:** a 420vh section with one sticky 100svh stage holding three stacked families. Each family is a two-column grid (1.05fr text / 0.95fr arch, gap clamp(24px, 5vw, 80px)). At 820px and below the arch moves above the text at 38svh.
 - **Ordering:** max-width 1360px, three equal columns joined by a drawn fibre line; one column with a left rule at 820px and below.
 - **Enquire:** max-width 1120px; chat and ticket in a 1.5fr / 1fr grid, single column at 900px and below. Plain form rows are two columns, one at 640px and below.
@@ -354,7 +354,7 @@ Native `dialog`, ink-2, line border, r-lg, max 920px; image and body side by sid
 
 ### Motion
 - **Easings:** ease (expo-out) for nearly everything; ease-io for the arch clip and scroll cue. Motion.dev reveals use the same curve as an array `[0.16, 1, 0.3, 1]`.
-- **Durations in use:** 0.25s chips; 0.3s buttons and product chips; 0.4s chapter colour, bar fade, arrow disc; 0.45s message entry; 0.5s card lift, ticks, nodes, sheet entry; 0.6s text fades and Motion reveals (stagger 0.08s); 0.7s Rifat reveal (stagger 0.1s); 0.8s text rise and card photo zoom; 0.9s ticket fill; 1.1s arch clip; 1.2s arch transform and ambient fade; loops at 1s (typing), 1.1s (sound bars), 1.6s (busy orb), 2.2s (scroll cue), 9 to 15s (orb).
+- **Durations in use:** 0.25s chips; 0.3s buttons and product chips; 0.4s chapter colour, bar fade, arrow disc; 0.45s message entry; 0.5s card lift, ticks, nodes, sheet entry; the product drawer moves with Motion: in on a spring (visual duration 0.5s, bounce 0.12), out on a 0.28s ease-in before the dialog closes (from the right on desktop, from below on phones; instant with reduced motion); 0.6s text fades and Motion reveals (stagger 0.08s); 0.7s Rifat reveal (stagger 0.1s); 0.8s text rise and card photo zoom; 0.9s ticket fill; 1.1s arch clip; 1.2s arch transform and ambient fade; loops at 1s (typing), 1.1s (sound bars), 1.6s (busy orb), 2.2s (scroll cue), 9 to 15s (orb).
 - **Scroll smoothing:** film progress lerps at 0.16 per frame, pointer tilt at 0.08.
 - **Reduced motion:** site.js does not add the `motion` class; the film becomes a poster with stacked captions, explore unpins into three full-height sections with one photo each, ambient layers, 3D studies and reveals are skipped, smooth scrolling is off and Rifat's pauses drop to zero. CSS also stops all looping animations and button/chip transitions.
 - **No JS:** the page reads as a document; header toggles, chapter bar and Rifat are hidden by `noscript`, the nav shows inline, and the plain form is the enquiry route.
