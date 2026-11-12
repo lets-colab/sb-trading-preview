@@ -114,6 +114,12 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(450);
     check((await p.evaluate(() => window.__draws)) === resized, `${name}: the 3D studies redraw after resize, then return to idle`);
   }
+  // A direct product link works independently, then returns to Rifat with the exact product.
+  await p.goto(ORIGIN + '/products/bamboo-poles/');
+  check((await p.locator('h1').textContent())?.trim() === 'Bamboo poles', `${name}: product page opens directly`);
+  await p.click('a.quote');
+  await p.waitForFunction(() => document.querySelector('#ticketList')?.textContent?.includes('Bamboo poles'), null, { timeout: 10000 });
+  check((await p.textContent('#ticketList')).includes('Bamboo poles'), `${name}: direct product enquiry preserves selection`);
   check(errors.length === 0, `${name}: no page errors or failed loads${errors.length ? ' - ' + errors.slice(0, 2).join(' | ') : ''}`);
   check(external.length === 0, `${name}: no external requests${external.length ? ' - ' + external.slice(0, 2).join(' | ') : ''}`);
   await ctx.close();
