@@ -85,7 +85,7 @@ p{text-wrap:pretty}
 }
 
 /* ------------------------------------------------------------ 01–03 the film */
-.film{position:relative;height:680vh}
+.film{position:relative;height:460vh}
 .film-stage{position:sticky;top:0;height:100svh;overflow:hidden}
 .film-canvas,.film-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .film-poster{display:none}
@@ -96,7 +96,6 @@ p{text-wrap:pretty}
 .beat{position:absolute;left:var(--gutter);right:var(--gutter);bottom:clamp(96px,16vh,170px);max-width:1000px}
 .beat h2{max-width:13ch}
 .beat-hero h1{max-width:9ch}
-.hero-logo{width:clamp(108px,11vw,168px);height:auto;margin:0 0 28px;filter:drop-shadow(0 10px 30px #000a)}
 .fam-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:900px;margin-top:30px}
 .fam-cards a{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:150px;padding:20px;border-radius:var(--r-md);overflow:hidden;text-decoration:none;
   background:linear-gradient(120deg,#0c2440cc 0%,#0c244066 60%,#0c244000 100%);border:1px solid #dbeaf633;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
@@ -114,11 +113,23 @@ p{text-wrap:pretty}
   .fam-cards b{max-width:none;font-size:20px}
   .fam-cards .go{width:32px;height:32px}
 }
-.scroll-cue{display:flex;align-items:center;gap:14px;margin:40px 0 0;font:600 12px/1 var(--text);letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
-.scroll-cue span{display:block;width:1px;height:40px;background:var(--fibre);animation:cue 2.2s var(--ease-io) infinite}
+.scroll-ring{display:flex;align-items:center;gap:14px;margin:32px 0 0;font-size:14px;color:var(--dim)}
+.scroll-ring svg{width:44px;height:44px;transform:rotate(-90deg)}
+.scroll-ring circle{fill:none;stroke:var(--line-2);stroke-width:1.5}
+.scroll-ring circle.fill{stroke:var(--fibre);stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--hp,0))}
+/* the specimen stage: a soft overhead light on the opening frames, gone once the film starts */
+.spotlight{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 30% 75% at 68% -12%,#dbeaf62e,transparent 68%),radial-gradient(ellipse 24% 7% at 68% 90%,#dbeaf61a,transparent 70%)}
+.specimen{display:flex;gap:clamp(20px,3vw,40px);margin:28px 0 0;padding:16px 0 0;border-top:1px solid var(--line)}
+.specimen div{margin:0}
+.specimen dt{font-size:13px;color:var(--dim)}
+.specimen dd{margin:2px 0 0;font:400 clamp(24px,2.2vw,30px)/1.1 var(--display);color:var(--cloud)}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0 0}
+.hero-actions .btn-ghost{padding-left:10px}
 @keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
 .film-label{position:absolute;right:var(--gutter);bottom:72px;margin:0;padding:4px 10px;border-radius:var(--r-pill);background:#051222b3;font-size:12px;color:var(--dim)}
 html:not(.js) .film,html:not(.motion) .film{height:auto}
+html:not(.motion) .spotlight,html:not(.motion) .scroll-ring{display:none}
 html:not(.js) .film-stage,html:not(.motion) .film-stage{position:relative;height:auto;min-height:100svh;padding:140px var(--gutter) 120px;display:flex;flex-direction:column;justify-content:flex-end;gap:56px}
 html:not(.js) .film-poster,html:not(.motion) .film-poster{display:block}
 html:not(.js) .film-canvas,html:not(.motion) .film-canvas{display:none}
@@ -134,6 +145,7 @@ html:not(.js) .film-label,html:not(.motion) .film-label{position:relative;right:
 .ambient::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#051222f0 0%,#051222b3 42%,#05122240 100%),linear-gradient(0deg,#051222 0%,#05122200 30%)}
 .fam{position:absolute;inset:0;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:center;gap:clamp(24px,5vw,80px);padding:96px var(--gutter) 84px}
 .fam-text{max-width:620px}
+.fam h3{font-size:clamp(40px,4.4vw,72px)}
 .fam-lede{max-width:44ch;margin:24px 0 0;font-size:clamp(17px,1.3vw,19px);color:var(--dim)}
 .products{display:flex;flex-wrap:wrap;gap:10px;margin:32px 0 0;padding:0;list-style:none}
 .product{display:inline-flex;align-items:center;gap:10px;min-height:46px;padding:0 18px;border-radius:var(--r-pill);border:1px solid var(--line);background:#05122266;color:var(--cloud);font:500 15px/1.2 var(--text);cursor:pointer;text-align:left;transition:background .3s var(--ease),border-color .3s var(--ease),color .3s var(--ease),transform .3s var(--ease)}
@@ -284,6 +296,7 @@ html.at-end .chapters{opacity:0;pointer-events:none}
 .sheet[open]{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}
 .sheet::backdrop{background:#051222b3;backdrop-filter:blur(10px)}
 .motion .sheet[open]{animation:sheet-in .5s var(--ease)}
+@keyframes drawer-up{from{transform:translateY(48px);opacity:0}}
 @keyframes sheet-in{from{opacity:0;transform:translateY(24px) scale(.98)}}
 .sheet-img{margin:0;min-height:100%;max-height:72svh;overflow:hidden}
 .sheet-img img{width:100%;height:100%;object-fit:cover}
@@ -292,9 +305,35 @@ html.at-end .chapters{opacity:0;pointer-events:none}
 .sheet-body p{color:var(--dim)}
 .sheet-body .btn{align-self:flex-start;margin-top:12px;padding-left:10px}
 .sheet-close{position:absolute;right:12px;top:12px;z-index:1}
+/* spec drawer: the product sheet slides in from the side and keeps the stage visible behind it */
+.sheet.drawer[open]{display:flex;flex-direction:column;position:fixed;inset:0 0 0 auto;margin:0;width:min(480px,100vw);height:100svh;max-height:100svh;border-radius:var(--r-lg) 0 0 var(--r-lg);border-right:0}
+.drawer::backdrop{background:#0512228c;backdrop-filter:blur(4px)}
+.motion .sheet.drawer[open]{animation:drawer-in .55s var(--ease)}
+@keyframes drawer-in{from{transform:translateX(48px);opacity:0}}
+.drawer .sheet-img{flex:none;height:46svh;min-height:0;max-height:none}
+.drawer .sheet-body{justify-content:flex-start;padding:28px clamp(22px,3vw,36px) 36px}
+.sheet-family{margin:6px 0 0;font-size:14px}
+.sheet-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.sheet-actions .btn{margin-top:0}
+.sheet-status{margin:12px 0 0;font-size:14px;color:var(--fibre)}
+.sheet-status:empty{display:none}
+/* enquiry tray: what the buyer has added, one tap from Rifat */
+.tray{position:fixed;right:var(--gutter);bottom:68px;z-index:var(--z-header);display:flex;align-items:center;gap:10px;max-width:min(420px,calc(100vw - 32px));min-height:48px;padding:6px 18px 6px 6px;border-radius:var(--r-pill);background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(12px);box-shadow:0 18px 50px #0008;text-decoration:none;transition:opacity .4s var(--ease),transform .4s var(--ease)}
+.tray[hidden]{display:none}
+.tray-count{display:grid;place-items:center;min-width:36px;height:36px;border-radius:50%;background:var(--fibre);color:var(--ink-0);font-weight:700}
+.tray-label{font-weight:600;white-space:nowrap}
+.tray-items{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:var(--dim)}
+.tray.bump{animation:bump .5s var(--ease)}
+@keyframes bump{40%{transform:scale(1.06)}}
+html.at-end .tray{opacity:0;pointer-events:none;transform:translateY(12px)}
 .sheet-close button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--ink-0);color:var(--cloud);font-size:16px;cursor:pointer}
 @media (max-width:700px){
   .sheet[open]{grid-template-columns:1fr}
+  .sheet.drawer[open]{inset:auto 0 0 0;width:100vw;height:auto;max-height:92svh;border-radius:var(--r-lg) var(--r-lg) 0 0;border-right:1px solid var(--line);border-bottom:0}
+  .drawer .sheet-img{height:34svh}
+  .motion .sheet.drawer[open]{animation-name:drawer-up}
+  .tray{bottom:58px;right:16px}
+  .tray-items{display:none}
   .sheet-img{max-height:40svh}
 }
 
@@ -319,10 +358,11 @@ html.at-end .chapters{opacity:0;pointer-events:none}
   .study-label{left:var(--gutter);right:auto;bottom:62px;font-size:11px}
   .film-label{bottom:64px;left:var(--gutter);right:auto}
   .beat{bottom:clamp(92px,14vh,140px)}
+  .film-shade{background:linear-gradient(0deg,#051222 0%,#051222e0 38%,#0512224d 70%,#05122200 100%),linear-gradient(180deg,#05122299 0%,#05122200 22%)}
 }
 
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .orb i,.scroll-cue span,.sound-toggle[aria-pressed="true"] .bars i,.msg.typing i{animation:none}
+  .orb i,.sound-toggle[aria-pressed="true"] .bars i,.msg.typing i{animation:none}
   .btn,.product{transition:none}
 }

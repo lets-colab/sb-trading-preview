@@ -86,6 +86,7 @@ async function loadFrames() {
   };
   await Promise.all(Array.from({ length: 6 }, worker));
 }
+const spotlight = $('.spotlight', film);
 function beats(p) {
   for (const { el, at: [a, b] } of filmBeats) {
     const fade = 0.035;
@@ -93,6 +94,10 @@ function beats(p) {
     el.style.opacity = o.toFixed(3);
     el.style.transform = `translateY(${((1 - o) * 28).toFixed(1)}px)`;
     el.style.visibility = o < 0.01 ? 'hidden' : 'visible';
+    if (a <= 0) { // the opening: the scroll ring fills as the film begins; the overhead light fades with the title
+      el.style.setProperty('--hp', clamp(p / b).toFixed(3));
+      if (spotlight) spotlight.style.opacity = o.toFixed(3);
+    }
   }
 }
 
@@ -271,7 +276,20 @@ nav.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false)
 addEventListener('keydown', (e) => { if (e.key === 'Escape' && nav.classList.contains('open')) { setMenu(false); menuBtn.focus(); } });
 
 // ------------------------------------------------------------------ Rifat (stage 05)
-const rifat = createRifat({ root: $('#rifat'), whatsapp: document.body.dataset.whatsapp || '', cue: sound.cue, reduced });
+// The enquiry tray mirrors "Your enquiry": how many products, which ones, one tap from Rifat.
+const tray = $('#enquiryTray'), trayCount = $('#trayCount'), trayItems = $('#trayItems');
+let trayN = 0;
+function updateTray(enquiry) {
+  const list = enquiry.products || [];
+  tray.hidden = list.length === 0;
+  trayCount.textContent = String(list.length);
+  trayItems.textContent = list.join(', ');
+  tray.setAttribute('aria-label', `Your enquiry: ${list.length} ${list.length === 1 ? 'product' : 'products'}, ${list.join(', ')}. Open Rifat.`);
+  if (list.length > trayN && !reduced) { tray.classList.remove('bump'); void tray.offsetWidth; tray.classList.add('bump'); }
+  trayN = list.length;
+}
+const rifat = createRifat({ root: $('#rifat'), whatsapp: document.body.dataset.whatsapp || '', cue: sound.cue, reduced, onChange: updateTray });
+tray.addEventListener('click', (e) => { e.preventDefault(); const t = $('#enquire'); if (lenis) lenis.scrollTo(t, { offset: -40 }); else t.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); });
 
 // ------------------------------------------------------------------ product sheet
 $$('.product').forEach((el) => el.addEventListener('pointerenter', () => sound.cue('hover', el)));
@@ -285,6 +303,8 @@ for (const btn of $$('.product')) {
     $('#sheetFamily').textContent = btn.dataset.family;
     $('#sheetTitle').textContent = sheetProduct;
     $('#sheetNote').textContent = btn.dataset.note;
+    $('#sheetStatus').textContent = '';
+    $('#sheetAdd').textContent = 'Add to enquiry';
     sheet.showModal();
     sound.cue('open', btn);
   });
@@ -295,6 +315,12 @@ $('#sheetAsk').addEventListener('click', () => {
   if (lenis) lenis.scrollTo(target, { offset: -40 }); else target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
   rifat.askAbout(sheetProduct);
   setTimeout(() => $('#rifatInput').focus({ preventScroll: true }), reduced ? 30 : 900);
+});
+$('#sheetAdd').addEventListener('click', (e) => {
+  const list = rifat.addProduct(sheetProduct);
+  $('#sheetStatus').textContent = `Added. Your enquiry: ${list}. Add more products, or finish with Rifat.`;
+  e.currentTarget.textContent = 'Added to enquiry ✓';
+  sound.cue('tick', e.currentTarget);
 });
 sheet.addEventListener('click', (e) => { if (e.target === sheet) sheet.close(); });
 

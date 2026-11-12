@@ -48,6 +48,10 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await toExplore(0.1);
   await p.click('#bamboo.on .product >> nth=1'); await p.waitForTimeout(500);
   check(await p.evaluate(() => document.getElementById('productSheet').open), `${name}: a product opens its sheet`);
+  check((await p.evaluate(() => document.getElementById('enquiryTray').hidden)), `${name}: the enquiry tray stays hidden while the enquiry is empty`);
+  await p.click('#sheetAdd'); await p.waitForTimeout(300);
+  check(await p.evaluate(() => !document.getElementById('enquiryTray').hidden && document.getElementById('trayCount').textContent === '1' && /Bamboo splits/.test(document.getElementById('trayItems').textContent)),
+    `${name}: "Add to enquiry" in the spec drawer puts the product in the enquiry tray`);
   await p.click('#sheetAsk');
   await p.waitForFunction(() => document.activeElement?.id === 'rifatInput', null, { timeout: 10000 }).catch(() => {});
   check((await p.evaluate(() => document.activeElement.id)) === 'rifatInput', `${name}: focus lands in Rifat's message field after "Ask Rifat"`);
