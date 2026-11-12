@@ -182,6 +182,37 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   check(external.length === 0, `${name}: no external requests${external.length ? ' - ' + external.slice(0, 2).join(' | ') : ''}`);
   await ctx.close();
 }
+// Android hero regression: accidental text selection and constrained phone viewports.
+for (const [width, height] of [[320, 568], [390, 844]]) {
+  const mobileContext = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true });
+  const mobilePage = await mobileContext.newPage();
+  await mobilePage.goto(ORIGIN + '/', { waitUntil: 'domcontentloaded' });
+  await mobilePage.evaluate(async () => { await document.fonts.ready; });
+  const layout = await mobilePage.evaluate(() => {
+    const box = (el) => el.getBoundingClientRect();
+    const headline = document.querySelector('.beat-hero h1');
+    const heading = box(headline), header = box(document.querySelector('.top'));
+    const action = box(document.querySelector('.beat-hero .hero-actions'));
+    const label = box(document.querySelector('.film-label'));
+    const controls = [...document.querySelectorAll('.top > .brand, .top > .menu-toggle, .top > .sound-toggle, .top > .btn')]
+      .filter((el) => getComputedStyle(el).display !== 'none').map(box);
+    const bounds = ({ x, y, width, height }) => [Math.round(x), Math.round(y), Math.round(width), Math.round(height)];
+    return {
+      checks: {
+        noTitleSelection: getComputedStyle(headline).userSelect === 'none',
+        headlineFits: heading.left >= 0 && heading.right <= innerWidth && headline.scrollWidth <= headline.clientWidth + 1,
+        controlsFit: controls.every((r) => r.left >= 0 && r.right <= innerWidth),
+        controlsSeparated: controls.every((r, i) => i === 0 || r.left >= controls[i - 1].right - 1),
+        headlineClearOfHeader: heading.top >= header.bottom + 8,
+        sourceClearOfAction: action.bottom + 8 <= label.top,
+        sourceVisible: label.left >= 0 && label.right <= innerWidth && label.bottom <= innerHeight,
+      },
+      boxes: { heading: bounds(heading), header: bounds(header), action: bounds(action), label: bounds(label), controls: controls.map(bounds) },
+    };
+  });
+  for (const [rule, passed] of Object.entries(layout.checks)) check(passed, `phone ${width}x${height}: ${rule}${passed ? '' : ' (' + JSON.stringify(layout.boxes) + ')'}`);
+  await mobileContext.close();
+}
 await browser.close(); server.close();
 console.log(failures ? `\n${failures} failing` : '\nall passing');
 process.exit(failures ? 1 : 0);
