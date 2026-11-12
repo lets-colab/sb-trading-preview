@@ -109,6 +109,12 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
     const ready = isReady(enquiry);
     const canSend = ready && number;
     onChange(enquiry);
+    // phones: the ticket sits below the chat, so a one-line summary above the input shows progress and jumps to it
+    const summary = $('#rifatSummary');
+    if (summary) {
+      const have = REQUIRED.filter((k) => fieldText(enquiry, k)).length;
+      summary.textContent = `Your enquiry · ${fieldText(enquiry, 'products') || 'no product yet'} · ${have} of ${REQUIRED.length} needed details`;
+    }
     wa.setAttribute('aria-disabled', String(!canSend));
     wa.href = canSend ? `https://wa.me/${number}?text=${encodeURIComponent(summaryText(enquiry))}` : '#enquire';
     if (canSend) { wa.target = '_blank'; wa.rel = 'noopener'; } else { wa.removeAttribute('target'); }
@@ -277,6 +283,7 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
     cue('tick', copyBtn);
   }
   copyBtn.addEventListener('click', copy);
+  $('#rifatSummary')?.addEventListener('click', () => list.closest('.ticket').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }));
   // "Start again" clears the enquiry, so it asks once: the first press arms it for four seconds.
   const restart = $('#rifatRestart');
   let armed = 0;

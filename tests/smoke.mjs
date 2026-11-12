@@ -56,6 +56,10 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await p.waitForFunction(() => document.activeElement?.id === 'rifatInput', null, { timeout: 10000 }).catch(() => {});
   check((await p.evaluate(() => document.activeElement.id)) === 'rifatInput', `${name}: focus lands in Rifat's message field after "Ask Rifat"`);
   check(/Bamboo splits/.test(await p.textContent('#ticketList')), `${name}: the product from the sheet is in "Your enquiry"`);
+  if (touch) { // phone: the ticket sits below the chat, so a collapsed summary above the input keeps it in view
+    const sum = await p.evaluate(() => { const el = document.getElementById('rifatSummary'); return el && getComputedStyle(el).display !== 'none' ? el.textContent : null; });
+    check(!!sum && /Bamboo splits/.test(sum) && /1 of 4/.test(sum), `${name}: a collapsed enquiry summary above Rifat's input shows the product and progress (${sum})`);
+  }
   check(/guided mode/i.test(await p.textContent('#rifatMode')), `${name}: without the Pages Function Rifat says it is in guided mode`);
 
   // guided flow
