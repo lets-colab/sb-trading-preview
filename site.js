@@ -148,9 +148,8 @@ async function loadFrames() {
 const filmLabel = $('.film-label', film);
 const filmShots = (filmLabel?.dataset.shots || '').split('|').filter(Boolean).map((s) => { const [r, src] = s.split(':'), [a, b] = r.split('-').map(Number); return { a, b, src }; });
 let filmShot = null;
-function labelShot(i, p) {
+function labelShot(i) {
   if (!filmLabel) return;
-  filmLabel.dataset.at = p.toFixed(3);
   const shot = filmShots.find((s) => i + 1 >= s.a && i + 1 <= s.b);
   if (!shot || shot === filmShot) return;
   filmShot = shot;
@@ -249,7 +248,7 @@ function tick(now = performance.now()) {
   if (Math.abs(p - filmP) < 1e-4) filmP = p;
   const i = Math.round(filmP * (FRAMES - 1));
   if (i !== shown) draw(i);
-  if (!reduced) { beats(filmP); labelShot(i, filmP); }
+  if (!reduced) { beats(filmP); labelShot(i); }
 
   if (!reduced) {
     const e = progressOf(explore), n = fams.length;
@@ -378,6 +377,8 @@ let sheetProduct = '';
 const sheetOff = () => (matchMedia('(max-width: 700px)').matches ? { x: 0, y: '100%' } : { x: '100%', y: 0 });
 let sheetLeaving = null;
 function openSheet() {
+  if (sheetLeaving) { sheetLeaving.then(openSheet); return; } // asked to open while the exit is still playing
+  if (sheet.open) return;                                     // already open: the caller has updated its content
   delete sheet.dataset.closing;
   sheet.showModal();
   if (reduced || !M) return;
@@ -415,9 +416,14 @@ function showProduct(btn, { push = true } = {}) {
   openSheet();
 }
 for (const btn of $$('.product')) btn.addEventListener('click', () => { showProduct(btn); sound.cue('open', btn); });
-sheet.addEventListener('close', () => { // closed from the page: drop the product from the address without moving the scroll
+// Closed from the page: the product leaves the address. If this visit pushed the entry, step back over it so browsing
+// several products does not fill the Back history; "Ask Rifat" has started scrolling to Enquire, and a shared link has
+// no entry of its own, so those rewrite the address in place instead (stepping back would restore the old scroll).
+let sheetKeepsScroll = false;
+sheet.addEventListener('close', () => {
   document.title = pageTitle;
-  if (productAt()) history.replaceState(null, '', location.pathname + location.search);
+  if (productAt()) { if (history.state?.product && !sheetKeepsScroll) history.back(); else history.replaceState(null, '', location.pathname + location.search); }
+  sheetKeepsScroll = false;
 });
 addEventListener('popstate', () => { const btn = productAt(); if (btn?.classList.contains('product')) showProduct(btn, { push: false }); else closeSheet(); });
 { // a shared product link: bring its family on stage, then open it
@@ -429,6 +435,7 @@ addEventListener('popstate', () => { const btn = productAt(); if (btn?.classList
   }
 }
 $('#sheetAsk').addEventListener('click', () => {
+  sheetKeepsScroll = true;
   const target = $('#enquire');
   if (lenis) lenis.scrollTo(target, { offset: -40 }); else target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
   rifat.askAbout(sheetProduct);

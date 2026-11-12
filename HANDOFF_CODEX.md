@@ -1,22 +1,19 @@
-# Handoff: SB Trading website (for Codex / ChatGPT), updated 10 Nov 2026 (rebuild)
+# Handoff: SB Trading website (for Codex / ChatGPT), updated 12 Nov 2026
 
 Read this file, then `PRODUCT.md` (brand and product brief) and `README.md` (file map). This repo is the SB Trading client-review site.
 
-## Start here, Codex / ChatGPT (latest state, 10 Nov 2026)
-- **Live:** `main` at merge `11ab83d` (PR #7) is deployed to https://sb-trading.lastbenchbd.com (still behind the Cloudflare Access login). It includes the Pexels footage, WhatsApp +880 1878-707910, DESIGN.md + token gate, keyboard family switching and the 3D idle fix.
-- **This branch, not yet merged:** Rifat AI build plus critique fixes (see its PR). It adds:
-  - enquiries with several products (`products` list on the page and in the Pages Function, "Add another product");
-  - no fake "typing" dots in guided mode, newest message kept in view above the chips, "Start again" asks once ("Clear enquiry?");
-  - `tests/rifat-ai.mjs`: the real Pages Function against a simulated Anthropic API (AI mode detected, tool loop fills "Your enquiry", key only server-side, fallbacks on, outage falls back to guided mode);
-  - contrast: `--faint` raised to 60% (6.05:1), backed labels over film/3D, styled placeholder; chapter bar hides once #enquire is on screen; hover effects only on hover-capable devices; button and node glows removed; "AI" tag on the header "Ask Rifat"; phone Sound button keeps an accessible name.
-- **To switch Rifat's AI on (owner action):** Cloudflare dashboard → Pages project `sb-trading` → Settings → Variables and secrets → add encrypted `ANTHROPIC_API_KEY` for Production → redeploy. Never set `ANTHROPIC_BASE_URL` there (test only). Then check a real conversation; that has not been proven yet.
-- **Next design work (from the Impeccable critique, 27/40):**
-  1. Remove the ~14 uppercase kicker labels above headings and the white/gold two-tone on every heading (keep it for the hero).
-  2. Done: the procedural three.js studies are replaced by photographs in depth (`assets/photodepth.js`, depth maps in `assets/img/depth/`, regenerate with Depth Anything V2 Small if photos change). Real phone scans (Polycam/RealityScan → glTF) from SB Trading would be the next step up.
-  3. Shorten the film (680vh → about 300vh) and put the three family cards plus "Ask Rifat" right after the hero; add a visible "See the materials" shortcut and one plain fact line (where SB Trading is, that it exports).
-  4. Partly done: the loom/weave ending is replaced by a bamboo -> yarn ball + bark sheet shot captioned "Bamboo, yarn and bark." The middle beats still show bamboo fibre while SB Trading's yarn is banana fibre.
-  5. Phone: sticky collapsed "Your enquiry" summary above Rifat's input.
-  Re-run `/impeccable critique` and the detector after each pass; keep `npm test` green.
+## Start here, Codex / ChatGPT (latest state, 12 Nov 2026)
+- **Preview:** `main` at merge `876d5df` (PR #15) is what Cloudflare Pages deploys to https://sb-trading.lastbenchbd.com, still behind the Cloudflare Access login. Nobody has confirmed the deployed page from inside this workflow (the login blocks it): NOT VERIFIED live.
+- **Merged since 10 Nov (PRs #10, #14, #15):** photographs in depth (`assets/photodepth.js`) replacing the procedural 3D; specimen-stage opening; film 460vh with a new ending; spec drawer (Motion spring in, eased exit) and enquiry tray; phone enquiry summary; opt-in generated score with note ripples and a live meter (`assets/sound.js`); caption contrast gate; Remotion film rebuilt from the site's design system (`video/`, `tests/film-sync.mjs`); `docs/SHOTLIST.md`.
+- **This branch (open PR, not merged):**
+  - the film label names each shot's own source (Pexels stock or generated);
+  - `tests/access.mjs`: reduced motion, keyboard path, axe-core WCAG A/AA scan (no serious or critical violations in five states, desktop and phone);
+  - staged frame loading and lazy 3D setup (simulated mid-range phone: main-thread blocking about 970 ms -> about 100 ms; Lighthouse mobile performance 42 -> 57, accessibility 100, best practices 100; SEO 63 only because the draft is `noindex`);
+  - the client brief's navigation (About Us, Products, Contact Us) with an About Us section built from facts already on the page;
+  - a shareable address for each of the nine products (`#p-<slug>`: title, Back/Forward, direct load, no-JavaScript note).
+- **Assessment:** about 8.5/10, not award level. What remains is content and owner decisions, listed under "Open items". Do not claim 10.5/10 or PASS without them.
+- **To switch Rifat's AI on (owner action):** Cloudflare dashboard → Pages project `sb-trading` → Settings → Variables and secrets → add encrypted `ANTHROPIC_API_KEY` for Production → redeploy. Never set `ANTHROPIC_BASE_URL` there (test only). AGENTS.md keeps paid AI off until the owner approves spend and rate limiting. A real conversation has not been proven yet.
+- **Rules that bind agents here:** AGENTS.md (no automatic merge, deploy, Access change, secret installation or publishing; failing test first; say NOT VERIFIED when evidence is missing).
 
 ## State in one paragraph
 A cinematic scroll story for SB Trading (bamboo, banana fibre yarn, banana bark and leaves; nine products), rebuilt on 10 Nov 2026 after the owner rejected the previous version. Static HTML/CSS/JS plus one Cloudflare Pages Function. Five stages from the owner's proposal deck (Arrive, Discover, Transition, Explore, Enquire) in one continuous blue-hour palette: a scroll-scrubbed film (bamboo canopy → bamboo to fibre → banana leaves → hand-weaving; generated footage plus credited Pexels stock), a pinned Explore stage with real photographs in tilting arched windows and real-time 3D material studies (three.js) breaking out of the frames, "How ordering works" with a drawn fibre line, and **Rifat**, the enquiry assistant, with "Your enquiry" and a WhatsApp hand-off. Opt-in tactile sound. A Remotion brand film project lives in `video/`. It is a client-review draft, not a live commercial site.
@@ -61,8 +58,8 @@ docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions
 ## Commands
 ```bash
 npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
-CHROMIUM_PATH=<chrome> npm test                          # token gate + Rifat AI end-to-end (simulated API) + browser smoke, desktop + phone
-node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector, expect []
+CHROMIUM_PATH=<chrome> npm test                          # 144 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone
+node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector: 10 findings, all documented intent
 cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
 ```
 
@@ -134,12 +131,19 @@ No Access, DNS, credential, or production permission changes were made during th
 - If evidence is missing, mark the item `NOT PROVEN` and stop at the smallest reversible diagnostic check.
 
 ## Open items, in priority order
-1. **Owner content:** email and phone (WhatsApp +880 1878-707910 is live); origin, minimum order, shipping terms, lead times, certifications; confirmed product names, grades and per-product photos (banana bark and woven mats have none; "Ski poles" is an unverified label). Approval of the derived light logo.
-2. **Rifat AI key:** add `ANTHROPIC_API_KEY` in Cloudflare (steps above), then test five real buyer conversations, including attempts to get prices or a confirmed order (Rifat must refuse and hand to the team). Consider rate limiting per IP (Cloudflare WAF rule on `/api/rifat`) before any public launch.
-3. Keep DESIGN.md in step with styles.css (the token gate enforces values); re-run `/impeccable critique` after each design pass.
-4. Real-device checks: frame rate of the 3D studies on a mid-range phone; screen reader; listen to the cues on headphones and laptop speakers.
-5. Replace the generated and stock film footage with real SB Trading footage when it exists. Stock sources (Pexels licence): videos 40042753 (bamboo), 37009850 (banana leaves), 11716405 (handloom weaving).
-6. Remotion film: re-render from `video/` with the transparent logo; add music only with a licensed track.
+1. **SB Trading's own footage and photographs:** run `docs/SHOTLIST.md` (two days: location at dusk, then studio). Every film shot is currently Pexels stock or generated and says so on screen. Stock sources (Pexels licence): videos 40042753 (bamboo), 37009850 (banana leaves).
+2. **Owner content:** email and phone (WhatsApp +880 1878-707910 is live); origin, minimum order, shipping terms, lead times, certifications; confirmed product names, grades and per-product photos (banana bark and woven mats have none; "Ski poles" is an unverified label). Approval of the derived light logo. About Us states only what the page already said; extend it only with facts SB Trading confirms.
+3. **Rifat AI key (owner decision on spend first):** add `ANTHROPIC_API_KEY` in Cloudflare (steps above), then test five real buyer conversations, including attempts to get prices or a confirmed order (Rifat must refuse and hand to the team). Add rate limiting per IP (Cloudflare WAF rule on `/api/rifat`) before any public launch.
+4. **Owner's ten-minute check on a real phone (nothing here is verified on a real device):**
+   - the film scrubs smoothly with the thumb and each caption is readable;
+   - Explore: the three arches respond and a product opens from the bottom and closes cleanly;
+   - open a product, copy the address from the browser, send it to yourself on WhatsApp and open it: the same product must open;
+   - press Sound with headphones: the music is pleasant and never louder than the cues; press again and it stops;
+   - Rifat: build an enquiry and press "Send on WhatsApp": the message arrives filled in on +880 1878-707910;
+   - with a screen reader (TalkBack or VoiceOver) the page reads in order and Rifat's replies are announced.
+5. **Product pages:** each product has a shareable address that opens its drawer. The acceptance review also asks for core product information without JavaScript and a distinct title on first load; the no-JavaScript note is printed beside each product, but separate static product pages do not exist. Decide whether they are needed once specs are confirmed.
+6. **Public launch (owner decision):** removing Cloudflare Access, `noindex`, the "client review draft" wording and the Remotion film's draft notice all wait for items 1 to 4. Remotion licensing: free for individuals and companies of up to three people; larger companies need a company licence.
+7. Keep DESIGN.md in step with styles.css (the token gate enforces values); re-run `/impeccable critique` after each design pass (detector: 10 findings, documented intent).
 
 ## Related project
 MutualBD voyage (a separate client): see `lets-colab/letscolab`, `projectx/clients/mutualbd/voyage/HANDOFF_CODEX.md`. Do not mix the two clients' content.

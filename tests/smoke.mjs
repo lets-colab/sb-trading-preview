@@ -43,14 +43,14 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await p.goto(ORIGIN + '/'); await p.waitForTimeout(3000);
   check((await p.evaluate(() => window.__ac)) === 0, `${name}: no AudioContext before the Sound press`);
   // the film names the source of the shot on screen (stock or generated), and never claims it as SB Trading's own
-  const labelAt = async (x) => {
+  const labelAt = async (x, want) => {
     await p.evaluate((q) => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * q); }, x);
-    await p.waitForFunction((q) => Math.abs((parseFloat(document.querySelector('.film-label').dataset.at) || -1) - q) < 0.02, x, { timeout: 15000 }).catch(() => {});
+    await p.waitForFunction((src) => new RegExp(src, 'i').test(document.querySelector('.film-label').textContent), want.source, { timeout: 15000 }).catch(() => {}); // the film eases to the scroll position
     return p.evaluate(() => document.querySelector('.film-label').textContent.trim());
   };
   const shots = [[0.03, /stock footage \(Pexels\)/i], [0.5, /generated footage/i], [0.8, /stock footage \(Pexels\)/i], [0.95, /generated footage/i]];
   const seen = [];
-  for (const [x, want] of shots) { const t = await labelAt(x); seen.push(`${x}: ${t}`); if (!want.test(t) || !/not SB Trading's own/.test(t) || (/generated/i.test(t) && /Pexels/.test(t))) seen.push('MISMATCH'); }
+  for (const [x, want] of shots) { const t = await labelAt(x, want); seen.push(`${x}: ${t}`); if (!want.test(t) || !/not SB Trading's own/.test(t) || (/generated/i.test(t) && /Pexels/.test(t))) seen.push('MISMATCH'); }
   check(!seen.includes('MISMATCH'), `${name}: the film label names each shot's own source (${seen.filter((s) => s !== 'MISMATCH').join(' | ')})`);
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
@@ -68,6 +68,17 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   check(await p.evaluate(() => document.getElementById('productSheet').open && document.getElementById('sheetTitle').textContent === 'Bamboo splits'), `${name}: Forward reopens the same product`);
   await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.getElementById('productSheet').open && location.hash === '', null, { timeout: 5000 }).catch(() => {});
   check((await p.evaluate(() => location.hash)) === '', `${name}: closing the product clears its address`);
+  { // browsing products must not pile up history: three opened and closed leave at most one extra entry
+    const before = await p.evaluate(() => history.length);
+    for (let k = 0; k < 3; k++) {
+      await p.click(`#bamboo.on .product >> nth=${k}`); await p.waitForFunction(() => document.getElementById('productSheet').open && /^#p-/.test(location.hash), null, { timeout: 5000 }).catch(() => {});
+      await p.waitForTimeout(700); await p.keyboard.press('Escape');
+      await p.waitForFunction(() => !document.getElementById('productSheet').open && location.hash === '', null, { timeout: 5000 }).catch(() => {});
+      await p.waitForTimeout(250);
+    }
+    const grew = (await p.evaluate(() => history.length)) - before;
+    check(grew <= 1, `${name}: opening and closing three products does not fill the Back history (${grew} extra entries)`);
+  }
   { // a shared product link opens that product directly
     const q = await ctx.newPage(); await q.goto(ORIGIN + '/#p-grade-a-banana-silk');
     const direct = await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 12000 }).then(() => true, () => false);
