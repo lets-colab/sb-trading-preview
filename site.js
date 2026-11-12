@@ -133,6 +133,19 @@ async function loadFrames() {
   };
   await Promise.all(Array.from({ length: 6 }, worker));
 }
+// The label names the source of the shot on screen (frame ranges in data-shots), so stock and generated footage are
+// never blurred together and nothing reads as SB Trading's own. Without motion the HTML's whole-film sentence stays.
+const filmLabel = $('.film-label', film);
+const filmShots = (filmLabel?.dataset.shots || '').split('|').filter(Boolean).map((s) => { const [r, src] = s.split(':'), [a, b] = r.split('-').map(Number); return { a, b, src }; });
+let filmShot = null;
+function labelShot(i, p) {
+  if (!filmLabel) return;
+  filmLabel.dataset.at = p.toFixed(3);
+  const shot = filmShots.find((s) => i + 1 >= s.a && i + 1 <= s.b);
+  if (!shot || shot === filmShot) return;
+  filmShot = shot;
+  filmLabel.textContent = `This shot: ${shot.src}, not SB Trading's own.`;
+}
 const spotlight = $('.spotlight', film);
 function beats(p) {
   for (const { el, at: [a, b] } of filmBeats) {
@@ -226,7 +239,7 @@ function tick(now = performance.now()) {
   if (Math.abs(p - filmP) < 1e-4) filmP = p;
   const i = Math.round(filmP * (FRAMES - 1));
   if (i !== shown) draw(i);
-  if (!reduced) beats(filmP);
+  if (!reduced) { beats(filmP); labelShot(i, filmP); }
 
   if (!reduced) {
     const e = progressOf(explore), n = fams.length;
