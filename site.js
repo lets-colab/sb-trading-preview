@@ -157,6 +157,7 @@ async function loadStudies() {
 // ------------------------------------------------------------------ ordering line, chapters, page progress
 const ordering = $('#ordering'), steps = $$('.steps li', ordering), line = $('.fibre-line', ordering);
 const chapterLinks = $$('.chapters a');
+const enquireEl = $('#enquire');
 let chapter = -1;
 function setChapter(c) {
   if (c === chapter) return;
@@ -211,7 +212,8 @@ function tick(now = performance.now()) {
   setChapter(c);
   const max = Math.max(1, root.scrollHeight - innerHeight);
   root.style.setProperty('--page', (scrollY / max).toFixed(4));
-  root.classList.toggle('at-end', scrollY > max - innerHeight * 0.15);
+  // the chapter bar steps aside once Rifat's section is on screen, so it never covers the chat or its buttons
+  root.classList.toggle('at-end', enquireEl.getBoundingClientRect().top < innerHeight * 0.75);
 
   if (!reduced) requestAnimationFrame(tick);
 }

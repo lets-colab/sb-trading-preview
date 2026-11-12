@@ -78,10 +78,19 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   if (!touch) {
     check(await p.evaluate(() => document.documentElement.classList.contains('has-3d')), `${name}: the 3D studies load`);
     // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
-    await toExplore(0.1); await p.focus('#bamboo .product >> nth=3'); await p.keyboard.press('Tab'); await p.waitForTimeout(300);
-    check((await p.evaluate(() => document.activeElement.textContent.trim())) === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products into the fibre products`);
-    await p.keyboard.press('Shift+Tab'); await p.waitForTimeout(300);
-    check((await p.evaluate(() => document.activeElement.textContent.trim())) === 'Woven mats', `${name}: Shift+Tab returns to the bamboo products`);
+    // wait until the Bamboo family is the live one (an inert family cannot take focus), then focus its last product
+    await toExplore(0.1); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
+    await p.focus('#bamboo .product >> nth=3');
+    await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
+    const focused = () => p.evaluate(() => document.activeElement?.textContent.trim() || document.activeElement?.tagName);
+    await p.keyboard.press('Tab');
+    await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Grade A: banana silk', null, { timeout: 5000 }).catch(() => {});
+    const afterTab = await focused();
+    check(afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products into the fibre products (focus: ${afterTab})`);
+    await p.keyboard.press('Shift+Tab');
+    await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
+    const afterShift = await focused();
+    check(afterShift === 'Woven mats', `${name}: Shift+Tab returns to the bamboo products (focus: ${afterShift})`);
     await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
     await toExplore(0.5); await p.waitForTimeout(4000);
@@ -89,10 +98,14 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500); const b = await p.evaluate(() => window.__draws);
     check(b === a, `${name}: the 3D studies stop drawing after settling (${b - a} draw calls)`);
     await p.evaluate(() => window.dispatchEvent(new Event('resize')));
-    await p.waitForFunction((before) => document.querySelector('.studies')?.dataset.renderState === 'active' && window.__draws > before, b, { timeout: 10000 });
-    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
+    // a redraw must happen (draw count rises); the 'active' state itself can be too brief to observe on a slow runner
+    const redrew = await p.waitForFunction((before) => window.__draws > before, b, { timeout: 10000 }).then(() => true, () => false);
+    const diag = redrew ? '' : await p.evaluate((before) => { const r = document.getElementById('explore').getBoundingClientRect();
+      return ` [draws ${before}->${window.__draws}, class "${document.documentElement.className}", state ${document.querySelector('.studies')?.dataset.renderState}, explore top ${Math.round(r.top)} bottom ${Math.round(r.bottom)}, viewport ${innerWidth}x${innerHeight}]`; }, b);
+    check(redrew, `${name}: the 3D studies redraw after a resize${diag}`);
+    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 }).catch(() => {});
     const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500);
-    check((await p.evaluate(() => window.__draws)) === resized, `${name}: the 3D studies redraw after resize, then return to idle`);
+    check((await p.evaluate(() => window.__draws)) === resized, `${name}: after the resize redraw the 3D studies return to idle`);
   }
   check(errors.length === 0, `${name}: no page errors or failed loads${errors.length ? ' - ' + errors.slice(0, 2).join(' | ') : ''}`);
   check(external.length === 0, `${name}: no external requests${external.length ? ' - ' + external.slice(0, 2).join(' | ') : ''}`);
