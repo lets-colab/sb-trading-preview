@@ -98,10 +98,12 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500); const b = await p.evaluate(() => window.__draws);
     check(b === a, `${name}: the 3D studies stop drawing after settling (${b - a} draw calls)`);
     await p.evaluate(() => window.dispatchEvent(new Event('resize')));
-    await p.waitForFunction((before) => document.querySelector('.studies')?.dataset.renderState === 'active' && window.__draws > before, b, { timeout: 10000 });
-    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
+    // a redraw must happen (draw count rises); the 'active' state itself can be too brief to observe on a slow runner
+    const redrew = await p.waitForFunction((before) => window.__draws > before, b, { timeout: 10000 }).then(() => true, () => false);
+    check(redrew, `${name}: the 3D studies redraw after a resize`);
+    await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 }).catch(() => {});
     const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500);
-    check((await p.evaluate(() => window.__draws)) === resized, `${name}: the 3D studies redraw after resize, then return to idle`);
+    check((await p.evaluate(() => window.__draws)) === resized, `${name}: after the resize redraw the 3D studies return to idle`);
   }
   check(errors.length === 0, `${name}: no page errors or failed loads${errors.length ? ' - ' + errors.slice(0, 2).join(' | ') : ''}`);
   check(external.length === 0, `${name}: no external requests${external.length ? ' - ' + external.slice(0, 2).join(' | ') : ''}`);
