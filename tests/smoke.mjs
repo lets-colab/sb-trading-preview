@@ -101,7 +101,14 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     check(afterShift === 'Woven mats', `${name}: Shift+Tab returns to the bamboo products (focus: ${afterShift})`);
     await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
+    const playing = await p.waitForFunction(() => document.documentElement.dataset.score === 'playing', null, { timeout: 6000 }).then(() => true, () => false);
+    check(playing, `${name}: pressing Sound starts the generated score`);
+    const lit = await p.waitForFunction(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--audio')) > 0.05, null, { timeout: 8000 }).then(() => true, () => false);
+    check(lit, `${name}: the score's level reaches the page's light (--audio rises)`);
+    const rippled = await p.waitForFunction(() => document.querySelectorAll('.score-fx i').length > 0, null, { timeout: 12000 }).then(() => true, () => false);
+    check(rippled, `${name}: each note shows as light where it sounds`);
     await toExplore(0.5); await p.waitForTimeout(4000);
+    check(/^e\d$/.test(await p.evaluate(() => document.documentElement.dataset.scoreScene)), `${name}: the score follows the chapter (Explore harmony)`);
     await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 });
     const a = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500); const b = await p.evaluate(() => window.__draws);
     check(b === a, `${name}: the 3D studies stop drawing after settling (${b - a} draw calls)`);
@@ -114,6 +121,9 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 }).catch(() => {});
     const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500);
     check((await p.evaluate(() => window.__draws)) === resized, `${name}: after the resize redraw the 3D studies return to idle`);
+    await p.click('#soundToggle'); await p.waitForTimeout(600);
+    check(await p.evaluate(() => document.documentElement.dataset.score === 'off' && parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--audio') || '0') === 0),
+      `${name}: pressing Sound again stops the score and its light`);
   }
   check(errors.length === 0, `${name}: no page errors or failed loads${errors.length ? ' - ' + errors.slice(0, 2).join(' | ') : ''}`);
   check(external.length === 0, `${name}: no external requests${external.length ? ' - ' + external.slice(0, 2).join(' | ') : ''}`);

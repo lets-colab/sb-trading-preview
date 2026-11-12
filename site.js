@@ -19,10 +19,36 @@ let lastInput = 0; // the 3D studies draw only while the visitor scrolls or move
 
 // ------------------------------------------------------------------ sound (opt-in, generated in the browser)
 // Off until the visitor asks: the click creates the audio context (browsers require a gesture); sound.js loads then.
+// With sound on, a generated score plays under the cues. Its chord follows the chapter, its air follows scroll speed,
+// and two visuals answer it: --audio (its live level) brightens the light, and each mallet note leaves a ripple of
+// light where it sounds. Reduced motion keeps the music but drops both visuals.
 const sound = (() => {
-  const btn = $('#soundToggle'), hint = $('#soundHint');
-  let actx = null, engine = null, on = false, hinted = false;
+  const btn = $('#soundToggle'), hint = $('#soundHint'), fx = $('.score-fx');
+  let actx = null, engine = null, on = false, hinted = false, scene = { chapter: 0, family: 0 }, raf = 0;
   const guard = (fn) => { try { fn(); } catch (e) { console.error('sound stopped:', e); engine = null; actx?.suspend().catch(() => {}); } };
+  root.dataset.score = 'off';
+  function light() { // runs only while the score plays and the tab is visible
+    raf = 0;
+    if (!on || !engine || document.hidden || reduced) return;
+    root.style.setProperty('--audio', engine.level().toFixed(3));
+    raf = requestAnimationFrame(light);
+  }
+  function ripple(n) {
+    if (reduced || !fx) return;
+    setTimeout(() => {
+      if (!on || document.hidden || fx.childElementCount > 7) return;
+      const i = document.createElement('i');
+      i.style.left = `${(n.x * 100).toFixed(1)}%`; i.style.top = `${(n.y * 100).toFixed(1)}%`;
+      i.style.setProperty('--v', n.v.toFixed(2));
+      i.addEventListener('animationend', () => i.remove(), { once: true });
+      fx.appendChild(i);
+    }, Math.max(0, (n.at - actx.currentTime) * 1000));
+  }
+  function start() {
+    guard(() => { engine.scene(scene); engine.music(true); });
+    root.dataset.score = 'playing';
+    if (!raf) raf = requestAnimationFrame(light);
+  }
   function set(v) {
     on = v;
     btn.setAttribute('aria-pressed', String(v));
@@ -30,21 +56,42 @@ const sound = (() => {
       const C = window.AudioContext || window.webkitAudioContext;
       if (!C) return;
       actx = new C({ latencyHint: 'interactive' });
-      import('./assets/sound.js').then((m) => { engine = m.createSoundEngine(actx); guard(() => engine.cue('toggle', 0.5)); }).catch(() => { /* the page stays silent */ });
+      import('./assets/sound.js').then((m) => {
+        engine = m.createSoundEngine(actx);
+        engine.onNote(ripple);
+        guard(() => engine.cue('toggle', 0.5));
+        if (on) start();
+      }).catch(() => { /* the page stays silent */ });
     }
     if (!actx) return;
-    if (v) { actx.resume().catch(() => {}); if (engine) guard(() => engine.cue('toggle', 0.5)); }
-    if (v && !hinted) { hinted = true; hint.textContent = 'Sound on: small cues as you move through the page'; setTimeout(() => { hint.textContent = ''; }, 3600); }
-    if (!v) setTimeout(() => { if (!on && actx.state === 'running') actx.suspend().catch(() => {}); }, 400);
+    if (v) { actx.resume().catch(() => {}); if (engine) { guard(() => engine.cue('toggle', 0.5)); start(); } }
+    if (v && !hinted) { hinted = true; hint.textContent = 'Sound on: a generated score and cues, best on headphones'; setTimeout(() => { hint.textContent = ''; }, 3600); }
+    if (!v) {
+      if (engine) guard(() => engine.music(false));
+      root.dataset.score = 'off'; root.style.setProperty('--audio', '0');
+      fx?.replaceChildren();
+      setTimeout(() => { if (!on && actx.state === 'running') actx.suspend().catch(() => {}); }, 1700); // after the fade
+    }
   }
   btn.addEventListener('click', () => set(!on));
-  document.addEventListener('visibilitychange', () => { if (actx && on) (document.hidden ? actx.suspend() : actx.resume()).catch(() => {}); });
+  document.addEventListener('visibilitychange', () => {
+    if (!actx || !on) return;
+    (document.hidden ? actx.suspend() : actx.resume()).catch(() => {});
+    if (!document.hidden && !raf) raf = requestAnimationFrame(light);
+  });
   return {
     cue(name, el) {
       if (!on || !engine) return;
       const r = el?.getBoundingClientRect?.();
       guard(() => engine.cue(name, r ? (r.left + r.width / 2) / innerWidth : 0.5));
     },
+    scene(chapter, family) {
+      if (chapter === scene.chapter && family === scene.family) return;
+      scene = { chapter, family };
+      root.dataset.scoreScene = chapter === 3 ? `e${family}` : String(chapter);
+      if (on && engine) guard(() => engine.scene(scene));
+    },
+    motion(speed) { if (on && engine) guard(() => engine.motion(speed)); },
   };
 })();
 
@@ -165,7 +212,7 @@ async function loadStudies() {
 const ordering = $('#ordering'), steps = $$('.steps li', ordering), line = $('.fibre-line', ordering);
 const chapterLinks = $$('.chapters a');
 const enquireEl = $('#enquire');
-let chapter = -1;
+let chapter = -1, lastY = scrollY;
 function setChapter(c) {
   if (c === chapter) return;
   chapter = c;
@@ -214,6 +261,9 @@ function tick(now = performance.now()) {
   if (fr.bottom > mid) c = p < 0.115 ? 0 : p < 0.4 ? 1 : 2;
   else if (er.bottom > mid) c = 3;
   setChapter(c);
+  sound.scene(c, Math.max(0, famActive));
+  sound.motion(Math.abs(scrollY - lastY) / innerHeight * 12);
+  lastY = scrollY;
   const max = Math.max(1, root.scrollHeight - innerHeight);
   root.style.setProperty('--page', (scrollY / max).toFixed(4));
   // the chapter bar steps aside once Rifat's section is on screen, so it never covers the chat or its buttons
