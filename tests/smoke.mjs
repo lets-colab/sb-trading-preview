@@ -100,7 +100,9 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.evaluate(() => window.dispatchEvent(new Event('resize')));
     // a redraw must happen (draw count rises); the 'active' state itself can be too brief to observe on a slow runner
     const redrew = await p.waitForFunction((before) => window.__draws > before, b, { timeout: 10000 }).then(() => true, () => false);
-    check(redrew, `${name}: the 3D studies redraw after a resize`);
+    const diag = redrew ? '' : await p.evaluate((before) => { const r = document.getElementById('explore').getBoundingClientRect();
+      return ` [draws ${before}->${window.__draws}, class "${document.documentElement.className}", state ${document.querySelector('.studies')?.dataset.renderState}, explore top ${Math.round(r.top)} bottom ${Math.round(r.bottom)}, viewport ${innerWidth}x${innerHeight}]`; }, b);
+    check(redrew, `${name}: the 3D studies redraw after a resize${diag}`);
     await p.waitForFunction(() => document.querySelector('.studies')?.dataset.renderState === 'idle', null, { timeout: 15000 }).catch(() => {});
     const resized = await p.evaluate(() => window.__draws); await p.waitForTimeout(1500);
     check((await p.evaluate(() => window.__draws)) === resized, `${name}: after the resize redraw the 3D studies return to idle`);
