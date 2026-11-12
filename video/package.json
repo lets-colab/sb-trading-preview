@@ -2,7 +2,8 @@
   "name": "sb-trading-brand-film",
   "private": true,
   "scripts": {
-    "studio": "remotion studio",
+    "studio": "node sync-design.mjs && node render-score.mjs && remotion studio",
+    "sync": "node sync-design.mjs",
     "render": "node render.mjs"
   },
   "dependencies": {

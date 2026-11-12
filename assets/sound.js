@@ -232,7 +232,7 @@ export function createSoundEngine(ctx, { seed } = {}) {
     }
   }
 
-  function music(on, at) {
+  function music(on, at, fade = on ? 4 : 1.5) {               // fade: seconds to full level, or to silence
     const t = at ?? ctx.currentTime;
     if (on && !started) {
       started = true;
@@ -244,7 +244,7 @@ export function createSoundEngine(ctx, { seed } = {}) {
     musicOn = on;
     musicBus.gain.cancelScheduledValues(t);
     musicBus.gain.setValueAtTime(realtime ? musicBus.gain.value : on ? 0 : 1, t);
-    musicBus.gain.linearRampToValueAtTime(on ? 1 : 0, t + (on ? 4 : 1.5));
+    musicBus.gain.linearRampToValueAtTime(on ? 1 : 0, t + fade);
   }
 
   if (realtime) setInterval(() => { if (musicOn && ctx.state === 'running') schedule(ctx.currentTime + 1.5); }, 400);

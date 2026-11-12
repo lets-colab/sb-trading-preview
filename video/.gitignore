@@ -1,2 +1,6 @@
 node_modules/
 out/
+# generated from the site by sync-design.mjs and render-score.mjs
+public/fonts/
+public/img/
+public/score.wav

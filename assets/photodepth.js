@@ -4,8 +4,12 @@
 // parallax, a scroll-driven dolly, depth of field, distance haze and a light sweep. Every pixel comes from SB Trading's
 // photograph; nothing is modelled or invented.
 //
-// API (site.js): createPhotoDepth(canvas, { low }) -> { mount(el), setSize(w, h), render(state) -> settling }
+// API (site.js, and the Remotion film in video/): createPhotoDepth(canvas, { low, base, preserve })
+//   -> { mount(el), setSize(w, h), render(state) -> settling, whenReady(fam) -> Promise<boolean> }
 //   render({ fam, t, pointer, settle }) draws one frame and returns true while it is still easing; settle snaps.
+//   base: where the photographs live (default 'assets/img/'; depth maps in base + 'depth/').
+//   preserve: keep the drawing buffer after compositing, so a frame can be captured (the film renderer needs it).
+//   whenReady(fam) resolves once that family's photographs and depth maps have loaded (false if any failed).
 const FAMILIES = [
   ['bamboo-sections', 'bamboo-poles'],
   ['banana-fibre', 'banana-fibre-loose'],
@@ -71,8 +75,8 @@ function loadImage(src) {
   return new Promise((ok, fail) => { const i = new Image(); i.onload = () => ok(i); i.onerror = fail; i.src = src; });
 }
 
-export function createPhotoDepth(canvas, { low = false } = {}) {
-  const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, powerPreference: low ? 'low-power' : 'default' });
+export function createPhotoDepth(canvas, { low = false, base = 'assets/img/', preserve = false } = {}) {
+  const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, preserveDrawingBuffer: preserve, powerPreference: low ? 'low-power' : 'default' });
   if (!gl) throw new Error('no WebGL2');
   const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
     if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
@@ -102,7 +106,7 @@ export function createPhotoDepth(canvas, { low = false } = {}) {
     if (tex.has(name)) return tex.get(name);
     const entry = { ready: false, failed: false, aspect: 1 };
     tex.set(name, entry);
-    Promise.all([loadImage(`assets/img/${name}.webp`), loadImage(`assets/img/depth/${name}-depth.webp`)]).then(([im, dm]) => {
+    entry.loaded = Promise.all([loadImage(`${base}${name}.webp`), loadImage(`${base}depth/${name}-depth.webp`)]).then(([im, dm]) => {
       if (gl.isContextLost()) return;
       entry.img = texture(im); entry.depth = texture(dm); entry.aspect = im.width / im.height; entry.ready = true; if (showing.includes(name)) dirty = true; // a prefetch for the next family does not redraw
     }).catch(() => { entry.failed = true; if (showing.includes(name)) dirty = true; }); // the canvas hides for that family and its <img> shows
@@ -155,5 +159,9 @@ export function createPhotoDepth(canvas, { low = false } = {}) {
       return settling;
     },
     get dirty() { return dirty; },
+    whenReady(fam) {
+      const names = FAMILIES[fam] || FAMILIES[0];
+      return Promise.all(names.map((n) => want(n).loaded)).then(() => names.every((n) => tex.get(n).ready));
+    },
   };
 }
