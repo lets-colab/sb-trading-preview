@@ -300,7 +300,7 @@ Three silhouettes do all the work. Controls are full pills (r-pill) or circles (
 ### Header
 Fixed, transparent-to-ink gradient (`#051222d9` to transparent), padding 14px gutter.
 - **Brand mark:** the derived light mark at 38px height with a soft drop shadow, plus "SB Trading" in grotesk 600 16px; the name hides at 900px and below. The light mark is pending owner approval.
-- **Nav:** pill links, min-height 44px, 500 15px, dim; hover cloud on `#dbeaf614`.
+- **Nav:** the client brief's three links, About Us, Products, Contact Us (`tests/copy.mjs` holds them); pill links, min-height 44px, 500 15px, dim; hover cloud on `#dbeaf614`.
 - **Menu toggle (900px and below):** bordered pill (line hairline, `#05122299`), toggles `aria-expanded`. The nav becomes an ink-2 dropdown panel (r-md, line border, dropdown shadow) with 48px cloud links; hidden only when JS is on and it is not `open`. Escape closes and returns focus.
 - **Sound toggle:** bordered pill with four 2px bars. `aria-pressed="true"` turns the border fibre and animates the bars in fibre (1.1s ease-in-out, staggered 0.18s). Label hides at 520px and below. Sound is off until pressed; the status hint below it is an ink-2 pill that hides when empty.
 - **Ask Rifat:** small primary button with the extra-small orb.

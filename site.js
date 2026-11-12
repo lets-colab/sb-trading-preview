@@ -112,26 +112,48 @@ function nearest(i) {
   for (let d = 0; d < FRAMES; d++) { if (frames[i - d]) return frames[i - d]; if (frames[i + d]) return frames[i + d]; }
   return null;
 }
+let wanted = 0, drawnFrom = -1; // the frame the scroll asks for, and the loaded frame actually on the canvas
 function draw(i) {
+  wanted = i;
   const img = nearest(i);
   if (!img) return;
   const cw = canvas.width, ch = canvas.height, s = Math.max(cw / img.width, ch / img.height);
   ctx.drawImage(img, (cw - img.width * s) / 2, (ch - img.height * s) / 2, img.width * s, img.height * s);
-  shown = i;
+  shown = i; drawnFrom = frames.indexOf(img);
 }
-// Coarse to fine: every 8th frame first, so the whole film scrubs early.
+// Coarse to fine: every 8th frame first, so the whole film scrubs early; the finer passes wait for an idle moment, so
+// 255 downloads and decodes do not compete with the first paint on a phone. A newly decoded frame triggers a redraw
+// only when it is closer to the frame the scroll asks for than the one on the canvas.
+const idle = () => new Promise((r) => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 1500 }) : setTimeout(r, 200)));
 async function loadFrames() {
-  const order = [], seen = new Set();
-  for (const step of [8, 4, 2, 1]) for (let i = 0; i < FRAMES; i += step) if (!seen.has(i)) { seen.add(i); order.push(i); }
-  let next = 0;
-  const worker = async () => {
-    while (next < order.length) {
-      const i = order[next++], img = new Image();
-      img.src = `assets/film/${SET}/${String(i + 1).padStart(3, '0')}.webp`;
-      try { await img.decode(); frames[i] = img; shown = -1; } catch (e) { /* a missing frame is covered by its neighbours */ }
-    }
-  };
-  await Promise.all(Array.from({ length: 6 }, worker));
+  const seen = new Set();
+  for (const step of [8, 4, 2, 1]) {
+    const order = [];
+    for (let i = 0; i < FRAMES; i += step) if (!seen.has(i)) { seen.add(i); order.push(i); }
+    let next = 0;
+    const worker = async () => {
+      while (next < order.length) {
+        const i = order[next++], img = new Image();
+        img.src = `assets/film/${SET}/${String(i + 1).padStart(3, '0')}.webp`;
+        try { await img.decode(); frames[i] = img; if (drawnFrom < 0 || Math.abs(i - wanted) < Math.abs(drawnFrom - wanted)) shown = -1; }
+        catch (e) { /* a missing frame is covered by its neighbours */ }
+      }
+    };
+    await Promise.all(Array.from({ length: step === 8 ? 6 : 3 }, worker));
+    await idle();
+  }
+}
+// The label names the source of the shot on screen (frame ranges in data-shots), so stock and generated footage are
+// never blurred together and nothing reads as SB Trading's own. Without motion the HTML's whole-film sentence stays.
+const filmLabel = $('.film-label', film);
+const filmShots = (filmLabel?.dataset.shots || '').split('|').filter(Boolean).map((s) => { const [r, src] = s.split(':'), [a, b] = r.split('-').map(Number); return { a, b, src }; });
+let filmShot = null;
+function labelShot(i) {
+  if (!filmLabel) return;
+  const shot = filmShots.find((s) => i + 1 >= s.a && i + 1 <= s.b);
+  if (!shot || shot === filmShot) return;
+  filmShot = shot;
+  filmLabel.textContent = `This shot: ${shot.src}, not SB Trading's own.`;
 }
 const spotlight = $('.spotlight', film);
 function beats(p) {
@@ -226,7 +248,7 @@ function tick(now = performance.now()) {
   if (Math.abs(p - filmP) < 1e-4) filmP = p;
   const i = Math.round(filmP * (FRAMES - 1));
   if (i !== shown) draw(i);
-  if (!reduced) beats(filmP);
+  if (!reduced) { beats(filmP); labelShot(i); }
 
   if (!reduced) {
     const e = progressOf(explore), n = fams.length;
@@ -277,8 +299,12 @@ size();
 addEventListener('resize', () => { size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
 addEventListener('scroll', () => { lastInput = performance.now(); }, { passive: true });
 if (fine && !reduced) addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; lastInput = performance.now(); }, { passive: true });
-(window.requestIdleCallback || setTimeout)(() => loadStudies());
-loadFrames().then(() => { if (reduced) tick(); });
+// The 3D studies (shader compile, photographs, depth maps) load when Explore is within two screens, not at page load.
+if ('IntersectionObserver' in window) {
+  const near = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { near.disconnect(); loadStudies(); } }, { rootMargin: '200% 0px' });
+  near.observe(explore);
+} else loadStudies();
+if (reduced) tick(); else loadFrames(); // with reduced motion the film is a poster: no frames are fetched
 if (reduced) addEventListener('scroll', () => requestAnimationFrame(tick), { passive: true });
 requestAnimationFrame(tick);
 let lenis = null;
@@ -351,6 +377,8 @@ let sheetProduct = '';
 const sheetOff = () => (matchMedia('(max-width: 700px)').matches ? { x: 0, y: '100%' } : { x: '100%', y: 0 });
 let sheetLeaving = null;
 function openSheet() {
+  if (sheetLeaving) { sheetLeaving.then(openSheet); return; } // asked to open while the exit is still playing
+  if (sheet.open) return;                                     // already open: the caller has updated its content
   delete sheet.dataset.closing;
   sheet.showModal();
   if (reduced || !M) return;
@@ -370,21 +398,44 @@ function closeSheet() {
 }
 sheet.addEventListener('cancel', (e) => { e.preventDefault(); closeSheet(); }); // Escape
 $('.sheet-close', sheet).addEventListener('submit', (e) => { e.preventDefault(); closeSheet(); });
-for (const btn of $$('.product')) {
-  btn.addEventListener('click', () => {
-    sheetProduct = btn.textContent.trim();
-    $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
-    $('#sheetImg').alt = `${btn.dataset.family} photograph`;
-    $('#sheetFamily').textContent = btn.dataset.family;
-    $('#sheetTitle').textContent = sheetProduct;
-    $('#sheetNote').textContent = btn.dataset.note;
-    $('#sheetStatus').textContent = '';
-    $('#sheetAdd').textContent = 'Add to enquiry';
-    openSheet();
-    sound.cue('open', btn);
-  });
+// Each product has its own address (#p-<slug>, the button's id): opening one pushes that address and sets the page
+// title, so it can be shared; Back closes it, Forward reopens it, and loading the address opens it directly.
+const pageTitle = document.title;
+const productAt = () => (/^#p-[a-z0-9-]+$/.test(location.hash) ? document.getElementById(location.hash.slice(1)) : null);
+function showProduct(btn, { push = true } = {}) {
+  sheetProduct = btn.textContent.trim();
+  $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
+  $('#sheetImg').alt = `${btn.dataset.family} photograph`;
+  $('#sheetFamily').textContent = btn.dataset.family;
+  $('#sheetTitle').textContent = sheetProduct;
+  $('#sheetNote').textContent = btn.dataset.note;
+  $('#sheetStatus').textContent = '';
+  $('#sheetAdd').textContent = 'Add to enquiry';
+  if (push && location.hash !== `#${btn.id}`) history.pushState({ product: btn.id }, '', `#${btn.id}`);
+  document.title = `${sheetProduct} · SB Trading`;
+  openSheet();
+}
+for (const btn of $$('.product')) btn.addEventListener('click', () => { showProduct(btn); sound.cue('open', btn); });
+// Closed from the page: the product leaves the address. If this visit pushed the entry, step back over it so browsing
+// several products does not fill the Back history; "Ask Rifat" has started scrolling to Enquire, and a shared link has
+// no entry of its own, so those rewrite the address in place instead (stepping back would restore the old scroll).
+let sheetKeepsScroll = false;
+sheet.addEventListener('close', () => {
+  document.title = pageTitle;
+  if (productAt()) { if (history.state?.product && !sheetKeepsScroll) history.back(); else history.replaceState(null, '', location.pathname + location.search); }
+  sheetKeepsScroll = false;
+});
+addEventListener('popstate', () => { const btn = productAt(); if (btn?.classList.contains('product')) showProduct(btn, { push: false }); else closeSheet(); });
+{ // a shared product link: bring its family on stage, then open it
+  const btn = productAt();
+  if (btn?.classList.contains('product')) {
+    const fam = btn.closest('.fam'), n = fams.length, k = fams.indexOf(fam);
+    if (!reduced && k >= 0) scrollTo(0, explore.offsetTop + (explore.offsetHeight - innerHeight) * ((k + 0.35) / n)); else btn.scrollIntoView({ block: 'center' });
+    setTimeout(() => showProduct(btn, { push: false }), 60);
+  }
 }
 $('#sheetAsk').addEventListener('click', () => {
+  sheetKeepsScroll = true;
   const target = $('#enquire');
   if (lenis) lenis.scrollTo(target, { offset: -40 }); else target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
   rifat.askAbout(sheetProduct);

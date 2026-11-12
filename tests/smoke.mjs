@@ -42,10 +42,50 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   p.on('request', (r) => { const u = r.url(); if (!u.startsWith(ORIGIN) && !u.startsWith('data:') && !u.startsWith('blob:')) external.push(u); });
   await p.goto(ORIGIN + '/'); await p.waitForTimeout(3000);
   check((await p.evaluate(() => window.__ac)) === 0, `${name}: no AudioContext before the Sound press`);
+  // the film names the source of the shot on screen (stock or generated), and never claims it as SB Trading's own
+  const labelAt = async (x, want) => {
+    await p.evaluate((q) => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * q); }, x);
+    await p.waitForFunction((src) => new RegExp(src, 'i').test(document.querySelector('.film-label').textContent), want.source, { timeout: 15000 }).catch(() => {}); // the film eases to the scroll position
+    return p.evaluate(() => document.querySelector('.film-label').textContent.trim());
+  };
+  const shots = [[0.03, /stock footage \(Pexels\)/i], [0.5, /generated footage/i], [0.8, /stock footage \(Pexels\)/i], [0.95, /generated footage/i]];
+  const seen = [];
+  for (const [x, want] of shots) { const t = await labelAt(x, want); seen.push(`${x}: ${t}`); if (!want.test(t) || !/not SB Trading's own/.test(t) || (/generated/i.test(t) && /Pexels/.test(t))) seen.push('MISMATCH'); }
+  check(!seen.includes('MISMATCH'), `${name}: the film label names each shot's own source (${seen.filter((s) => s !== 'MISMATCH').join(' | ')})`);
+  await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
 
   // product sheet -> Rifat
   await toExplore(0.1);
+  // every product has its own link: opening one sets the address and the page title; Back closes it, Forward reopens it
+  const title0 = await p.title();
+  await p.click('#bamboo.on .product >> nth=1'); await p.waitForTimeout(700);
+  check((await p.evaluate(() => location.hash)) === '#p-bamboo-splits' && /^Bamboo splits/.test(await p.title()), `${name}: opening a product gives it its own address and page title (${await p.evaluate(() => location.hash)}, "${await p.title()}")`);
+  await p.goBack(); // the dialog's close event (which restores the title) is delivered just after it closes
+  await p.waitForFunction((t) => !document.getElementById('productSheet').open && document.title === t, title0, { timeout: 5000 }).catch(() => {});
+  check(await p.evaluate(() => !document.getElementById('productSheet').open && location.hash === '') && (await p.title()) === title0, `${name}: Back closes the product and restores the address and title`);
+  await p.goForward(); await p.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+  check(await p.evaluate(() => document.getElementById('productSheet').open && document.getElementById('sheetTitle').textContent === 'Bamboo splits'), `${name}: Forward reopens the same product`);
+  await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.getElementById('productSheet').open && location.hash === '', null, { timeout: 5000 }).catch(() => {});
+  check((await p.evaluate(() => location.hash)) === '', `${name}: closing the product clears its address`);
+  { // browsing products must not pile up history: three opened and closed leave at most one extra entry
+    const before = await p.evaluate(() => history.length);
+    for (let k = 0; k < 3; k++) {
+      await p.click(`#bamboo.on .product >> nth=${k}`); await p.waitForFunction(() => document.getElementById('productSheet').open && /^#p-/.test(location.hash), null, { timeout: 5000 }).catch(() => {});
+      await p.waitForTimeout(700); await p.keyboard.press('Escape');
+      await p.waitForFunction(() => !document.getElementById('productSheet').open && location.hash === '', null, { timeout: 5000 }).catch(() => {});
+      await p.waitForTimeout(250);
+    }
+    const grew = (await p.evaluate(() => history.length)) - before;
+    check(grew <= 1, `${name}: opening and closing three products does not fill the Back history (${grew} extra entries)`);
+  }
+  { // a shared product link opens that product directly
+    const q = await ctx.newPage(); await q.goto(ORIGIN + '/#p-grade-a-banana-silk');
+    const direct = await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 12000 }).then(() => true, () => false);
+    const got = await q.evaluate(() => `${document.getElementById('sheetTitle').textContent} / ${document.getElementById('sheetFamily').textContent}`);
+    check(direct && got === 'Grade A: banana silk / Banana fibre yarn', `${name}: a shared product link opens that product directly (${got})`);
+    await q.close();
+  }
   // the drawer leaves with an exit animation, then the dialog closes (Escape and the close button alike)
   for (const how of ['Escape', 'the close button']) {
     await p.click('#bamboo.on .product >> nth=0'); await p.waitForTimeout(800);
