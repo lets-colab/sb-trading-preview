@@ -78,10 +78,19 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   if (!touch) {
     check(await p.evaluate(() => document.documentElement.classList.contains('has-3d')), `${name}: the 3D studies load`);
     // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
-    await toExplore(0.1); await p.focus('#bamboo .product >> nth=3'); await p.keyboard.press('Tab'); await p.waitForTimeout(300);
-    check((await p.evaluate(() => document.activeElement.textContent.trim())) === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products into the fibre products`);
-    await p.keyboard.press('Shift+Tab'); await p.waitForTimeout(300);
-    check((await p.evaluate(() => document.activeElement.textContent.trim())) === 'Woven mats', `${name}: Shift+Tab returns to the bamboo products`);
+    // wait until the Bamboo family is the live one (an inert family cannot take focus), then focus its last product
+    await toExplore(0.1); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
+    await p.focus('#bamboo .product >> nth=3');
+    await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
+    const focused = () => p.evaluate(() => document.activeElement?.textContent.trim() || document.activeElement?.tagName);
+    await p.keyboard.press('Tab');
+    await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Grade A: banana silk', null, { timeout: 5000 }).catch(() => {});
+    const afterTab = await focused();
+    check(afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products into the fibre products (focus: ${afterTab})`);
+    await p.keyboard.press('Shift+Tab');
+    await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
+    const afterShift = await focused();
+    check(afterShift === 'Woven mats', `${name}: Shift+Tab returns to the bamboo products (focus: ${afterShift})`);
     await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
     await toExplore(0.5); await p.waitForTimeout(4000);
