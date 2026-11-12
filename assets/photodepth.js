@@ -100,12 +100,12 @@ export function createPhotoDepth(canvas, { low = false } = {}) {
   let dirty = true;
   function want(name) {
     if (tex.has(name)) return tex.get(name);
-    const entry = { ready: false, aspect: 1 };
+    const entry = { ready: false, failed: false, aspect: 1 };
     tex.set(name, entry);
     Promise.all([loadImage(`assets/img/${name}.webp`), loadImage(`assets/img/depth/${name}-depth.webp`)]).then(([im, dm]) => {
       if (gl.isContextLost()) return;
       entry.img = texture(im); entry.depth = texture(dm); entry.aspect = im.width / im.height; entry.ready = true; dirty = true;
-    }).catch(() => { /* a missing photo leaves that family to its <img> */ });
+    }).catch(() => { entry.failed = true; dirty = true; }); // the canvas hides for that family and its <img> shows
     return entry;
   }
   FAMILIES[0].forEach(want);
@@ -131,7 +131,10 @@ export function createPhotoDepth(canvas, { low = false } = {}) {
       names.forEach(want);
       FAMILIES[(fam + 1) % FAMILIES.length].forEach(want); // prefetch the next family
       const A = tex.get(names[0]), B = tex.get(names[1] || names[0]);
-      if (!A.ready) return true;
+      // Until this family's photo and depth map are ready (or if they failed), the canvas steps aside so the plain
+      // <img> in the arch shows instead of a blank frame. Loading keeps the loop alive; a failure lets it stop.
+      canvas.style.visibility = A.ready ? 'visible' : 'hidden';
+      if (!A.ready) { dirty = false; return !A.failed; }
       const targetMix = names[1] && B.ready ? Math.min(1, Math.max(0, (t - 0.45) * 6)) : 0;
       const k = settle ? 1 : 0.12;
       const lx = ease(look[0], pointer[0], k), ly = ease(look[1], pointer[1], k), m = ease(mix, targetMix, settle ? 1 : 0.2);

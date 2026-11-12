@@ -187,7 +187,7 @@ function tick(now = performance.now()) {
     else { pointer[0] = target[0]; pointer[1] = target[1]; }
     const er = explore.getBoundingClientRect();
     const inView = er.top < innerHeight && er.bottom > 0;
-    if (studies && inView && (active || settling || !restDrawn)) {
+    if (studies && inView && (active || settling || !restDrawn || studies.dirty)) { // dirty: a texture arrived or the canvas moved/resized
       if (idx !== mountedFam) { mountedFam = idx; studies.mount(fams[idx].querySelector('.arch')); sizeStudies(); }
       settling = studies.render({ fam: idx, t, pointer, now, settle: !active });
       restDrawn = !active && !settling;
