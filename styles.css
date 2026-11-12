@@ -340,32 +340,6 @@ html.at-end .chapters{opacity:0;pointer-events:none}
   .beat{bottom:clamp(92px,14vh,140px)}
 }
 
-/* Mobile film controls: keep the typography cinematic without hijacking a
-   long-press/scroll gesture, and preserve a readable, truthful source label. */
-.film .beat h1,.film .beat h2{-webkit-user-select:none;user-select:none}
-@media (max-width:520px){
-  .top{padding:12px var(--gutter)}
-  .top .brand-mark{height:34px}
-  .top .menu-toggle{min-height:40px;padding:0 11px;font-size:14px}
-  .top .sound-toggle{min-height:40px;padding:0 10px}
-  .top>.btn-small{min-height:40px;padding:0 10px 0 7px;gap:6px;font-size:13px}
-  .top>.btn-small .orb-xs{--s:24px}
-  .beat-hero h1{font-size:clamp(48px,13vw,58px);line-height:.96}
-  .beat-hero .lede{font-size:16px;line-height:1.5;max-width:38ch}
-  .film-label{max-width:calc(100% - 2 * var(--gutter));line-height:1.4;color:var(--cloud);background:#051222e6}
-}
-@media (max-width:360px){
-  .top>.btn-small .ai-tag{display:none}
-}
-@media (max-width:360px) and (max-height:650px){
-  .beat-hero{bottom:122px}
-  .beat-hero .hero-logo{width:68px;margin-bottom:10px}
-  .beat-hero .eyebrow{font-size:10px;letter-spacing:.08em;margin-bottom:8px}
-  .beat-hero h1{font-size:46px}
-  .beat-hero .lede{font-size:14px;line-height:1.45;margin-top:9px}
-  .beat-hero .hero-actions{margin-top:12px}
-}
-
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   .orb i,.scroll-cue span,.sound-toggle[aria-pressed="true"] .bars i,.msg.typing i{animation:none}
