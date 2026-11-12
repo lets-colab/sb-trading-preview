@@ -29,7 +29,9 @@ const ORIGIN = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 let failures = 0;
 const check = (ok, msg) => { console.log(ok ? 'ok  ' : 'FAIL', msg); if (!ok) failures++; };
-const open = async (opts) => { const ctx = await browser.newContext(opts); const p = await ctx.newPage(); await p.goto(ORIGIN + '/'); await p.waitForTimeout(2500); return [ctx, p]; };
+const open = async (opts) => { const ctx = await browser.newContext(opts); const p = await ctx.newPage(); p.__film = 0;
+  p.on('request', (r) => { if (/\/assets\/film\/[dm]\/\d+\.webp/.test(r.url()) && !/\/060\.webp/.test(r.url())) p.__film++; });
+  await p.goto(ORIGIN + '/'); await p.waitForTimeout(2500); return [ctx, p]; };
 
 // ---------------------------------------------------------------- 1. reduced motion
 {
@@ -43,6 +45,7 @@ const open = async (opts) => { const ctx = await browser.newContext(opts); const
     explore: getComputedStyle(document.getElementById('explore')).position,
   }));
   check(!s.motion, 'reduced motion: the page does not turn its motion layer on');
+  check(p.__film === 0, `reduced motion: the film is a poster, so no film frames are downloaded (${p.__film} frame requests)`);
   check(s.poster && s.canvas === 'none' && s.beats, 'reduced motion: the film is a still poster with every caption visible');
   check(/^Film: generated footage and Pexels stock clips, not SB Trading's own/.test(s.label), `reduced motion: the film label keeps its whole-film sentence (${s.label})`);
   await p.evaluate(() => document.querySelector('#bamboo .product').scrollIntoView({ block: 'center' }));
@@ -62,11 +65,15 @@ const open = async (opts) => { const ctx = await browser.newContext(opts); const
 // ---------------------------------------------------------------- 2. keyboard
 {
   const [ctx, p] = await open({ viewport: { width: 1440, height: 900 } });
+  await p.waitForTimeout(4000); // long enough for an idle-time setup to have happened, if there were one
+  const early = await p.evaluate(() => document.documentElement.className);
+  check(!/has-3d|no-3d/.test(early), `load: the 3D studies are not set up until Explore is near (html class "${early}")`);
   await p.keyboard.press('Tab');
   const skip = await p.evaluate(() => { const a = document.activeElement, r = a.getBoundingClientRect(); return { cls: a.className, top: r.top, shown: r.top >= 0 && r.bottom <= innerHeight }; });
   check(skip.cls === 'skip' && skip.shown, `keyboard: the skip link is the first tab stop and comes into view (${skip.cls || 'other element'}, top ${Math.round(skip.top)})`);
   await p.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.1); });
   await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
+  check(await p.waitForFunction(() => /has-3d|no-3d/.test(document.documentElement.className), null, { timeout: 10000 }).then(() => true, () => false), 'load: the 3D studies are set up once Explore is reached');
   await p.focus('#bamboo .product >> nth=1'); await p.keyboard.press('Enter'); await p.waitForTimeout(900);
   const inside = await p.evaluate(() => { const d = document.getElementById('productSheet'); return d.open && d.contains(document.activeElement); });
   check(inside, 'keyboard: Enter on a product opens the drawer with focus inside it');

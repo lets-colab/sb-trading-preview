@@ -112,26 +112,36 @@ function nearest(i) {
   for (let d = 0; d < FRAMES; d++) { if (frames[i - d]) return frames[i - d]; if (frames[i + d]) return frames[i + d]; }
   return null;
 }
+let wanted = 0, drawnFrom = -1; // the frame the scroll asks for, and the loaded frame actually on the canvas
 function draw(i) {
+  wanted = i;
   const img = nearest(i);
   if (!img) return;
   const cw = canvas.width, ch = canvas.height, s = Math.max(cw / img.width, ch / img.height);
   ctx.drawImage(img, (cw - img.width * s) / 2, (ch - img.height * s) / 2, img.width * s, img.height * s);
-  shown = i;
+  shown = i; drawnFrom = frames.indexOf(img);
 }
-// Coarse to fine: every 8th frame first, so the whole film scrubs early.
+// Coarse to fine: every 8th frame first, so the whole film scrubs early; the finer passes wait for an idle moment, so
+// 255 downloads and decodes do not compete with the first paint on a phone. A newly decoded frame triggers a redraw
+// only when it is closer to the frame the scroll asks for than the one on the canvas.
+const idle = () => new Promise((r) => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 1500 }) : setTimeout(r, 200)));
 async function loadFrames() {
-  const order = [], seen = new Set();
-  for (const step of [8, 4, 2, 1]) for (let i = 0; i < FRAMES; i += step) if (!seen.has(i)) { seen.add(i); order.push(i); }
-  let next = 0;
-  const worker = async () => {
-    while (next < order.length) {
-      const i = order[next++], img = new Image();
-      img.src = `assets/film/${SET}/${String(i + 1).padStart(3, '0')}.webp`;
-      try { await img.decode(); frames[i] = img; shown = -1; } catch (e) { /* a missing frame is covered by its neighbours */ }
-    }
-  };
-  await Promise.all(Array.from({ length: 6 }, worker));
+  const seen = new Set();
+  for (const step of [8, 4, 2, 1]) {
+    const order = [];
+    for (let i = 0; i < FRAMES; i += step) if (!seen.has(i)) { seen.add(i); order.push(i); }
+    let next = 0;
+    const worker = async () => {
+      while (next < order.length) {
+        const i = order[next++], img = new Image();
+        img.src = `assets/film/${SET}/${String(i + 1).padStart(3, '0')}.webp`;
+        try { await img.decode(); frames[i] = img; if (drawnFrom < 0 || Math.abs(i - wanted) < Math.abs(drawnFrom - wanted)) shown = -1; }
+        catch (e) { /* a missing frame is covered by its neighbours */ }
+      }
+    };
+    await Promise.all(Array.from({ length: step === 8 ? 6 : 3 }, worker));
+    await idle();
+  }
 }
 // The label names the source of the shot on screen (frame ranges in data-shots), so stock and generated footage are
 // never blurred together and nothing reads as SB Trading's own. Without motion the HTML's whole-film sentence stays.
@@ -290,8 +300,12 @@ size();
 addEventListener('resize', () => { size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
 addEventListener('scroll', () => { lastInput = performance.now(); }, { passive: true });
 if (fine && !reduced) addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; lastInput = performance.now(); }, { passive: true });
-(window.requestIdleCallback || setTimeout)(() => loadStudies());
-loadFrames().then(() => { if (reduced) tick(); });
+// The 3D studies (shader compile, photographs, depth maps) load when Explore is within two screens, not at page load.
+if ('IntersectionObserver' in window) {
+  const near = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { near.disconnect(); loadStudies(); } }, { rootMargin: '200% 0px' });
+  near.observe(explore);
+} else loadStudies();
+if (reduced) tick(); else loadFrames(); // with reduced motion the film is a poster: no frames are fetched
 if (reduced) addEventListener('scroll', () => requestAnimationFrame(tick), { passive: true });
 requestAnimationFrame(tick);
 let lenis = null;
