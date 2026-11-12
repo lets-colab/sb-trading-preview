@@ -12,7 +12,7 @@ Read this file, then `PRODUCT.md` (brand and product brief) and `README.md` (fil
 - **To switch Rifat's AI on (owner action):** Cloudflare dashboard → Pages project `sb-trading` → Settings → Variables and secrets → add encrypted `ANTHROPIC_API_KEY` for Production → redeploy. Never set `ANTHROPIC_BASE_URL` there (test only). Then check a real conversation; that has not been proven yet.
 - **Next design work (from the Impeccable critique, 27/40):**
   1. Remove the ~14 uppercase kicker labels above headings and the white/gold two-tone on every heading (keep it for the hero).
-  2. 3D studies must never cover the real photographs or headings: move them into the text column or behind the arch; drop 3D below 820px.
+  2. Done: the procedural three.js studies are replaced by photographs in depth (`assets/photodepth.js`, depth maps in `assets/img/depth/`, regenerate with Depth Anything V2 Small if photos change). Real phone scans (Polycam/RealityScan → glTF) from SB Trading would be the next step up.
   3. Shorten the film (680vh → about 300vh) and put the three family cards plus "Ask Rifat" right after the hero; add a visible "See the materials" shortcut and one plain fact line (where SB Trading is, that it exports).
   4. Re-caption the film's fibre beats so they read as banana fibre, not bamboo; "From fibre to weave" implies woven cloth they do not sell.
   5. Phone: sticky collapsed "Your enquiry" summary above Rifat's input.

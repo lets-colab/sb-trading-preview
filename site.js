@@ -132,9 +132,11 @@ explore.addEventListener('keydown', (e) => {
   (e.shiftKey ? next.at(-1) : next[0]).focus({ preventScroll: true });
 });
 
-// 3D material studies (three.js), loaded after first paint. No WebGL, reduced motion or a lost context: the photos carry it.
+// Photographs in depth (raw WebGL2): each family's real photo drawn with its depth map, inside the active arch.
+// No WebGL2, reduced motion or a lost context: the plain <img> in the arch carries it.
 const studiesCanvas = $('.studies', explore), stage = $('.explore-stage', explore);
-let studies = null, settling = true, restDrawn = false;
+let studies = null, settling = true, restDrawn = false, mountedFam = -1;
+function sizeStudies() { const a = studiesCanvas.parentElement.getBoundingClientRect(); studies?.setSize(a.width, a.height); }
 async function loadStudies() {
   try {
     if (reduced) throw new Error('reduced motion: no 3D');
@@ -143,9 +145,9 @@ async function loadStudies() {
     const dbg = probe.getExtension('WEBGL_debug_renderer_info');
     const soft = /swiftshader|llvmpipe|software/i.test(dbg ? String(probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '');
     probe.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
-    const { createMaterials } = await import('./assets/materials3d.js');
-    studies = createMaterials(studiesCanvas, { low: soft || innerWidth < 820 });
-    studies.setSize(innerWidth, innerHeight);
+    const { createPhotoDepth } = await import('./assets/photodepth.js');
+    studies = createPhotoDepth(studiesCanvas, { low: soft || innerWidth < 820 });
+    sizeStudies();
     studiesCanvas.addEventListener('webglcontextlost', () => { studies = null; root.classList.add('no-3d'); });
     root.classList.add('has-3d');
     restDrawn = false;
@@ -186,11 +188,8 @@ function tick(now = performance.now()) {
     const er = explore.getBoundingClientRect();
     const inView = er.top < innerHeight && er.bottom > 0;
     if (studies && inView && (active || settling || !restDrawn)) {
-      const a = fams[idx].querySelector('.arch').getBoundingClientRect();
-      const phone = innerWidth < 820;
-      const at = phone ? [(a.right - a.width * 0.2) / innerWidth, (a.bottom - a.height * 0.16) / innerHeight]
-                       : [(a.left + a.width * 0.02) / innerWidth, (a.top + a.height * 0.74) / innerHeight];
-      settling = studies.render({ fam: idx, t, p: e, pointer, at, now, settle: !active });
+      if (idx !== mountedFam) { mountedFam = idx; studies.mount(fams[idx].querySelector('.arch')); sizeStudies(); }
+      settling = studies.render({ fam: idx, t, pointer, now, settle: !active });
       restDrawn = !active && !settling;
     }
     if (!inView) restDrawn = false;
@@ -220,7 +219,7 @@ function tick(now = performance.now()) {
 
 // ------------------------------------------------------------------ start
 size();
-addEventListener('resize', () => { size(); studies?.setSize(innerWidth, innerHeight); lastInput = performance.now(); if (reduced) tick(); });
+addEventListener('resize', () => { size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
 addEventListener('scroll', () => { lastInput = performance.now(); }, { passive: true });
 if (fine && !reduced) addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; lastInput = performance.now(); }, { passive: true });
 (window.requestIdleCallback || setTimeout)(() => loadStudies());
