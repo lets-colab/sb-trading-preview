@@ -57,6 +57,24 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
 
   // product sheet -> Rifat
   await toExplore(0.1);
+  // every product has its own link: opening one sets the address and the page title; Back closes it, Forward reopens it
+  const title0 = await p.title();
+  await p.click('#bamboo.on .product >> nth=1'); await p.waitForTimeout(700);
+  check((await p.evaluate(() => location.hash)) === '#p-bamboo-splits' && /^Bamboo splits/.test(await p.title()), `${name}: opening a product gives it its own address and page title (${await p.evaluate(() => location.hash)}, "${await p.title()}")`);
+  await p.goBack(); // the dialog's close event (which restores the title) is delivered just after it closes
+  await p.waitForFunction((t) => !document.getElementById('productSheet').open && document.title === t, title0, { timeout: 5000 }).catch(() => {});
+  check(await p.evaluate(() => !document.getElementById('productSheet').open && location.hash === '') && (await p.title()) === title0, `${name}: Back closes the product and restores the address and title`);
+  await p.goForward(); await p.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+  check(await p.evaluate(() => document.getElementById('productSheet').open && document.getElementById('sheetTitle').textContent === 'Bamboo splits'), `${name}: Forward reopens the same product`);
+  await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.getElementById('productSheet').open && location.hash === '', null, { timeout: 5000 }).catch(() => {});
+  check((await p.evaluate(() => location.hash)) === '', `${name}: closing the product clears its address`);
+  { // a shared product link opens that product directly
+    const q = await ctx.newPage(); await q.goto(ORIGIN + '/#p-grade-a-banana-silk');
+    const direct = await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 12000 }).then(() => true, () => false);
+    const got = await q.evaluate(() => `${document.getElementById('sheetTitle').textContent} / ${document.getElementById('sheetFamily').textContent}`);
+    check(direct && got === 'Grade A: banana silk / Banana fibre yarn', `${name}: a shared product link opens that product directly (${got})`);
+    await q.close();
+  }
   // the drawer leaves with an exit animation, then the dialog closes (Escape and the close button alike)
   for (const how of ['Escape', 'the close button']) {
     await p.click('#bamboo.on .product >> nth=0'); await p.waitForTimeout(800);

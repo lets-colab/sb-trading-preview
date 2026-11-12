@@ -397,19 +397,36 @@ function closeSheet() {
 }
 sheet.addEventListener('cancel', (e) => { e.preventDefault(); closeSheet(); }); // Escape
 $('.sheet-close', sheet).addEventListener('submit', (e) => { e.preventDefault(); closeSheet(); });
-for (const btn of $$('.product')) {
-  btn.addEventListener('click', () => {
-    sheetProduct = btn.textContent.trim();
-    $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
-    $('#sheetImg').alt = `${btn.dataset.family} photograph`;
-    $('#sheetFamily').textContent = btn.dataset.family;
-    $('#sheetTitle').textContent = sheetProduct;
-    $('#sheetNote').textContent = btn.dataset.note;
-    $('#sheetStatus').textContent = '';
-    $('#sheetAdd').textContent = 'Add to enquiry';
-    openSheet();
-    sound.cue('open', btn);
-  });
+// Each product has its own address (#p-<slug>, the button's id): opening one pushes that address and sets the page
+// title, so it can be shared; Back closes it, Forward reopens it, and loading the address opens it directly.
+const pageTitle = document.title;
+const productAt = () => (/^#p-[a-z0-9-]+$/.test(location.hash) ? document.getElementById(location.hash.slice(1)) : null);
+function showProduct(btn, { push = true } = {}) {
+  sheetProduct = btn.textContent.trim();
+  $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
+  $('#sheetImg').alt = `${btn.dataset.family} photograph`;
+  $('#sheetFamily').textContent = btn.dataset.family;
+  $('#sheetTitle').textContent = sheetProduct;
+  $('#sheetNote').textContent = btn.dataset.note;
+  $('#sheetStatus').textContent = '';
+  $('#sheetAdd').textContent = 'Add to enquiry';
+  if (push && location.hash !== `#${btn.id}`) history.pushState({ product: btn.id }, '', `#${btn.id}`);
+  document.title = `${sheetProduct} · SB Trading`;
+  openSheet();
+}
+for (const btn of $$('.product')) btn.addEventListener('click', () => { showProduct(btn); sound.cue('open', btn); });
+sheet.addEventListener('close', () => { // closed from the page: drop the product from the address without moving the scroll
+  document.title = pageTitle;
+  if (productAt()) history.replaceState(null, '', location.pathname + location.search);
+});
+addEventListener('popstate', () => { const btn = productAt(); if (btn?.classList.contains('product')) showProduct(btn, { push: false }); else closeSheet(); });
+{ // a shared product link: bring its family on stage, then open it
+  const btn = productAt();
+  if (btn?.classList.contains('product')) {
+    const fam = btn.closest('.fam'), n = fams.length, k = fams.indexOf(fam);
+    if (!reduced && k >= 0) scrollTo(0, explore.offsetTop + (explore.offsetHeight - innerHeight) * ((k + 0.35) / n)); else btn.scrollIntoView({ block: 'center' });
+    setTimeout(() => showProduct(btn, { push: false }), 60);
+  }
 }
 $('#sheetAsk').addEventListener('click', () => {
   const target = $('#enquire');
