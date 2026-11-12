@@ -87,7 +87,7 @@ export function withProducts(list = [], add = []) {
   return real.length ? real : out;
 }
 
-export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = false, endpoint = 'api/rifat' }) {
+export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = false, endpoint = 'api/rifat', onChange = () => {} }) {
   const $ = (s) => root.querySelector(s);
   const log = $('#rifatLog'), chips = $('#rifatChips'), form = $('#rifatForm'), input = $('#rifatInput');
   const modeLabel = $('#rifatMode'), list = $('#ticketList'), wa = $('#waSend'), copyBtn = $('#copyEnquiry'), note = $('#ticketNote');
@@ -108,6 +108,13 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
     }
     const ready = isReady(enquiry);
     const canSend = ready && number;
+    onChange(enquiry);
+    // phones: the ticket sits below the chat, so a one-line summary above the input shows progress and jumps to it
+    const summary = $('#rifatSummary');
+    if (summary) {
+      const have = REQUIRED.filter((k) => fieldText(enquiry, k)).length;
+      summary.textContent = `Your enquiry · ${fieldText(enquiry, 'products') || 'no product yet'} · ${have} of ${REQUIRED.length} needed details`;
+    }
     wa.setAttribute('aria-disabled', String(!canSend));
     wa.href = canSend ? `https://wa.me/${number}?text=${encodeURIComponent(summaryText(enquiry))}` : '#enquire';
     if (canSend) { wa.target = '_blank'; wa.rel = 'noopener'; } else { wa.removeAttribute('target'); }
@@ -276,6 +283,7 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
     cue('tick', copyBtn);
   }
   copyBtn.addEventListener('click', copy);
+  $('#rifatSummary')?.addEventListener('click', () => list.closest('.ticket').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }));
   // "Start again" clears the enquiry, so it asks once: the first press arms it for four seconds.
   const restart = $('#rifatRestart');
   let armed = 0;
@@ -328,6 +336,12 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
       const now = fieldText(enquiry, 'products');
       if (mode === 'ai') { say(`You were looking at ${product}. I’ve added it to your enquiry (${now}). What would you like to know, or how much do you need?`); return offer([]); }
       return askNext(`You were looking at ${product}. I’ve added it to your enquiry (${now}). `);
+    },
+    // Adds a product from the spec drawer without starting a conversation; returns the product list as text.
+    addProduct(product) {
+      const p = matchProduct(product);
+      if (p) merge({ products: withProducts(enquiry.products, [p]) });
+      return fieldText(enquiry, 'products');
     },
     setEnquiry(fields) {
       const { quantity, unit, product, ...rest } = fields;

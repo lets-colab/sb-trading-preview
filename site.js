@@ -19,10 +19,36 @@ let lastInput = 0; // the 3D studies draw only while the visitor scrolls or move
 
 // ------------------------------------------------------------------ sound (opt-in, generated in the browser)
 // Off until the visitor asks: the click creates the audio context (browsers require a gesture); sound.js loads then.
+// With sound on, a generated score plays under the cues. Its chord follows the chapter, its air follows scroll speed,
+// and two visuals answer it: --audio (its live level) brightens the light, and each mallet note leaves a ripple of
+// light where it sounds. Reduced motion keeps the music but drops both visuals.
 const sound = (() => {
-  const btn = $('#soundToggle'), hint = $('#soundHint');
-  let actx = null, engine = null, on = false, hinted = false;
+  const btn = $('#soundToggle'), hint = $('#soundHint'), fx = $('.score-fx');
+  let actx = null, engine = null, on = false, hinted = false, scene = { chapter: 0, family: 0 }, raf = 0;
   const guard = (fn) => { try { fn(); } catch (e) { console.error('sound stopped:', e); engine = null; actx?.suspend().catch(() => {}); } };
+  root.dataset.score = 'off';
+  function light() { // runs only while the score plays and the tab is visible
+    raf = 0;
+    if (!on || !engine || document.hidden || reduced) return;
+    root.style.setProperty('--audio', engine.level().toFixed(3));
+    raf = requestAnimationFrame(light);
+  }
+  function ripple(n) {
+    if (reduced || !fx) return;
+    setTimeout(() => {
+      if (!on || document.hidden || fx.childElementCount > 7) return;
+      const i = document.createElement('i');
+      i.style.left = `${(n.x * 100).toFixed(1)}%`; i.style.top = `${(n.y * 100).toFixed(1)}%`;
+      i.style.setProperty('--v', n.v.toFixed(2));
+      i.addEventListener('animationend', () => i.remove(), { once: true });
+      fx.appendChild(i);
+    }, Math.max(0, (n.at - actx.currentTime) * 1000));
+  }
+  function start() {
+    guard(() => { engine.scene(scene); engine.music(true); });
+    root.dataset.score = 'playing';
+    if (!raf) raf = requestAnimationFrame(light);
+  }
   function set(v) {
     on = v;
     btn.setAttribute('aria-pressed', String(v));
@@ -30,26 +56,47 @@ const sound = (() => {
       const C = window.AudioContext || window.webkitAudioContext;
       if (!C) return;
       actx = new C({ latencyHint: 'interactive' });
-      import('./assets/sound.js').then((m) => { engine = m.createSoundEngine(actx); guard(() => engine.cue('toggle', 0.5)); }).catch(() => { /* the page stays silent */ });
+      import('./assets/sound.js').then((m) => {
+        engine = m.createSoundEngine(actx);
+        engine.onNote(ripple);
+        guard(() => engine.cue('toggle', 0.5));
+        if (on) start();
+      }).catch(() => { /* the page stays silent */ });
     }
     if (!actx) return;
-    if (v) { actx.resume().catch(() => {}); if (engine) guard(() => engine.cue('toggle', 0.5)); }
-    if (v && !hinted) { hinted = true; hint.textContent = 'Sound on: small cues as you move through the page'; setTimeout(() => { hint.textContent = ''; }, 3600); }
-    if (!v) setTimeout(() => { if (!on && actx.state === 'running') actx.suspend().catch(() => {}); }, 400);
+    if (v) { actx.resume().catch(() => {}); if (engine) { guard(() => engine.cue('toggle', 0.5)); start(); } }
+    if (v && !hinted) { hinted = true; hint.textContent = 'Sound on: a generated score and cues, best on headphones'; setTimeout(() => { hint.textContent = ''; }, 3600); }
+    if (!v) {
+      if (engine) guard(() => engine.music(false));
+      root.dataset.score = 'off'; root.style.setProperty('--audio', '0');
+      fx?.replaceChildren();
+      setTimeout(() => { if (!on && actx.state === 'running') actx.suspend().catch(() => {}); }, 1700); // after the fade
+    }
   }
   btn.addEventListener('click', () => set(!on));
-  document.addEventListener('visibilitychange', () => { if (actx && on) (document.hidden ? actx.suspend() : actx.resume()).catch(() => {}); });
+  document.addEventListener('visibilitychange', () => {
+    if (!actx || !on) return;
+    (document.hidden ? actx.suspend() : actx.resume()).catch(() => {});
+    if (!document.hidden && !raf) raf = requestAnimationFrame(light);
+  });
   return {
     cue(name, el) {
       if (!on || !engine) return;
       const r = el?.getBoundingClientRect?.();
       guard(() => engine.cue(name, r ? (r.left + r.width / 2) / innerWidth : 0.5));
     },
+    scene(chapter, family) {
+      if (chapter === scene.chapter && family === scene.family) return;
+      scene = { chapter, family };
+      root.dataset.scoreScene = chapter === 3 ? `e${family}` : String(chapter);
+      if (on && engine) guard(() => engine.scene(scene));
+    },
+    motion(speed) { if (on && engine) guard(() => engine.motion(speed)); },
   };
 })();
 
 // ------------------------------------------------------------------ film (stages 01–03)
-const FRAMES = 279;
+const FRAMES = 255;
 const SET = innerWidth / innerHeight < 0.9 ? 'm' : 'd';
 const film = $('#film'), canvas = $('.film-canvas'), ctx = canvas.getContext('2d');
 const frames = new Array(FRAMES);
@@ -86,6 +133,7 @@ async function loadFrames() {
   };
   await Promise.all(Array.from({ length: 6 }, worker));
 }
+const spotlight = $('.spotlight', film);
 function beats(p) {
   for (const { el, at: [a, b] } of filmBeats) {
     const fade = 0.035;
@@ -93,6 +141,10 @@ function beats(p) {
     el.style.opacity = o.toFixed(3);
     el.style.transform = `translateY(${((1 - o) * 28).toFixed(1)}px)`;
     el.style.visibility = o < 0.01 ? 'hidden' : 'visible';
+    if (a <= 0) { // the opening: the scroll ring fills as the film begins; the overhead light fades with the title
+      el.style.setProperty('--hp', clamp(p / b).toFixed(3));
+      if (spotlight) spotlight.style.opacity = o.toFixed(3);
+    }
   }
 }
 
@@ -132,9 +184,11 @@ explore.addEventListener('keydown', (e) => {
   (e.shiftKey ? next.at(-1) : next[0]).focus({ preventScroll: true });
 });
 
-// 3D material studies (three.js), loaded after first paint. No WebGL, reduced motion or a lost context: the photos carry it.
+// Photographs in depth (raw WebGL2): each family's real photo drawn with its depth map, inside the active arch.
+// No WebGL2, reduced motion or a lost context: the plain <img> in the arch carries it.
 const studiesCanvas = $('.studies', explore), stage = $('.explore-stage', explore);
-let studies = null, settling = true, restDrawn = false;
+let studies = null, settling = true, restDrawn = false, mountedFam = -1;
+function sizeStudies() { const a = studiesCanvas.parentElement.getBoundingClientRect(); studies?.setSize(a.width, a.height); }
 async function loadStudies() {
   try {
     if (reduced) throw new Error('reduced motion: no 3D');
@@ -143,9 +197,9 @@ async function loadStudies() {
     const dbg = probe.getExtension('WEBGL_debug_renderer_info');
     const soft = /swiftshader|llvmpipe|software/i.test(dbg ? String(probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '');
     probe.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
-    const { createMaterials } = await import('./assets/materials3d.js');
-    studies = createMaterials(studiesCanvas, { low: soft || innerWidth < 820 });
-    studies.setSize(innerWidth, innerHeight);
+    const { createPhotoDepth } = await import('./assets/photodepth.js');
+    studies = createPhotoDepth(studiesCanvas, { low: soft || innerWidth < 820 });
+    sizeStudies();
     studiesCanvas.addEventListener('webglcontextlost', () => { studies = null; root.classList.add('no-3d'); });
     root.classList.add('has-3d');
     restDrawn = false;
@@ -158,7 +212,7 @@ async function loadStudies() {
 const ordering = $('#ordering'), steps = $$('.steps li', ordering), line = $('.fibre-line', ordering);
 const chapterLinks = $$('.chapters a');
 const enquireEl = $('#enquire');
-let chapter = -1;
+let chapter = -1, lastY = scrollY;
 function setChapter(c) {
   if (c === chapter) return;
   chapter = c;
@@ -185,16 +239,13 @@ function tick(now = performance.now()) {
     else { pointer[0] = target[0]; pointer[1] = target[1]; }
     const er = explore.getBoundingClientRect();
     const inView = er.top < innerHeight && er.bottom > 0;
-    if (studies && inView && (active || settling || !restDrawn)) {
-      const a = fams[idx].querySelector('.arch').getBoundingClientRect();
-      const phone = innerWidth < 820;
-      const at = phone ? [(a.right - a.width * 0.2) / innerWidth, (a.bottom - a.height * 0.16) / innerHeight]
-                       : [(a.left + a.width * 0.02) / innerWidth, (a.top + a.height * 0.74) / innerHeight];
-      settling = studies.render({ fam: idx, t, p: e, pointer, at, now, settle: !active });
+    if (studies && inView && (active || settling || !restDrawn || studies.dirty)) { // dirty: a texture arrived or the canvas moved/resized
+      if (idx !== mountedFam) { mountedFam = idx; studies.mount(fams[idx].querySelector('.arch')); sizeStudies(); }
+      settling = studies.render({ fam: idx, t, pointer, now, settle: !active });
       restDrawn = !active && !settling;
     }
     if (!inView) restDrawn = false;
-    studiesCanvas.dataset.renderState = !inView ? 'offscreen' : restDrawn ? 'idle' : 'active';
+    studiesCanvas.dataset.renderState = !inView ? 'offscreen' : restDrawn && !studies?.dirty ? 'idle' : 'active';
     stage.style.setProperty('--ry', `${(pointer[0] * 10).toFixed(2)}deg`);
     stage.style.setProperty('--rx', `${(-pointer[1] * 7).toFixed(2)}deg`);
   }
@@ -207,9 +258,12 @@ function tick(now = performance.now()) {
   // chapters: 01 Arrive, 02 Discover, 03 Transition (film), 04 Explore, 05 Enquire
   const mid = innerHeight / 2, fr = film.getBoundingClientRect(), er = explore.getBoundingClientRect();
   let c = 4;
-  if (fr.bottom > mid) c = p < 0.105 ? 0 : p < 0.365 ? 1 : 2;
+  if (fr.bottom > mid) c = p < 0.115 ? 0 : p < 0.4 ? 1 : 2;
   else if (er.bottom > mid) c = 3;
   setChapter(c);
+  sound.scene(c, Math.max(0, famActive));
+  sound.motion(Math.abs(scrollY - lastY) / innerHeight * 12);
+  lastY = scrollY;
   const max = Math.max(1, root.scrollHeight - innerHeight);
   root.style.setProperty('--page', (scrollY / max).toFixed(4));
   // the chapter bar steps aside once Rifat's section is on screen, so it never covers the chat or its buttons
@@ -220,7 +274,7 @@ function tick(now = performance.now()) {
 
 // ------------------------------------------------------------------ start
 size();
-addEventListener('resize', () => { size(); studies?.setSize(innerWidth, innerHeight); lastInput = performance.now(); if (reduced) tick(); });
+addEventListener('resize', () => { size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
 addEventListener('scroll', () => { lastInput = performance.now(); }, { passive: true });
 if (fine && !reduced) addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; lastInput = performance.now(); }, { passive: true });
 (window.requestIdleCallback || setTimeout)(() => loadStudies());
@@ -272,7 +326,20 @@ nav.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false)
 addEventListener('keydown', (e) => { if (e.key === 'Escape' && nav.classList.contains('open')) { setMenu(false); menuBtn.focus(); } });
 
 // ------------------------------------------------------------------ Rifat (stage 05)
-const rifat = createRifat({ root: $('#rifat'), whatsapp: document.body.dataset.whatsapp || '', cue: sound.cue, reduced });
+// The enquiry tray mirrors "Your enquiry": how many products, which ones, one tap from Rifat.
+const tray = $('#enquiryTray'), trayCount = $('#trayCount'), trayItems = $('#trayItems');
+let trayN = 0;
+function updateTray(enquiry) {
+  const list = enquiry.products || [];
+  tray.hidden = list.length === 0;
+  trayCount.textContent = String(list.length);
+  trayItems.textContent = list.join(', ');
+  tray.setAttribute('aria-label', `Your enquiry: ${list.length} ${list.length === 1 ? 'product' : 'products'}, ${list.join(', ')}. Open Rifat.`);
+  if (list.length > trayN && !reduced) { tray.classList.remove('bump'); void tray.offsetWidth; tray.classList.add('bump'); }
+  trayN = list.length;
+}
+const rifat = createRifat({ root: $('#rifat'), whatsapp: document.body.dataset.whatsapp || '', cue: sound.cue, reduced, onChange: updateTray });
+tray.addEventListener('click', (e) => { e.preventDefault(); const t = $('#enquire'); if (lenis) lenis.scrollTo(t, { offset: -40 }); else t.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); });
 
 // ------------------------------------------------------------------ product sheet
 $$('.product').forEach((el) => el.addEventListener('pointerenter', () => sound.cue('hover', el)));
@@ -286,6 +353,8 @@ for (const btn of $$('.product')) {
     $('#sheetFamily').textContent = btn.dataset.family;
     $('#sheetTitle').textContent = sheetProduct;
     $('#sheetNote').textContent = btn.dataset.note;
+    $('#sheetStatus').textContent = '';
+    $('#sheetAdd').textContent = 'Add to enquiry';
     sheet.showModal();
     sound.cue('open', btn);
   });
@@ -296,6 +365,12 @@ $('#sheetAsk').addEventListener('click', () => {
   if (lenis) lenis.scrollTo(target, { offset: -40 }); else target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
   rifat.askAbout(sheetProduct);
   setTimeout(() => $('#rifatInput').focus({ preventScroll: true }), reduced ? 30 : 900);
+});
+$('#sheetAdd').addEventListener('click', (e) => {
+  const list = rifat.addProduct(sheetProduct);
+  $('#sheetStatus').textContent = `Added. Your enquiry: ${list}. Add more products, or finish with Rifat.`;
+  e.currentTarget.textContent = 'Added to enquiry ✓';
+  sound.cue('tick', e.currentTarget);
 });
 sheet.addEventListener('click', (e) => { if (e.target === sheet) sheet.close(); });
 

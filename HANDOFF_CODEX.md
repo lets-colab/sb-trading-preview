@@ -12,9 +12,9 @@ Read this file, then `PRODUCT.md` (brand and product brief) and `README.md` (fil
 - **To switch Rifat's AI on (owner action):** Cloudflare dashboard → Pages project `sb-trading` → Settings → Variables and secrets → add encrypted `ANTHROPIC_API_KEY` for Production → redeploy. Never set `ANTHROPIC_BASE_URL` there (test only). Then check a real conversation; that has not been proven yet.
 - **Next design work (from the Impeccable critique, 27/40):**
   1. Remove the ~14 uppercase kicker labels above headings and the white/gold two-tone on every heading (keep it for the hero).
-  2. 3D studies must never cover the real photographs or headings: move them into the text column or behind the arch; drop 3D below 820px.
+  2. Done: the procedural three.js studies are replaced by photographs in depth (`assets/photodepth.js`, depth maps in `assets/img/depth/`, regenerate with Depth Anything V2 Small if photos change). Real phone scans (Polycam/RealityScan → glTF) from SB Trading would be the next step up.
   3. Shorten the film (680vh → about 300vh) and put the three family cards plus "Ask Rifat" right after the hero; add a visible "See the materials" shortcut and one plain fact line (where SB Trading is, that it exports).
-  4. Re-caption the film's fibre beats so they read as banana fibre, not bamboo; "From fibre to weave" implies woven cloth they do not sell.
+  4. Partly done: the loom/weave ending is replaced by a bamboo -> yarn ball + bark sheet shot captioned "Bamboo, yarn and bark." The middle beats still show bamboo fibre while SB Trading's yarn is banana fibre.
   5. Phone: sticky collapsed "Your enquiry" summary above Rifat's input.
   Re-run `/impeccable critique` and the detector after each pass; keep `npm test` green.
 
@@ -44,7 +44,7 @@ src/rifat-fn.js       Pages Function source (Anthropic TypeScript SDK) -> functi
 src/materials3d.js    3D studies (three.js r187)        -> assets/materials3d.js
 src/smooth.js         Lenis re-export                   -> assets/vendor/smooth.js
 assets/sound.js       tactile sound cues (lazy-loaded on the Sound press)
-assets/film/{d,m}/    279 WebP frames (desktop 1280x720, phone 405x720 crop): 1-30 Pexels bamboo canopy, 31-191 generated bamboo-to-fibre, 192-223 Pexels banana leaves, 224-279 Pexels handloom weaving. Do NOT use gemini_generated_video_9f29a4ec (fibres winding into yarn): the owner withdrew it.
+assets/film/{d,m}/    255 WebP frames (desktop 1280x720, phone 405x720 crop): 1-30 Pexels bamboo canopy, 31-191 generated bamboo-to-fibre, 192-223 Pexels banana leaves, 224-255 generated bamboo -> fibre -> yarn ball + bark sheet (owner's Gemini clip 65bdd3ff, 3.4-6.0 s only: its HUD, fake 'spec drawer' with invented MOQ/grade and a wrong WhatsApp number are excluded). Do NOT use gemini_generated_video_9f29a4ec (owner withdrew it).
 assets/img/           five real product photographs + logo variants (see rule 5)
 assets/vendor/        Motion 12, Lenis, three.js licence, fonts (Gloock, Schibsted Grotesk; OFL)
 functions/api/rifat.js  GET -> { ai }, POST -> { reply, enquiry, ready }; 503 without ANTHROPIC_API_KEY
