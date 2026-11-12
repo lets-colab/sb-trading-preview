@@ -134,6 +134,35 @@ check(await noJsPage.locator('.no-js-enquiry a[href="https://wa.me/8801878707910
 check(await noJsPage.locator('.hero-actions a[href="#explore"]').isVisible(), 'no-JS homepage retains a direct catalogue shortcut');
 check(await noJsPage.locator('#mainNav a[href="#explore"]').isVisible(), 'no-JS mobile navigation remains visible');
 await noJsContext.close();
+
+// Regression for the Android screenshot: long-pressing the cinematic headline must not
+// summon the native selection toolbar, and the mobile hero must fit short/narrow screens.
+for (const [width, height] of [[320, 568], [390, 844]]) {
+  const mobileContext = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true });
+  const mobilePage = await mobileContext.newPage();
+  await mobilePage.goto(ORIGIN + '/', { waitUntil: 'domcontentloaded' });
+  await mobilePage.evaluate(async () => { await document.fonts.ready; });
+  const layout = await mobilePage.evaluate(() => {
+    const box = (el) => el.getBoundingClientRect();
+    const headline = document.querySelector('.beat-hero h1');
+    const heading = box(headline), header = box(document.querySelector('.top'));
+    const action = box(document.querySelector('.beat-hero .hero-actions'));
+    const label = box(document.querySelector('.film-label'));
+    const controls = [...document.querySelectorAll('.top > .brand, .top > .menu-toggle, .top > .sound-toggle, .top > .btn')]
+      .filter((el) => getComputedStyle(el).display !== 'none').map(box);
+    return {
+      noTitleSelection: getComputedStyle(headline).userSelect === 'none',
+      headlineFits: heading.left >= 0 && heading.right <= innerWidth && headline.scrollWidth <= headline.clientWidth + 1,
+      controlsFit: controls.every((r) => r.left >= 0 && r.right <= innerWidth),
+      controlsSeparated: controls.every((r, i) => i === 0 || r.left >= controls[i - 1].right - 1),
+      headlineClearOfHeader: heading.top >= header.bottom + 8,
+      sourceClearOfAction: action.bottom + 8 <= label.top,
+      sourceVisible: label.left >= 0 && label.right <= innerWidth && label.bottom <= innerHeight,
+    };
+  });
+  for (const [rule, passed] of Object.entries(layout)) check(passed, `phone ${width}×${height}: ${rule}`);
+  await mobileContext.close();
+}
 await browser.close(); server.close();
 console.log(failures ? `\n${failures} failing` : '\nall passing');
 process.exit(failures ? 1 : 0);
