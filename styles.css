@@ -381,6 +381,43 @@ html.at-end .tray{opacity:0;pointer-events:none;transform:translateY(12px)}
   .film-shade{background:linear-gradient(0deg,#051222 0%,#051222e0 38%,#0512224d 70%,#05122200 100%),linear-gradient(180deg,#05122299 0%,#05122200 22%)}
 }
 
+/* Android film: keep headline gestures for scrolling, not native text selection.
+   Text in descriptions, product details and enquiries remains selectable. */
+.film .beat h1,.film .beat h2{-webkit-user-select:none;user-select:none}
+@media (max-width:520px){
+  .top{padding:12px var(--gutter)}
+  .top .brand-mark{height:34px}
+  .top .menu-toggle{min-height:40px;padding:0 11px;font-size:14px}
+  .top .sound-toggle{min-height:40px;padding:0 10px}
+  .top>.btn-small{min-height:40px;padding:0 10px 0 7px;gap:6px;font-size:13px}
+  .top>.btn-small .orb-xs{--s:24px}
+  .beat-hero h1{font-size:clamp(48px,13vw,58px);line-height:.96}
+  .beat-hero .lede{font-size:16px;line-height:1.5;margin-top:16px}
+  .beat-hero .specimen{margin-top:16px;padding-top:12px;gap:14px}
+  .beat-hero .specimen dt{font-size:12px}
+  .beat-hero .specimen dd{font-size:22px}
+  .beat-hero .hero-actions{margin-top:16px;gap:8px}
+  .beat-hero .hero-actions .btn{min-height:44px;padding:0 16px;font-size:14px}
+  .beat-hero .hero-actions .btn-ghost{padding-left:8px}
+  .beat-hero .scroll-ring{margin-top:16px;font-size:12px}
+  .film-label{max-width:calc(100% - 2 * var(--gutter));line-height:1.4;color:var(--cloud);background:#051222e6}
+}
+@media (max-width:360px){
+  .top>.btn-small .ai-tag{display:none}
+}
+@media (max-width:360px) and (max-height:650px){
+  .beat-hero{bottom:122px}
+  .beat-hero h1{font-size:44px}
+  .beat-hero .lede{font-size:14px;line-height:1.35;margin-top:10px}
+  .beat-hero .specimen{margin-top:9px;padding-top:7px;gap:10px}
+  .beat-hero .specimen dt{font-size:11px}
+  .beat-hero .specimen dd{font-size:18px}
+  .beat-hero .hero-actions{margin-top:10px;gap:6px}
+  .beat-hero .hero-actions .btn{min-height:38px;padding:0 11px;font-size:12px}
+  .beat-hero .hero-actions .btn .orb-xs{--s:19px}
+  .beat-hero .scroll-ring{display:none}
+}
+
 @media (prefers-reduced-motion:reduce){
   .score-fx{display:none}
   html{scroll-behavior:auto}
