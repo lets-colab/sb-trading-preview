@@ -49,7 +49,7 @@ const sound = (() => {
 })();
 
 // ------------------------------------------------------------------ film (stages 01–03)
-const FRAMES = 279;
+const FRAMES = 255;
 const SET = innerWidth / innerHeight < 0.9 ? 'm' : 'd';
 const film = $('#film'), canvas = $('.film-canvas'), ctx = canvas.getContext('2d');
 const frames = new Array(FRAMES);
@@ -206,7 +206,7 @@ function tick(now = performance.now()) {
   // chapters: 01 Arrive, 02 Discover, 03 Transition (film), 04 Explore, 05 Enquire
   const mid = innerHeight / 2, fr = film.getBoundingClientRect(), er = explore.getBoundingClientRect();
   let c = 4;
-  if (fr.bottom > mid) c = p < 0.105 ? 0 : p < 0.365 ? 1 : 2;
+  if (fr.bottom > mid) c = p < 0.115 ? 0 : p < 0.4 ? 1 : 2;
   else if (er.bottom > mid) c = 3;
   setChapter(c);
   const max = Math.max(1, root.scrollHeight - innerHeight);
