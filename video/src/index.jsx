@@ -1,118 +1,183 @@
-// SB Trading — brand film (Remotion). Real logo and product photographs only; copy from the site's own catalogue.
-// Compositions: SBFilm16x9 (1920×1080) and SBFilm9x16 (1080×1920), 15 s at 30 fps.
-import React from 'react';
+// SB Trading film (Remotion), built from the site's own design system so it cannot drift from it:
+//   colours  -> tokens.json, synced from DESIGN.md by sync-design.mjs (tests/film-sync.mjs checks it)
+//   words    -> copy.json, every line the site's own copy (checked against index.html)
+//   type     -> Gloock (names and statements) and Schibsted Grotesk (everything read or operated), the site's two voices
+//   pictures -> the site's photographs drawn by the site's depth renderer (assets/photodepth.js), inside its arch window
+//   sound    -> the site's generated score (assets/sound.js, seeded) rendered offline by render-score.mjs; each mallet
+//               note leaves a ripple of light where it sounds, exactly as on the site
+// Cue sheet at 30 fps, 480 frames (16 s): open 0-96, bamboo 96-204, banana fibre yarn 204-312, bark and leaves
+// 312-408, end 408-480. Every scene settles into a readable composition and holds at least 2 s.
+import React, { useLayoutEffect, useRef, useState, useEffect } from 'react';
 import {
-  AbsoluteFill, Composition, Img, Sequence, interpolate, registerRoot, spring, staticFile, useCurrentFrame, useVideoConfig, Easing,
+  AbsoluteFill, Audio, Composition, Easing, Img, Sequence, continueRender, delayRender, interpolate, registerRoot,
+  staticFile, useCurrentFrame, useVideoConfig,
 } from 'remotion';
+import { createPhotoDepth } from '../../assets/photodepth.js';
+import tokens from './tokens.json';
+import copy from './copy.json';
+import notes from './score-notes.json';
 
-const C = { ink: '#102a43', blue: '#004a98', cloud: '#f3f8fc', mist: '#dbeaf6', fibre: '#d7be93' };
-const out = Easing.bezier(0.16, 1, 0.3, 1);
+const c = tokens.colors;
+const FPS = 30;
+const display = '"Gloock", Georgia, serif', text = '"Schibsted Grotesk", system-ui, sans-serif';
+const out = Easing.bezier(0.16, 1, 0.3, 1), io = Easing.bezier(0.65, 0, 0.35, 1);
+const ramp = (f, a, b, e = out) => interpolate(f, [a, b], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: e });
+const line = (s) => { if (!copy.lines.includes(s)) throw new Error(`not site copy: ${s}`); return s; };
 const fonts = `
-@font-face{font-family:"Instrument Serif";src:url(${staticFile('instrument-serif-latin-400-normal.woff2')}) format("woff2")}
-@font-face{font-family:"Instrument Serif";font-style:italic;src:url(${staticFile('instrument-serif-latin-400-italic.woff2')}) format("woff2")}
-@font-face{font-family:"Plus Jakarta Sans";src:url(${staticFile('plus-jakarta-sans-latin-wght-normal.woff2')}) format("woff2");font-weight:200 800}`;
-const serif = '"Instrument Serif", Georgia, serif', sans = '"Plus Jakarta Sans", system-ui, sans-serif';
+@font-face{font-family:"Gloock";src:url(${staticFile('fonts/gloock-latin-400-normal.woff2')}) format("woff2")}
+@font-face{font-family:"Schibsted Grotesk";src:url(${staticFile('fonts/schibsted-grotesk-latin-wght-normal.woff2')}) format("woff2");font-weight:400 900}`;
+const BASE = staticFile('img/bamboo-sections.webp').replace('bamboo-sections.webp', '');
+const useWide = () => { const { width, height } = useVideoConfig(); return width > height; };
 
-/** The golden fibre thread: an SVG path drawn by progress p (0–1), optionally converging to the centre. */
-const Thread = ({ p, opacity = 1, wave = 0, at = 0.5 }) => {
-  const { width, height } = useVideoConfig();
-  const y = height * at, a = height * 0.18 * (1 - wave);
-  const d = `M ${-40} ${y + a} C ${width * 0.25} ${y - a * 2}, ${width * 0.4} ${y + a * 2}, ${width * 0.5} ${y} S ${width * 0.75} ${y - a * 2}, ${width + 40} ${y - a}`;
-  return (
-    <svg width={width} height={height} style={{ position: 'absolute', inset: 0, opacity }}>
-      {[0, 1, 2].map((k) => (
-        <path key={k} d={d} fill="none" stroke={C.fibre} strokeWidth={k === 0 ? 2.4 : 1} strokeOpacity={k === 0 ? 0.95 : 0.4}
-          pathLength={1} strokeDasharray={1} strokeDashoffset={1 - p} transform={`translate(0 ${(k - 1) * 14 * (1 - wave)})`} />
-      ))}
-    </svg>
-  );
+/** Holds the render until both of the site's typefaces have loaded. */
+const Fonts = () => {
+  const [h] = useState(() => delayRender('fonts'));
+  useEffect(() => { Promise.all([document.fonts.load(`400 40px ${display}`), document.fonts.load(`500 30px ${text}`)]).then(() => continueRender(h)); }, [h]);
+  return <style>{fonts}</style>;
 };
 
-const Kicker = ({ children, color = C.fibre }) => (
-  <div style={{ font: `600 ${26}px/1.2 ${sans}`, letterSpacing: '0.22em', textTransform: 'uppercase', color, marginBottom: 22 }}>{children}</div>
-);
-
-// ---------------------------------------------------------------- scene 1: thread and logo
-const Arrive = () => {
-  const f = useCurrentFrame(), { fps, width, height } = useVideoConfig();
-  const draw = interpolate(f, [0, 55], [0, 1], { extrapolateRight: 'clamp', easing: out });
-  const logo = spring({ frame: f - 28, fps, config: { damping: 18, mass: 0.9 } });
-  const text = interpolate(f, [48, 70], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: out });
-  const exit = interpolate(f, [78, 90], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const size = Math.min(width, height) * 0.26;
-  return (
-    <AbsoluteFill style={{ background: `radial-gradient(70% 60% at 50% 45%, #173a5c, ${C.ink})`, opacity: exit }}>
-      <Thread p={draw} opacity={0.9} />
-      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-        <div style={{ width: size, height: size, borderRadius: '50%', background: C.cloud, display: 'grid', placeItems: 'center', transform: `scale(${logo})`, boxShadow: `0 0 0 2px ${C.fibre}66, 0 40px 120px #000a` }}>
-          <Img src={staticFile('sb-trading-logo.png')} style={{ width: size * 0.82, height: size * 0.82, objectFit: 'contain' }} />
-        </div>
-        <div style={{ marginTop: 44, opacity: text, transform: `translateY(${(1 - text) * 20}px)`, textAlign: 'center' }}>
-          <Kicker>Forestry &amp; agricultural products</Kicker>
-        </div>
-      </AbsoluteFill>
-    </AbsoluteFill>
-  );
+/** One family's photographs drawn in depth by the site's renderer, deterministically per frame. */
+const Depth = ({ fam, w, h, dur }) => {
+  const f = useCurrentFrame(), ref = useRef(null), pd = useRef(null);
+  const [handle] = useState(() => delayRender(`depth ${fam}`));
+  const [ready, setReady] = useState(false);
+  useLayoutEffect(() => {
+    pd.current = createPhotoDepth(ref.current, { base: BASE, preserve: true });
+    pd.current.setSize(w, h);
+    pd.current.whenReady(fam).then(() => { setReady(true); continueRender(handle); });
+  }, []);
+  useLayoutEffect(() => {
+    if (!ready) return;
+    const t = Math.min(1, f / dur);
+    pd.current.render({ fam, t, pointer: [Math.sin(f / 38) * 0.22, Math.cos(f / 52) * 0.14], settle: true });
+  }, [f, ready]);
+  return <canvas ref={ref} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />;
 };
 
-// ---------------------------------------------------------------- scenes 2–4: materials
-const Material = ({ img, kicker, title, accent, detail, from = 'left' }) => {
-  const f = useCurrentFrame(), { width, height } = useVideoConfig(), dur = 80;
-  const wipe = interpolate(f, [0, 16], [0, 100], { extrapolateRight: 'clamp', easing: out });
-  const zoom = interpolate(f, [0, dur], [1.12, 1.0]);
-  const pan = interpolate(f, [0, dur], from === 'left' ? [-2, 2] : [2, -2]);
-  const t = interpolate(f, [10, 30], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: out });
-  const portrait = height > width;
-  return (
-    <AbsoluteFill style={{ clipPath: `inset(0 ${100 - wipe}% 0 0)`, background: C.ink }}>
-      <Img src={staticFile(img)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${zoom}) translateX(${pan}%)` }} />
-      <AbsoluteFill style={{ background: `linear-gradient(${portrait ? '0deg' : '90deg'}, ${C.ink}f2 0%, ${C.ink}b3 38%, ${C.ink}00 72%)` }} />
-      <div style={{ position: 'absolute', left: portrait ? 70 : 120, right: 70, bottom: portrait ? 260 : 140, opacity: t, transform: `translateY(${(1 - t) * 30}px)` }}>
-        <Kicker>{kicker}</Kicker>
-        <div style={{ font: `400 ${portrait ? 130 : 150}px/0.95 ${serif}`, color: C.cloud }}>
-          {title} <span style={{ fontStyle: 'italic', color: C.fibre }}>{accent}</span>
-        </div>
-        <div style={{ font: `400 34px/1.4 ${sans}`, color: C.mist, marginTop: 26 }}>{detail}</div>
-      </div>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: C.fibre, transform: `translateX(${(wipe / 100) * width}px)`, opacity: wipe < 100 ? 1 : 0 }} />
-    </AbsoluteFill>
-  );
-};
-
-// ---------------------------------------------------------------- scene 5: end card
-const Enquire = () => {
+/** The site's arch window: rounded top, opens from the bottom, then leaves upward with a turn (as site.js does). */
+const Arch = ({ fam, dur, w, h, style }) => {
   const f = useCurrentFrame();
-  const thread = interpolate(f, [0, 40], [0, 1], { extrapolateRight: 'clamp', easing: out });
-  const t = interpolate(f, [14, 40], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: out });
-  const fade = interpolate(f, [100, 120], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const open = ramp(f, 0, 33, io), leave = ramp(f, dur - 14, dur, io);
+  const turn = (1 - open) * 16 - leave * 16;
   return (
-    <AbsoluteFill style={{ background: C.ink, opacity: fade }}>
-      <Thread p={1} wave={thread} opacity={0.5} at={0.86} />
-      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 80, opacity: t, transform: `translateY(${(1 - t) * 24}px)` }}>
-        <Kicker>SB Trading</Kicker>
-        <div style={{ font: `400 140px/0.95 ${serif}`, color: C.cloud }}>Materials in <span style={{ fontStyle: 'italic', color: C.fibre }}>motion.</span></div>
-        <div style={{ marginTop: 46, display: 'inline-block', padding: '22px 44px', borderRadius: 999, background: C.fibre, color: C.ink, font: `600 34px/1 ${sans}` }}>Request a quotation</div>
-        <div style={{ marginTop: 30, font: `500 30px/1 ${sans}`, color: C.mist, letterSpacing: '0.04em' }}>sb-trading.lastbenchbd.com</div>
-      </AbsoluteFill>
+    <div style={{ position: 'absolute', width: w, height: h, perspective: 1600, ...style }}>
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: `999px 999px 28px 28px`, overflow: 'hidden',
+        clipPath: `inset(${(1 - open) * 100}% 0 ${leave * 100}% 0 round 999px 999px 28px 28px)`,
+        transform: `rotateY(${turn}deg) translateZ(${-(1 - open + leave) * 140}px)`,
+        boxShadow: `0 40px 120px ${c['ink-0']}aa, 0 0 0 1px ${c.fibre}26`, background: c['ink-2'],
+      }}>
+        <Depth fam={fam} w={w} h={h} dur={dur} />
+      </div>
+    </div>
+  );
+};
+
+/** A product chip, as on the site: pill, hairline, fibre "+". */
+const Chip = ({ label, at }) => {
+  const f = useCurrentFrame(), k = ramp(f, at, at + 14);
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '0 22px', height: 52, borderRadius: 999,
+      border: `1px solid ${c.line}`, background: `${c['ink-0']}66`, color: c.cloud, font: `500 22px/1 ${text}`,
+      opacity: k, transform: `translateY(${(1 - k) * 14}px)` }}>
+      {label}<span style={{ color: c.fibre }}>+</span>
+    </div>
+  );
+};
+
+const Open = () => {
+  const f = useCurrentFrame(), wide = useWide(), { width } = useVideoConfig();
+  const mark = ramp(f, 0, 24), rule = ramp(f, 10, 44), head = ramp(f, 22, 50), lede = ramp(f, 38, 62), exit = ramp(f, 84, 96, io);
+  const [a, b] = ['Materials', 'in Motion.'];
+  if (`${a} ${b}` !== line('Materials in Motion.')) throw new Error('headline');
+  return (
+    <AbsoluteFill style={{ padding: wide ? '0 150px' : '0 90px', justifyContent: 'center', opacity: 1 - exit, transform: `translateY(${-exit * 30}px)` }}>
+      <Img src={staticFile('img/sb-mark-light.webp')} style={{ width: 92, height: 'auto', opacity: mark, marginBottom: 46 }} />
+      <div style={{ width: (wide ? 520 : width - 180) * rule, height: 2, background: c.fibre, opacity: 0.7, marginBottom: 46 }} />
+      <div style={{ font: `400 ${wide ? 170 : 150}px/0.92 ${display}`, letterSpacing: '-0.015em', color: c.cloud, opacity: head, transform: `translateY(${(1 - head) * 40}px)` }}>
+        {a} <span style={{ color: c.fibre }}>{b}</span>
+      </div>
+      <div style={{ maxWidth: 900, marginTop: 40, font: `400 ${wide ? 34 : 38}px/1.45 ${text}`, color: c.mist, opacity: lede, transform: `translateY(${(1 - lede) * 20}px)` }}>
+        {line('Bamboo, banana fibre yarn, and banana bark and leaves, supplied to business buyers.')}
+      </div>
     </AbsoluteFill>
   );
 };
 
-const Film = () => (
-  <AbsoluteFill style={{ background: C.ink }}>
-    <style>{fonts}</style>
-    <Sequence durationInFrames={90}><Arrive /></Sequence>
-    <Sequence from={90} durationInFrames={80}><Material img="bamboo-poles.webp" kicker="Bamboo · four product types" title="Bamboo," accent="cut to length." detail="Poles, splits, ski poles and woven mats." /></Sequence>
-    <Sequence from={170} durationInFrames={80}><Material img="banana-fibre.webp" kicker="Banana fibre yarn · three grades" title="Fibre with a" accent="twist." detail="From fine banana silk to industrial yarn." from="right" /></Sequence>
-    <Sequence from={250} durationInFrames={80}><Material img="banana-leaves.webp" kicker="Banana bark & leaves" title="Leaves and" accent="bark." detail="From the banana plant, packed for buyers." /></Sequence>
-    <Sequence from={330} durationInFrames={120}><Enquire /></Sequence>
-  </AbsoluteFill>
-);
+const Family = ({ fam, title, lede, chips, dur }) => {
+  const f = useCurrentFrame(), wide = useWide(), { width, height } = useVideoConfig();
+  const t = ramp(f, 14, 40), exit = ramp(f, dur - 14, dur, io);
+  const ah = wide ? 860 : 1000, aw = Math.round((ah * 73) / 120);
+  return (
+    <AbsoluteFill>
+      <Arch fam={fam} dur={dur} w={aw} h={ah} style={wide ? { right: 190, top: (height - ah) / 2 } : { left: (width - aw) / 2, top: 150 }} />
+      <div style={{ position: 'absolute', left: wide ? 150 : 90, right: wide ? aw + 330 : 90, top: wide ? undefined : ah + 230, bottom: wide ? 250 : undefined,
+        opacity: t * (1 - exit), transform: `translateY(${(1 - t) * 34 - exit * 20}px)` }}>
+        <div style={{ font: `400 ${wide ? 120 : 110}px/0.96 ${display}`, letterSpacing: '-0.015em', color: c.cloud }}>{line(title)}</div>
+        <div style={{ marginTop: 28, maxWidth: 760, font: `400 ${wide ? 32 : 34}px/1.45 ${text}`, color: c.mist }}>{line(lede)}</div>
+        <div style={{ marginTop: 36, display: 'flex', flexWrap: 'wrap', gap: 12, maxWidth: 820 }}>
+          {chips.map((ch, i) => <Chip key={ch} label={line(ch)} at={30 + i * 6} />)}
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+const End = () => {
+  const f = useCurrentFrame(), wide = useWide();
+  const head = ramp(f, 0, 24), pill = ramp(f, 12, 34), mark = ramp(f, 20, 40);
+  return (
+    <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 90 }}>
+      <div style={{ font: `400 ${wide ? 150 : 130}px/0.95 ${display}`, letterSpacing: '-0.015em', color: c.cloud, opacity: head, transform: `translateY(${(1 - head) * 30}px)` }}>
+        {line('Receive a quotation.')}
+      </div>
+      <div style={{ marginTop: 54, display: 'inline-flex', alignItems: 'center', height: 84, padding: '0 46px', borderRadius: 999, background: c.fibre, color: c['ink-0'],
+        font: `600 34px/1 ${text}`, opacity: pill, transform: `translateY(${(1 - pill) * 20}px)` }}>
+        {line('WhatsApp: +880 1878-707910')}
+      </div>
+      <Img src={staticFile('img/sb-mark-light.webp')} style={{ width: 70, height: 'auto', marginTop: 60, opacity: mark }} />
+    </AbsoluteFill>
+  );
+};
+
+/** Each score note leaves a ripple of light where it sounds (the site's .score-fx, frame-exact). */
+const Ripples = () => {
+  const f = useCurrentFrame(), { width, height } = useVideoConfig(), size = Math.min(width, height) * 0.26;
+  return notes.map((n, i) => {
+    const s = Math.round(n.at * FPS), k = (f - s) / 84;
+    if (k < 0 || k > 1) return null;
+    const op = (k < 0.14 ? k / 0.14 : 1 - (k - 0.14) / 0.86) * (0.35 + n.v * 0.55), sc = 0.18 + (1.5 - 0.18) * Easing.bezier(0.2, 0.7, 0.2, 1)(k);
+    return <div key={i} style={{ position: 'absolute', left: n.x * width - size / 2, top: n.y * height - size / 2, width: size, height: size, borderRadius: '50%',
+      opacity: op, transform: `scale(${sc})`, mixBlendMode: 'screen',
+      background: `radial-gradient(circle, ${c['fibre-2']}59 0%, ${c.fibre}26 34%, transparent 62%)`, boxShadow: `inset 0 0 0 1px ${c['fibre-2']}33` }} />;
+  });
+};
+
+const Film = () => {
+  const { durationInFrames } = useVideoConfig(), f = useCurrentFrame();
+  const fadeIn = ramp(f, 0, 12), fadeOut = 1 - ramp(f, durationInFrames - 10, durationInFrames);
+  const label = copy.labelled[0].text;
+  return (
+    <AbsoluteFill style={{ background: `radial-gradient(90% 70% at 72% -10%, ${c['ink-2']}, ${c['ink-0']} 72%)` }}>
+      <Fonts />
+      <Audio src={staticFile('score.wav')} />
+      <AbsoluteFill style={{ opacity: fadeIn * fadeOut }}>
+        <Ripples />
+        <Sequence durationInFrames={96}><Open /></Sequence>
+        <Sequence from={96} durationInFrames={108}><Family fam={0} dur={108} title="Bamboo" lede="Poles, splits, ski poles and woven mats." chips={['Bamboo poles', 'Bamboo splits', 'Ski poles', 'Woven mats']} /></Sequence>
+        <Sequence from={204} durationInFrames={108}><Family fam={1} dur={108} title="Banana fibre yarn" lede="Banana fibre yarn in three grades, from fine banana silk to industrial yarn." chips={['Grade A: banana silk', 'Grade B: standard banana fibre yarn', 'Grade C: industrial banana fibre yarn']} /></Sequence>
+        <Sequence from={312} durationInFrames={96}><Family fam={2} dur={96} title="Banana bark and leaves" lede="Banana bark and banana leaves, the third family of the range." chips={['Banana bark', 'Banana leaves']} /></Sequence>
+        <Sequence from={408}><End /></Sequence>
+      </AbsoluteFill>
+      <div style={{ position: 'absolute', right: 40, bottom: 36, padding: '10px 18px', borderRadius: 999, background: c.glass, border: `1px solid ${c['line-2']}`, color: c.dim, font: `400 20px/1.2 ${text}` }}>{label}</div>
+    </AbsoluteFill>
+  );
+};
 
 const Root = () => (
   <>
-    <Composition id="SBFilm16x9" component={Film} durationInFrames={450} fps={30} width={1920} height={1080} />
-    <Composition id="SBFilm9x16" component={Film} durationInFrames={450} fps={30} width={1080} height={1920} />
+    <Composition id="SBFilm16x9" component={Film} durationInFrames={480} fps={FPS} width={1920} height={1080} />
+    <Composition id="SBFilm9x16" component={Film} durationInFrames={480} fps={FPS} width={1080} height={1920} />
   </>
 );
 registerRoot(Root);

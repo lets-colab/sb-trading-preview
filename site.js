@@ -345,6 +345,31 @@ tray.addEventListener('click', (e) => { e.preventDefault(); const t = $('#enquir
 $$('.product').forEach((el) => el.addEventListener('pointerenter', () => sound.cue('hover', el)));
 const sheet = $('#productSheet');
 let sheetProduct = '';
+// The drawer arrives on a gentle spring and leaves on a short ease-in (Motion); the native dialog closes only after the
+// exit has played, so Escape, the close button, the backdrop and "Ask Rifat" all leave the same way. Reduced motion,
+// or Motion missing: it opens and closes instantly. Desktop slides from the right, phones (bottom sheet) from below.
+const sheetOff = () => (matchMedia('(max-width: 700px)').matches ? { x: 0, y: '100%' } : { x: '100%', y: 0 });
+let sheetLeaving = null;
+function openSheet() {
+  delete sheet.dataset.closing;
+  sheet.showModal();
+  if (reduced || !M) return;
+  const off = sheetOff();
+  M.animate(sheet, { x: [off.x, 0], y: [off.y, 0], opacity: [0.5, 1] }, { type: M.spring, visualDuration: 0.5, bounce: 0.12 });
+}
+/** Plays the exit and closes the dialog; resolves once it is closed (the browser then returns focus to the opener). */
+function closeSheet() {
+  if (sheetLeaving) return sheetLeaving;
+  if (!sheet.open) return Promise.resolve();
+  if (reduced || !M) { sheet.close(); return Promise.resolve(); }
+  sheet.dataset.closing = '';
+  const off = sheetOff();
+  sheetLeaving = M.animate(sheet, { x: off.x, y: off.y, opacity: 0.5 }, { duration: 0.28, ease: [0.4, 0, 1, 1] }).finished
+    .catch(() => {}).then(() => { sheet.close(); delete sheet.dataset.closing; sheetLeaving = null; });
+  return sheetLeaving;
+}
+sheet.addEventListener('cancel', (e) => { e.preventDefault(); closeSheet(); }); // Escape
+$('.sheet-close', sheet).addEventListener('submit', (e) => { e.preventDefault(); closeSheet(); });
 for (const btn of $$('.product')) {
   btn.addEventListener('click', () => {
     sheetProduct = btn.textContent.trim();
@@ -355,16 +380,17 @@ for (const btn of $$('.product')) {
     $('#sheetNote').textContent = btn.dataset.note;
     $('#sheetStatus').textContent = '';
     $('#sheetAdd').textContent = 'Add to enquiry';
-    sheet.showModal();
+    openSheet();
     sound.cue('open', btn);
   });
 }
 $('#sheetAsk').addEventListener('click', () => {
-  sheet.close();
   const target = $('#enquire');
   if (lenis) lenis.scrollTo(target, { offset: -40 }); else target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
   rifat.askAbout(sheetProduct);
-  setTimeout(() => $('#rifatInput').focus({ preventScroll: true }), reduced ? 30 : 900);
+  // focus only after the drawer has closed, or the dialog's own focus return would take it back to the product
+  const t0 = performance.now();
+  closeSheet().then(() => setTimeout(() => $('#rifatInput').focus({ preventScroll: true }), Math.max(30, (reduced ? 30 : 900) - (performance.now() - t0))));
 });
 $('#sheetAdd').addEventListener('click', (e) => {
   const list = rifat.addProduct(sheetProduct);
@@ -372,7 +398,7 @@ $('#sheetAdd').addEventListener('click', (e) => {
   e.currentTarget.textContent = 'Added to enquiry ✓';
   sound.cue('tick', e.currentTarget);
 });
-sheet.addEventListener('click', (e) => { if (e.target === sheet) sheet.close(); });
+sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });
 
 // ------------------------------------------------------------------ the plain form (an alternative to Rifat)
 const form = $('#enquiryForm'), toggle = $('#formToggle');

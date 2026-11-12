@@ -33,12 +33,12 @@ p{text-wrap:pretty}
 @media (hover:hover){.btn:hover{background:var(--fibre-2);transform:translateY(-2px)}}
 .btn:active{transform:translateY(0)}
 .btn-small{min-height:44px;padding:0 18px 0 8px;font-size:14px}
-.ai-tag{margin-left:2px;padding:2px 6px;border-radius:6px;background:#0512221f;font-size:11px;letter-spacing:.06em}
+.ai-tag{margin-left:2px;padding:2px 7px;border-radius:var(--r-pill);background:#0512221f;font-size:11px;letter-spacing:.06em}
 .btn-ghost{background:transparent;color:var(--cloud);box-shadow:inset 0 0 0 1px var(--line)}
 .btn-ghost:hover{background:#d7be931a;box-shadow:inset 0 0 0 1px var(--fibre)}
 .btn[aria-disabled="true"]{background:#dbeaf61a;color:var(--faint);cursor:not-allowed;box-shadow:none;transform:none}
 :focus-visible{outline:2px solid var(--fibre);outline-offset:3px}
-.skip{position:absolute;left:12px;top:-60px;z-index:var(--z-skip);padding:10px 16px;background:var(--fibre);color:var(--ink-0);border-radius:8px}
+.skip{position:absolute;left:12px;top:-60px;z-index:var(--z-skip);padding:10px 16px;background:var(--fibre);color:var(--ink-0);border-radius:var(--r-pill)}
 .skip:focus{top:12px}
 
 /* ------------------------------------------------------------ Rifat's orb: three fibre rings around a warm core */
@@ -106,6 +106,9 @@ html[data-score="playing"] .sound-toggle[aria-pressed="true"] .bars i{animation:
 .beat{position:absolute;left:var(--gutter);right:var(--gutter);bottom:clamp(96px,16vh,170px);max-width:1000px}
 .beat h2{max-width:13ch}
 .beat-hero h1{max-width:9ch}
+/* The end beat sits over the brightest frames (yarn ball, bark sheet); a local ink scrim travels with its opacity */
+.beat-end{isolation:isolate}
+.beat-end::before{content:"";position:absolute;inset:-18% -14% -16% -8%;z-index:-1;pointer-events:none;background:linear-gradient(90deg,#051222eb 0%,#051222cc 58%,#05122200 100%);-webkit-mask-image:linear-gradient(0deg,transparent,#000 20%,#000 80%,transparent);mask-image:linear-gradient(0deg,transparent,#000 20%,#000 80%,transparent)}
 .fam-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:900px;margin-top:30px}
 .fam-cards a{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:150px;padding:20px;border-radius:var(--r-md);overflow:hidden;text-decoration:none;
   background:linear-gradient(120deg,#0c2440cc 0%,#0c244066 60%,#0c244000 100%);border:1px solid #dbeaf633;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
@@ -320,8 +323,9 @@ html.at-end .chapters{opacity:0;pointer-events:none}
 /* spec drawer: the product sheet slides in from the side and keeps the stage visible behind it */
 .sheet.drawer[open]{display:flex;flex-direction:column;position:fixed;inset:0 0 0 auto;margin:0;width:min(480px,100vw);height:100svh;max-height:100svh;border-radius:var(--r-lg) 0 0 var(--r-lg);border-right:0}
 .drawer::backdrop{background:#0512228c;backdrop-filter:blur(4px)}
-.motion .sheet.drawer[open]{animation:drawer-in .55s var(--ease)}
-@keyframes drawer-in{from{transform:translateX(48px);opacity:0}}
+.motion .sheet.drawer[open]{animation:none} /* site.js moves the drawer with Motion: spring in, ease-in out */
+.drawer::backdrop{transition:opacity .28s}
+.drawer[data-closing]::backdrop{opacity:0}
 .drawer .sheet-img{flex:none;height:46svh;min-height:0;max-height:none}
 .drawer .sheet-body{justify-content:flex-start;padding:28px clamp(22px,3vw,36px) 36px}
 .sheet-family{margin:6px 0 0;font-size:14px}
@@ -343,7 +347,6 @@ html.at-end .tray{opacity:0;pointer-events:none;transform:translateY(12px)}
   .sheet[open]{grid-template-columns:1fr}
   .sheet.drawer[open]{inset:auto 0 0 0;width:100vw;height:auto;max-height:92svh;border-radius:var(--r-lg) var(--r-lg) 0 0;border-right:1px solid var(--line);border-bottom:0}
   .drawer .sheet-img{height:34svh}
-  .motion .sheet.drawer[open]{animation-name:drawer-up}
   .tray{bottom:58px;right:16px}
   .tray-items{display:none}
   .sheet-img{max-height:40svh}

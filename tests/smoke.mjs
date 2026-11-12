@@ -46,6 +46,19 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
 
   // product sheet -> Rifat
   await toExplore(0.1);
+  // the drawer leaves with an exit animation, then the dialog closes (Escape and the close button alike)
+  for (const how of ['Escape', 'the close button']) {
+    await p.click('#bamboo.on .product >> nth=0'); await p.waitForTimeout(800);
+    // record the dialog's states as they happen: on a slow runner the whole exit can finish before a later poll
+    await p.evaluate(() => { const s = document.getElementById('productSheet'); window.__sheet = [];
+      window.__sheetObs?.disconnect(); window.__sheetObs = new MutationObserver(() => window.__sheet.push(s.open ? ('closing' in s.dataset ? 'leaving' : 'open') : 'closed'));
+      window.__sheetObs.observe(s, { attributes: true }); });
+    if (how === 'Escape') await p.keyboard.press('Escape'); else await p.click('#productSheet .sheet-close button');
+    const closed = await p.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 5000 }).then(() => true, () => false);
+    const seq = await p.evaluate(() => window.__sheet.join(','));
+    const leaving = /leaving.*closed/.test(seq);
+    check(leaving && closed, `${name}: ${how} plays the drawer's exit, then closes it (leaving ${leaving}, closed ${closed})`);
+  }
   await p.click('#bamboo.on .product >> nth=1'); await p.waitForTimeout(500);
   check(await p.evaluate(() => document.getElementById('productSheet').open), `${name}: a product opens its sheet`);
   check((await p.evaluate(() => document.getElementById('enquiryTray').hidden)), `${name}: the enquiry tray stays hidden while the enquiry is empty`);

@@ -1,0 +1,21 @@
+{
+  "note": "Every entry in lines is the site's own copy (tests/film-sync.mjs checks index.html). Anything else is in labelled, with its reason.",
+  "lines": [
+    "Materials in Motion.",
+    "Bamboo, banana fibre yarn, and banana bark and leaves, supplied to business buyers.",
+    "Bamboo",
+    "Poles, splits, ski poles and woven mats.",
+    "Bamboo poles", "Bamboo splits", "Ski poles", "Woven mats",
+    "Banana fibre yarn",
+    "Banana fibre yarn in three grades, from fine banana silk to industrial yarn.",
+    "Grade A: banana silk", "Grade B: standard banana fibre yarn", "Grade C: industrial banana fibre yarn",
+    "Banana bark and leaves",
+    "Banana bark and banana leaves, the third family of the range.",
+    "Banana bark", "Banana leaves",
+    "Receive a quotation.",
+    "WhatsApp: +880 1878-707910"
+  ],
+  "labelled": [
+    { "text": "Draft for review. Photographs not yet confirmed by SB Trading.", "reason": "Truth label: DESIGN.md says product photographs are not yet confirmed by SB Trading; it stays until they are." }
+  ]
+}
