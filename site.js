@@ -143,13 +143,14 @@ async function loadFrames() {
     await idle();
   }
 }
-// The label names the source of the shot on screen (frame ranges in data-shots), so stock and generated footage are
+// The label names the source of the frame drawn on the canvas (frame ranges in data-shots; while frames load, or if one
+// fails, a neighbouring shot may be on screen, and the label follows it), so stock and generated footage are
 // never blurred together and nothing reads as SB Trading's own. Without motion the HTML's whole-film sentence stays.
 const filmLabel = $('.film-label', film);
 const filmShots = (filmLabel?.dataset.shots || '').split('|').filter(Boolean).map((s) => { const [r, src] = s.split(':'), [a, b] = r.split('-').map(Number); return { a, b, src }; });
 let filmShot = null;
-function labelShot(i) {
-  if (!filmLabel) return;
+function labelShot(i) { // i: the index of the loaded frame on the canvas (not the one the scroll asked for), -1 before any
+  if (!filmLabel || i < 0) return;
   const shot = filmShots.find((s) => i + 1 >= s.a && i + 1 <= s.b);
   if (!shot || shot === filmShot) return;
   filmShot = shot;
@@ -248,7 +249,7 @@ function tick(now = performance.now()) {
   if (Math.abs(p - filmP) < 1e-4) filmP = p;
   const i = Math.round(filmP * (FRAMES - 1));
   if (i !== shown) draw(i);
-  if (!reduced) { beats(filmP); labelShot(i); }
+  if (!reduced) { beats(filmP); labelShot(drawnFrom); }
 
   if (!reduced) {
     const e = progressOf(explore), n = fams.length;

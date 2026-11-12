@@ -52,6 +52,17 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   const seen = [];
   for (const [x, want] of shots) { const t = await labelAt(x, want); seen.push(`${x}: ${t}`); if (!want.test(t) || !/not SB Trading's own/.test(t) || (/generated/i.test(t) && /Pexels/.test(t))) seen.push('MISMATCH'); }
   check(!seen.includes('MISMATCH'), `${name}: the film label names each shot's own source (${seen.filter((s) => s !== 'MISMATCH').join(' | ')})`);
+  { // the label follows the frame actually on the canvas: with frames 1-30 (stock) failing to load, frame 30 is drawn from
+    // the nearest loaded frame, which is generated footage, so the label must say generated (Codex finding on #16)
+    const q = await ctx.newPage();
+    await q.route(/\/assets\/film\/[dm]\/0(0[1-9]|[12][0-9]|30)\.webp$/, (r) => r.abort());
+    await q.goto(ORIGIN + '/'); await q.waitForTimeout(2500);
+    await q.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * (29 / 254)); });
+    await q.waitForFunction(() => /generated footage, not/i.test(document.querySelector('.film-label').textContent), null, { timeout: 15000 }).catch(() => {});
+    const t = await q.evaluate(() => document.querySelector('.film-label').textContent.trim());
+    check(/generated footage, not SB Trading's own/.test(t) && !/Pexels/.test(t), `${name}: the label follows the frame drawn, not the frame asked for (${t})`);
+    await q.close();
+  }
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
 
