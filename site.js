@@ -193,7 +193,7 @@ function tick(now = performance.now()) {
       restDrawn = !active && !settling;
     }
     if (!inView) restDrawn = false;
-    studiesCanvas.dataset.renderState = !inView ? 'offscreen' : restDrawn ? 'idle' : 'active';
+    studiesCanvas.dataset.renderState = !inView ? 'offscreen' : restDrawn && !studies?.dirty ? 'idle' : 'active';
     stage.style.setProperty('--ry', `${(pointer[0] * 10).toFixed(2)}deg`);
     stage.style.setProperty('--rx', `${(-pointer[1] * 7).toFixed(2)}deg`);
   }

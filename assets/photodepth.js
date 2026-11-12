@@ -97,15 +97,15 @@ export function createPhotoDepth(canvas, { low = false } = {}) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
     return t;
   }
-  let dirty = true;
+  let dirty = true, showing = [];   // showing: the photo names of the family on screen
   function want(name) {
     if (tex.has(name)) return tex.get(name);
     const entry = { ready: false, failed: false, aspect: 1 };
     tex.set(name, entry);
     Promise.all([loadImage(`assets/img/${name}.webp`), loadImage(`assets/img/depth/${name}-depth.webp`)]).then(([im, dm]) => {
       if (gl.isContextLost()) return;
-      entry.img = texture(im); entry.depth = texture(dm); entry.aspect = im.width / im.height; entry.ready = true; dirty = true;
-    }).catch(() => { entry.failed = true; dirty = true; }); // the canvas hides for that family and its <img> shows
+      entry.img = texture(im); entry.depth = texture(dm); entry.aspect = im.width / im.height; entry.ready = true; if (showing.includes(name)) dirty = true; // a prefetch for the next family does not redraw
+    }).catch(() => { entry.failed = true; if (showing.includes(name)) dirty = true; }); // the canvas hides for that family and its <img> shows
     return entry;
   }
   FAMILIES[0].forEach(want);
@@ -128,6 +128,7 @@ export function createPhotoDepth(canvas, { low = false } = {}) {
     },
     render({ fam, t, pointer, now = 0, settle = false }) {
       const names = FAMILIES[fam] || FAMILIES[0];
+      showing = names;
       names.forEach(want);
       FAMILIES[(fam + 1) % FAMILIES.length].forEach(want); // prefetch the next family
       const A = tex.get(names[0]), B = tex.get(names[1] || names[0]);
