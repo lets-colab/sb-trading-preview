@@ -148,15 +148,22 @@ async function loadFrames() {
 // never blurred together and nothing reads as SB Trading's own. Without motion the HTML's whole-film sentence stays.
 const filmLabel = $('.film-label', film);
 const filmShots = (filmLabel?.dataset.shots || '').split('|').filter(Boolean).map((s) => { const [r, src] = s.split(':'), [a, b] = r.split('-').map(Number); return { a, b, src }; });
-let filmShot = null;
+let filmShot = null, studioOn = true;
+const STUDIO_SHOT = { src: 'studio' };
 function labelShot(i) { // i: the index of the loaded frame on the canvas (not the one the scroll asked for), -1 before any
-  if (!filmLabel || i < 0) return;
+  if (!filmLabel) return;
+  if (studioOn) { // the studio covers the film: what is on screen is SB Trading's photograph, not footage
+    if (filmShot !== STUDIO_SHOT) { filmShot = STUDIO_SHOT; filmLabel.textContent = "This shot: SB Trading's own photograph."; }
+    return;
+  }
+  if (i < 0) return;
   const shot = filmShots.find((s) => i + 1 >= s.a && i + 1 <= s.b);
   if (!shot || shot === filmShot) return;
   filmShot = shot;
   filmLabel.textContent = `This shot: ${shot.src}, not SB Trading's own.`;
 }
-const spotlight = $('.spotlight', film);
+const studio = $('.studio', film);
+let studioO = 1;
 function beats(p) {
   for (const { el, at: [a, b] } of filmBeats) {
     const fade = 0.035;
@@ -164,12 +171,46 @@ function beats(p) {
     el.style.opacity = o.toFixed(3);
     el.style.transform = `translateY(${((1 - o) * 28).toFixed(1)}px)`;
     el.style.visibility = o < 0.01 ? 'hidden' : 'visible';
-    if (a <= 0) { // the opening: the scroll ring fills as the film begins; the overhead light fades with the title
+    if (a <= 0) { // the opening: the scroll ring fills as the film begins; the studio fades with the title
       el.style.setProperty('--hp', clamp(p / b).toFixed(3));
-      if (spotlight) spotlight.style.opacity = o.toFixed(3);
+      studioO = o;
+      studioOn = o > 0.9; // the opening starts at the arch, so footage shows there first
+      if (studio) { studio.style.setProperty('--open', (1 - o).toFixed(3)); studio.style.visibility = o < 0.01 ? 'hidden' : 'visible'; }
     }
   }
 }
+
+// Dust: slow gold motes that rise through the film, bright inside the studio's beam and faint over the footage. Seeded,
+// so every visit draws the same air; drawn only while the film is on screen, and not at all with reduced motion.
+const dust = (() => {
+  const cv = $('.dust', film), g = cv?.getContext('2d');
+  if (!g || reduced) return { size() {}, draw() {} };
+  let seed = 20261113;
+  const rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const motes = Array.from({ length: fine ? 70 : 40 }, () => ({ x: rnd(), y: rnd(), r: 0.6 + rnd() * rnd() * 2.2, up: 5 + rnd() * 14, sway: 6 + rnd() * 18, ph: rnd() * 6.28, a: 0.25 + rnd() * 0.6 }));
+  let w = 0, h = 0, dpr = 1, last = 0;
+  const lx = () => (innerWidth <= 760 ? 0.5 : 0.7);
+  return {
+    size() { dpr = Math.min(devicePixelRatio || 1, 1.5); w = innerWidth; h = innerHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); },
+    draw(now) {
+      const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
+      const t = now / 1000, cx = lx(), halfBeam = innerWidth <= 760 ? 0.36 : 0.17;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+      g.globalCompositeOperation = 'lighter';
+      for (const m of motes) {
+        m.y -= (m.up * dt) / h; if (m.y < -0.02) { m.y = 1.02; m.x = rnd(); }
+        const x = m.x * w + Math.sin(t * 0.35 + m.ph) * m.sway, y = m.y * h;
+        const inBeam = Math.exp(-(((x / w - cx) / halfBeam) ** 2) * (1 + (1 - m.y))) * studioO;
+        const a = m.a * (0.22 + 0.78 * inBeam) * (0.7 + 0.3 * Math.sin(t * 1.3 + m.ph * 3));
+        if (a < 0.02) continue;
+        const r = m.r * (1 + inBeam * 0.6);
+        g.fillStyle = `rgba(231,214,182,${a.toFixed(3)})`;
+        g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
+        if (r > 1.6) { g.fillStyle = `rgba(231,214,182,${(a * 0.18).toFixed(3)})`; g.beginPath(); g.arc(x, y, r * 3.2, 0, 6.2832); g.fill(); }
+      }
+    },
+  };
+})();
 
 // ------------------------------------------------------------------ explore (stage 04): one pinned stage, three families
 const explore = $('#explore');
@@ -249,7 +290,11 @@ function tick(now = performance.now()) {
   if (Math.abs(p - filmP) < 1e-4) filmP = p;
   const i = Math.round(filmP * (FRAMES - 1));
   if (i !== shown) draw(i);
-  if (!reduced) { beats(filmP); labelShot(drawnFrom); }
+  if (!reduced) {
+    beats(filmP); labelShot(drawnFrom);
+    const fr0 = film.getBoundingClientRect();
+    if (fr0.bottom > 0 && fr0.top < innerHeight && !document.hidden) dust.draw(now);
+  }
 
   if (!reduced) {
     const e = progressOf(explore), n = fams.length;
@@ -296,8 +341,8 @@ function tick(now = performance.now()) {
 }
 
 // ------------------------------------------------------------------ start
-size();
-addEventListener('resize', () => { size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
+size(); dust.size();
+addEventListener('resize', () => { size(); dust.size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
 addEventListener('scroll', () => { lastInput = performance.now(); }, { passive: true });
 if (fine && !reduced) addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; lastInput = performance.now(); }, { passive: true });
 // The 3D studies (shader compile, photographs, depth maps) load when Explore is within two screens, not at page load.

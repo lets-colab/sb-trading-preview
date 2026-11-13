@@ -48,10 +48,16 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.waitForFunction((src) => new RegExp(src, 'i').test(document.querySelector('.film-label').textContent), want.source, { timeout: 15000 }).catch(() => {}); // the film eases to the scroll position
     return p.evaluate(() => document.querySelector('.film-label').textContent.trim());
   };
-  const shots = [[0.03, /stock footage \(Pexels\)/i], [0.5, /generated footage/i], [0.8, /stock footage \(Pexels\)/i], [0.95, /generated footage/i]];
+  const studioLabel = await labelAt(0.02, /own photograph/);
+  check(/^This shot: SB Trading's own photograph\.$/.test(studioLabel), `${name}: under the title, the studio shows SB Trading's own photograph and the label says so (${studioLabel})`);
+  const studioShot = await p.evaluate(() => { const s = document.querySelector('.studio'), img = s.querySelector('img'); return { shown: getComputedStyle(s).visibility === 'visible', own: /assets\/img\//.test(img.currentSrc), loaded: img.complete && img.naturalWidth > 0 }; });
+  check(studioShot.shown && studioShot.own && studioShot.loaded, `${name}: the studio arch holds a loaded site photograph (${JSON.stringify(studioShot)})`);
+  const dustLit = await p.evaluate(() => { const c = document.querySelector('.dust'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 8) n++; return n; });
+  check(dustLit > 20, `${name}: dust motes are drawn over the opening (${dustLit} lit pixels)`);
+  const shots = [[0.105, /stock footage \(Pexels\)/i], [0.5, /generated footage/i], [0.8, /stock footage \(Pexels\)/i], [0.95, /generated footage/i]];
   const seen = [];
   for (const [x, want] of shots) { const t = await labelAt(x, want); seen.push(`${x}: ${t}`); if (!want.test(t) || !/not SB Trading's own/.test(t) || (/generated/i.test(t) && /Pexels/.test(t))) seen.push('MISMATCH'); }
-  check(!seen.includes('MISMATCH'), `${name}: the film label names each shot's own source (${seen.filter((s) => s !== 'MISMATCH').join(' | ')})`);
+  check(!seen.includes('MISMATCH'), `${name}: once the studio opens, the film label names each shot's own source (${seen.filter((s) => s !== 'MISMATCH').join(' | ')})`);
   { // the label follows the frame actually on the canvas: with frames 1-30 (stock) failing to load, frame 30 is drawn from
     // the nearest loaded frame, which is generated footage, so the label must say generated (Codex finding on #16)
     const q = await ctx.newPage();

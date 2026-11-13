@@ -130,9 +130,36 @@ html[data-score="playing"] .sound-toggle[aria-pressed="true"] .bars i{animation:
 .scroll-ring svg{width:44px;height:44px;transform:rotate(-90deg)}
 .scroll-ring circle{fill:none;stroke:var(--line-2);stroke-width:1.5}
 .scroll-ring circle.fill{stroke:var(--fibre);stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--hp,0))}
-/* the specimen stage: a soft overhead light on the opening frames, gone once the film starts */
-.spotlight{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
-  background:radial-gradient(ellipse 30% 75% at 68% -12%,#dbeaf62e,transparent 68%),radial-gradient(ellipse 24% 7% at 68% 90%,#dbeaf61a,transparent 70%)}
+/* the specimen studio: a dark room, one overhead beam on SB Trading's own bamboo photograph in the arch window; it
+   fades as the film begins, so the film opens out of the dark. --lx is the beam's centre. */
+/* --open (0 to 1, set by site.js as the title fades): the dark opens outward from the arch, so the film is reached
+   through the window instead of by a cross-fade */
+.studio{--lx:70%;--ly:48%;position:absolute;inset:0;pointer-events:none;overflow:hidden;
+  background:radial-gradient(ellipse 60% 70% at var(--lx) 30%,var(--ink-2),var(--ink-0) 70%);
+  -webkit-mask-image:radial-gradient(circle at var(--lx) var(--ly),#0000 calc(var(--open,0) * 150% - 22%),#000 calc(var(--open,0) * 150%));
+  mask-image:radial-gradient(circle at var(--lx) var(--ly),#0000 calc(var(--open,0) * 150% - 22%),#000 calc(var(--open,0) * 150%))}
+.skylight{position:absolute;left:var(--lx);top:-7vh;width:min(36vw,480px);aspect-ratio:3;translate:-50% 0;border-radius:50%;
+  background:radial-gradient(closest-side,var(--cloud),#dbeaf6d9 50%,#dbeaf600);filter:blur(4px)}
+.beam{position:absolute;left:var(--lx);top:0;width:min(48vw,660px);height:100%;translate:-50% 0;mix-blend-mode:screen;filter:blur(22px)}
+.beam::before{content:"";position:absolute;inset:0;clip-path:polygon(33% 0,67% 0,100% 100%,0 100%);
+  background:linear-gradient(180deg,#dbeaf64d 0%,#dbeaf624 55%,#dbeaf60d 100%)}
+.floor{position:absolute;left:var(--lx);bottom:6vh;width:min(44vw,600px);aspect-ratio:4.6;translate:-50% 0;border-radius:50%;
+  background:radial-gradient(closest-side,#dbeaf652,#dbeaf61f 55%,#dbeaf600)}
+.lit{position:absolute;left:var(--lx);top:var(--ly);height:min(58svh,560px);aspect-ratio:73/120;translate:-50% -50%;margin:0;
+  border-radius:999px 999px var(--r-lg) var(--r-lg);overflow:hidden;box-shadow:0 50px 120px #000a,0 0 0 1px #d7be9324}
+.lit img{width:100%;height:100%;object-fit:cover;object-position:50% 100%;transform:scale(1.45);transform-origin:50% 92%}
+/* the beam lights the top of the specimen; its foot falls into shadow */
+.lit::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#dbeaf61a 0%,#05122200 30%,#05122266 72%,#051222e6 100%)}
+.dust{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.beat-hero .specimen{max-width:600px}
+/* phone: a small specimen high in the beam, clear of the title below it */
+@media (max-width:760px){
+  .studio{--lx:50%;--ly:calc(9.5svh + 9svh)}
+  .lit{height:18svh}
+  .floor{bottom:auto;top:calc(9.5svh + 18svh - 1.6svh);width:46vw}
+  .beam{width:80vw}
+  .skylight{width:64vw;top:-5vh}
+}
 .specimen{display:flex;gap:clamp(20px,3vw,40px);margin:28px 0 0;padding:16px 0 0;border-top:1px solid var(--line)}
 .specimen div{margin:0}
 .specimen dt{font-size:13px;color:var(--dim)}
@@ -142,7 +169,7 @@ html[data-score="playing"] .sound-toggle[aria-pressed="true"] .bars i{animation:
 @keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
 .film-label{position:absolute;right:var(--gutter);bottom:72px;margin:0;padding:4px 10px;border-radius:var(--r-pill);background:#051222b3;font-size:12px;color:var(--dim)}
 html:not(.js) .film,html:not(.motion) .film{height:auto}
-html:not(.motion) .spotlight,html:not(.motion) .scroll-ring{display:none}
+html:not(.motion) .studio,html:not(.motion) .dust,html:not(.motion) .scroll-ring{display:none}
 html:not(.js) .film-stage,html:not(.motion) .film-stage{position:relative;height:auto;min-height:100svh;padding:140px var(--gutter) 120px;display:flex;flex-direction:column;justify-content:flex-end;gap:56px}
 html:not(.js) .film-poster,html:not(.motion) .film-poster{display:block}
 html:not(.js) .film-canvas,html:not(.motion) .film-canvas{display:none}
