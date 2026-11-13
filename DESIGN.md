@@ -209,7 +209,7 @@ Token count: 28 (16 colour, 2 font family, 2 easing, 1 spacing, 4 radius, 3 z-in
 
 ### Neutral
 - **Night Ground** (ink-0): the page. Also the text colour on every fibre fill.
-- **Raised Ink** (ink-2): solid raised surfaces: product sheet, mobile nav dropdown, sound hint.
+- **Raised Ink** (ink-2): solid raised surfaces: mobile nav dropdown, sound hint (the spec drawer is Ink Glass).
 - **Ink Glass** (glass): translucent panels over the ground, always with blur and a fibre hairline.
 - **Cloud** (cloud): primary text and headings.
 - **Dim Mist** (dim): secondary reading text.
@@ -351,6 +351,9 @@ Rifat's signature: a warm radial sphere (fibre-2 to fibre-3 to dark umber) with 
 
 ### Product sheet
 Native `dialog`, ink-2, line border, r-lg, max 920px; image and body side by side (stacked at 700px and below). Backdrop `#051222b3` with 10px blur; with motion it rises 24px from 0.98 scale over 0.5s. Circular 44px close on ink-0. The body ends with a primary button that hands the product to Rifat.
+
+### Spec drawer
+The product sheet as it is used: a pane of Ink Glass (glass, 24px blur, 1.3 saturation) floating 12px clear of the viewport edges (8px on phones, where it rises from the bottom), r-lg, a `#dbeaf62e` hairline and an inner top highlight; the backdrop is only `#05122266` with 2px blur, so the product's own family stays readable on stage behind it (a shared product link brings that family on stage). The photograph sits inset 10px with the radius stepped down. Under the title, a spec list in two columns with mist hairlines: Family, Grade (graded yarns only), Supplied from, then Specification and Minimum order, which read "Confirmed in your quotation" in dim until SB Trading confirms real values; never invent figures. The product's note, the two actions, and a dim hand-off line: Rifat (AI) gathers the enquiry and the buyer sends it on WhatsApp.
 
 ### Motion
 - **Easings:** ease (expo-out) for nearly everything; ease-io for the arch clip and scroll cue. Motion.dev reveals use the same curve as an array `[0.16, 1, 0.3, 1]`.

@@ -101,6 +101,11 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const direct = await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 12000 }).then(() => true, () => false);
     const got = await q.evaluate(() => `${document.getElementById('sheetTitle').textContent} / ${document.getElementById('sheetFamily').textContent}`);
     check(direct && got === 'Grade A: banana silk / Banana fibre yarn', `${name}: a shared product link opens that product directly (${got})`);
+    await q.waitForTimeout(2500); // past the load event, when the browser's own jump to the anchor happens
+    const behind = await q.evaluate(() => document.querySelector('.fam.on')?.id);
+    check(behind === 'fibre', `${name}: behind the glass drawer, the stage shows that product's family (${behind})`);
+    const spec = await q.evaluate(() => ({ grade: document.getElementById('sheetGradeRow').hidden ? null : document.getElementById('sheetGrade').textContent, rows: document.querySelectorAll('#productSheet .spec div:not([hidden])').length }));
+    check(spec.grade === 'A' && spec.rows === 5, `${name}: the drawer's spec sheet shows the grade for a graded yarn (${JSON.stringify(spec)})`);
     await q.close();
   }
   // the drawer leaves with an exit animation, then the dialog closes (Escape and the close button alike)

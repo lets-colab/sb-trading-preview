@@ -455,6 +455,9 @@ function showProduct(btn, { push = true } = {}) {
   $('#sheetFamily').textContent = btn.dataset.family;
   $('#sheetTitle').textContent = sheetProduct;
   $('#sheetNote').textContent = btn.dataset.note;
+  const grade = /^Grade ([A-C])\b/.exec(sheetProduct);
+  $('#sheetGradeRow').hidden = !grade;
+  $('#sheetGrade').textContent = grade ? grade[1] : '';
   $('#sheetStatus').textContent = '';
   $('#sheetAdd').textContent = 'Add to enquiry';
   if (push && location.hash !== `#${btn.id}`) history.pushState({ product: btn.id }, '', `#${btn.id}`);
@@ -476,7 +479,14 @@ addEventListener('popstate', () => { const btn = productAt(); if (btn?.classList
   const btn = productAt();
   if (btn?.classList.contains('product')) {
     const fam = btn.closest('.fam'), n = fams.length, k = fams.indexOf(fam);
-    if (!reduced && k >= 0) scrollTo(0, explore.offsetTop + (explore.offsetHeight - innerHeight) * ((k + 0.35) / n)); else btn.scrollIntoView({ block: 'center' });
+    const toFamily = () => {
+      if (reduced || k < 0) { btn.scrollIntoView({ block: 'center' }); return; }
+      const y = explore.offsetTop + (explore.offsetHeight - innerHeight) * ((k + 0.35) / n);
+      scrollTo(0, y); lenis?.scrollTo(y, { immediate: true, force: true });
+    };
+    toFamily();
+    // the browser's own jump to the #anchor comes at load and lands on the stage's first family; go back to this one
+    if (document.readyState !== 'complete') addEventListener('load', () => { if (productAt() === btn) requestAnimationFrame(toFamily); }, { once: true });
     setTimeout(() => showProduct(btn, { push: false }), 60);
   }
 }

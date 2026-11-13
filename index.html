@@ -233,14 +233,20 @@
   <figure class="sheet-img"><img id="sheetImg" src="assets/img/bamboo-poles.webp" alt=""></figure>
   <div class="sheet-body">
     <h3 id="sheetTitle"></h3>
-    <p class="sheet-family" id="sheetFamily"></p>
-    <p>Specifications, sizes, grades and availability are confirmed by SB Trading's team with each quotation.</p>
+    <dl class="spec">
+      <div><dt>Family</dt><dd id="sheetFamily"></dd></div>
+      <div id="sheetGradeRow" hidden><dt>Grade</dt><dd id="sheetGrade"></dd></div>
+      <div><dt>Supplied from</dt><dd>Bangladesh</dd></div>
+      <div><dt>Specification</dt><dd class="tbc">Confirmed in your quotation</dd></div>
+      <div><dt>Minimum order</dt><dd class="tbc">Confirmed in your quotation</dd></div>
+    </dl>
     <p class="source" id="sheetNote"></p>
     <div class="sheet-actions">
       <button class="btn" type="button" id="sheetAdd">Add to enquiry</button>
       <button class="btn btn-ghost" type="button" id="sheetAsk"><span class="orb orb-xs" aria-hidden="true"><i></i><i></i><i></i></span>Ask Rifat about it</button>
     </div>
     <p class="sheet-status" id="sheetStatus" role="status"></p>
+    <p class="handoff">Rifat (AI) gathers your enquiry; you send it to SB Trading on WhatsApp, +880 1878-707910.</p>
   </div>
 </dialog>
 
