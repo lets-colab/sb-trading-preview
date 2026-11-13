@@ -13,6 +13,9 @@ import {
   staticFile, useCurrentFrame, useVideoConfig,
 } from 'remotion';
 import { createPhotoDepth } from '../../assets/photodepth.js';
+import { createDustParticles, updateDustParticles } from '../../assets/dust-particles.js';
+import { createLightConeHero } from '../../assets/light-cone-hero.js';
+import { createFibreThread } from '../../assets/fibre-thread.js';
 import tokens from './tokens.json';
 import copy from './copy.json';
 import notes from './score-notes.json';
@@ -85,20 +88,64 @@ const Chip = ({ label, at }) => {
   );
 };
 
+/** Dust particles for the opening. */
+const Dust = ({ frame, width, height }) => {
+  const particles = createDustParticles(frame * 0.7, 60);
+  const updated = updateDustParticles(particles, frame, FPS);
+  return (
+    <AbsoluteFill style={{ pointerEvents: 'none' }}>
+      {updated.map((p, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: p.size,
+            height: p.size,
+            borderRadius: '50%',
+            background: `rgba(200, 180, 130, ${p.opacity * 0.3})`,
+            boxShadow: `0 0 ${p.size * 2}px rgba(200, 180, 130, ${p.opacity * 0.2})`,
+            transform: `translate(-50%, -50%) scale(${0.5 + p.z * 0.5})`,
+          }}
+        />
+      ))}
+    </AbsoluteFill>
+  );
+};
+
+/** Light cone with hero specimen. */
+const HeroObject = ({ frame, width, height }) => {
+  const entry = ramp(frame, 0, 40);
+  const heroCone = createLightConeHero(width, height, 'bamboo');
+  return (
+    <AbsoluteFill style={{ opacity: entry * 0.7, pointerEvents: 'none' }}>
+      <div dangerouslySetInnerHTML={{ __html: heroCone }} />
+    </AbsoluteFill>
+  );
+};
+
 const Open = () => {
-  const f = useCurrentFrame(), wide = useWide(), { width } = useVideoConfig();
+  const f = useCurrentFrame(), wide = useWide(), { width, height } = useVideoConfig();
   const mark = ramp(f, 0, 24), rule = ramp(f, 10, 44), head = ramp(f, 22, 50), lede = ramp(f, 38, 62), exit = ramp(f, 84, 96, io);
   const [a, b] = ['Materials', 'in Motion.'];
   if (`${a} ${b}` !== line('Materials in Motion.')) throw new Error('headline');
   return (
-    <AbsoluteFill style={{ padding: wide ? '0 150px' : '0 90px', justifyContent: 'center', opacity: 1 - exit, transform: `translateY(${-exit * 30}px)` }}>
-      <Img src={staticFile('img/sb-mark-light.webp')} style={{ width: 92, height: 'auto', opacity: mark, marginBottom: 46 }} />
-      <div style={{ width: (wide ? 520 : width - 180) * rule, height: 2, background: c.fibre, opacity: 0.7, marginBottom: 46 }} />
-      <div style={{ font: `400 ${wide ? 170 : 150}px/0.92 ${display}`, letterSpacing: '-0.015em', color: c.cloud, opacity: head, transform: `translateY(${(1 - head) * 40}px)` }}>
-        {a} <span style={{ color: c.fibre }}>{b}</span>
-      </div>
-      <div style={{ maxWidth: 900, marginTop: 40, font: `400 ${wide ? 34 : 38}px/1.45 ${text}`, color: c.mist, opacity: lede, transform: `translateY(${(1 - lede) * 20}px)` }}>
-        {line('Bamboo, banana fibre yarn, and banana bark and leaves, supplied to business buyers.')}
+    <AbsoluteFill>
+      {/* Background layers */}
+      <HeroObject frame={f} width={width} height={height} />
+      <Dust frame={f} width={width} height={height} />
+
+      {/* Content */}
+      <div style={{ padding: wide ? '0 150px' : '0 90px', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', opacity: 1 - exit, transform: `translateY(${-exit * 30}px)` }}>
+        <Img src={staticFile('img/sb-mark-light.webp')} style={{ width: 92, height: 'auto', opacity: mark, marginBottom: 46 }} />
+        <div style={{ width: (wide ? 520 : width - 180) * rule, height: 2, background: c.fibre, opacity: 0.7, marginBottom: 46 }} />
+        <div style={{ font: `400 ${wide ? 170 : 150}px/0.92 ${display}`, letterSpacing: '-0.015em', color: c.cloud, opacity: head, transform: `translateY(${(1 - head) * 40}px)` }}>
+          {a} <span style={{ color: c.fibre }}>{b}</span>
+        </div>
+        <div style={{ maxWidth: 900, marginTop: 40, font: `400 ${wide ? 34 : 38}px/1.45 ${text}`, color: c.mist, opacity: lede, transform: `translateY(${(1 - lede) * 20}px)` }}>
+          {line('Bamboo, banana fibre yarn, and banana bark and leaves, supplied to business buyers.')}
+        </div>
       </div>
     </AbsoluteFill>
   );
@@ -153,8 +200,14 @@ const Ripples = () => {
   });
 };
 
+/** Fibre thread that runs through the entire film. */
+const FibreThread = ({ frame, width, height }) => {
+  const svg = createFibreThread(width, height, frame, FPS);
+  return <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} dangerouslySetInnerHTML={{ __html: svg }} />;
+};
+
 const Film = () => {
-  const { durationInFrames } = useVideoConfig(), f = useCurrentFrame();
+  const { durationInFrames, width, height } = useVideoConfig(), f = useCurrentFrame();
   const fadeIn = ramp(f, 0, 12), fadeOut = 1 - ramp(f, durationInFrames - 10, durationInFrames);
   const label = copy.labelled[0].text;
   return (
@@ -168,6 +221,8 @@ const Film = () => {
         <Sequence from={204} durationInFrames={108}><Family fam={1} dur={108} title="Banana fibre yarn" lede="Banana fibre yarn in three grades, from fine banana silk to industrial yarn." chips={['Grade A: banana silk', 'Grade B: standard banana fibre yarn', 'Grade C: industrial banana fibre yarn']} /></Sequence>
         <Sequence from={312} durationInFrames={96}><Family fam={2} dur={96} title="Banana bark and leaves" lede="Banana bark and banana leaves, the third family of the range." chips={['Banana bark', 'Banana leaves']} /></Sequence>
         <Sequence from={408}><End /></Sequence>
+        {/* Fibre thread overlay */}
+        <FibreThread frame={f} width={width} height={height} />
       </AbsoluteFill>
       <div style={{ position: 'absolute', right: 40, bottom: 36, padding: '10px 18px', borderRadius: 999, background: c.glass, border: `1px solid ${c['line-2']}`, color: c.dim, font: `400 20px/1.2 ${text}` }}>{label}</div>
     </AbsoluteFill>
