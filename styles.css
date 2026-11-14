@@ -7,6 +7,7 @@
   --blue:#004a98; --blue-glow:#1d64b3; --ink-0:#051222; --ink:#081c31; --ink-2:#102a43; --ink-3:#173a5c;
   --cloud:#f3f8fc; --mist:#dbeaf6; --fibre:#d7be93; --fibre-2:#e7d6b6; --fibre-3:#a8875a;
   --dim:#dbeaf6b8; --faint:#dbeaf699; --line:#d7be9333; --line-2:#dbeaf61f; --glass:#0c2440c7;
+  --wall:#eef0eb; --floor:#dde1da; --paper:#ffffffcc; --ink-dim:#081c31b8; --ink-line:#081c3124;
   --display:"Gloock",Georgia,serif; --text:"Schibsted Grotesk",system-ui,sans-serif;
   --ease:cubic-bezier(.16,1,.3,1); --ease-io:cubic-bezier(.65,0,.35,1);
   --gutter:clamp(16px,4vw,64px); --r-sm:12px; --r-md:20px; --r-lg:28px; --r-pill:999px;
@@ -462,3 +463,33 @@ html.at-end .tray{opacity:0;pointer-events:none;transform:translateY(12px)}
   .orb i,.sound-toggle[aria-pressed="true"] .bars i,.msg.typing i{animation:none}
   .btn,.product{transition:none}
 }
+
+/* ------------------------------------------------------------ 04 explore as a bright showroom
+   After the dark film the visitor walks into a lit gallery (owner's reference 97f87dc2): warm white walls under a
+   ceiling light, a paler floor, ink text, brand-blue accents. Inside .explore the text tokens switch to their ink
+   counterparts, so every component keeps its own rules. .dawn (opacity --dark, set by site.js) darkens the stage
+   as it rises into view and as it leaves, so the light is reached, not cut to. */
+.explore{--cloud:var(--ink);--dim:var(--ink-dim);--faint:var(--ink-dim);--line:var(--ink-line);color:var(--ink);background-color:var(--wall)}
+.explore-stage{background-color:var(--wall);
+  background-image:radial-gradient(55% 38% at 68% -6%,#ffffff 0%,#ffffff00 72%),linear-gradient(180deg,#f5f6f2 0%,var(--wall) 52%,var(--floor) 100%)}
+.explore .ambient img{filter:blur(64px) saturate(1.1) brightness(1.1)}
+.explore .ambient img.on{opacity:.2}
+.explore .ambient::after{background:linear-gradient(90deg,#eef0ebf2 0%,#eef0ebc2 45%,#eef0eb66 100%)}
+.dawn{position:absolute;inset:0;z-index:6;pointer-events:none;background:var(--ink-0);opacity:var(--dark,0)}
+html:not(.motion) .dawn{display:none}
+.explore .product{background:var(--paper);box-shadow:0 1px 2px #081c3114}
+.explore .product::after{color:var(--blue)}
+.explore .study-label{background:var(--paper);color:var(--ink-dim)}
+.explore .arch{background:var(--floor)}
+.explore .plinth{background:var(--paper);border-color:var(--ink-line);border-bottom-color:#004a9861;box-shadow:0 22px 44px #081c3124,inset 0 1px 0 #ffffff}
+.explore .plinth-num{color:var(--blue)}
+/* the header and chapter bar turn to ink while the showroom is behind them, and the mark becomes brand blue */
+.brand-mark-ink{display:none}
+.light-top .top{background:linear-gradient(#eef0ebeb,#eef0eb00);color:var(--ink)}
+.light-top .brand-mark:not(.brand-mark-ink){display:none}
+.light-top .brand-mark-ink{display:block;filter:none}
+.light-top .sound-toggle,.light-top .menu-toggle{background:var(--paper);color:var(--ink);border-color:var(--ink-line)}
+@media (min-width:901px){.light-top .nav a{color:var(--ink-dim)}.light-top .nav a:hover{color:var(--ink);background:#081c310f}}
+.light-bottom .chapters{background:linear-gradient(#eef0eb00,#eef0ebeb 55%)}
+.light-bottom .chapters a{color:var(--ink-dim)}
+.light-bottom .chapters a:hover,.light-bottom .chapters a.on{color:var(--ink)}

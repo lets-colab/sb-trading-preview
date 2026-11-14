@@ -103,7 +103,15 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     check(direct && got === 'Grade A: banana silk / Banana fibre yarn', `${name}: a shared product link opens that product directly (${got})`);
     await q.waitForTimeout(2500); // past the load event, when the browser's own jump to the anchor happens
     const behind = await q.evaluate(() => document.querySelector('.fam.on')?.id);
-    check(behind === 'fibre', `${name}: behind the glass drawer, the stage shows that product's family (${behind})`);
+    const why = behind === 'fibre' ? '' : await q.evaluate(() => { const e = document.getElementById('explore'), r = e.getBoundingClientRect(); return JSON.stringify({ y: Math.round(scrollY), p: +(Math.min(1, Math.max(0, -r.top / (r.height - innerHeight)))).toFixed(3), on: [...document.querySelectorAll('.fam.on')].map((f) => f.id), open: document.getElementById('productSheet').open, vis: document.visibilityState, hash: location.hash }); });
+    check(behind === 'fibre', `${name}: behind the glass drawer, the stage shows that product's family (${behind}${why ? ' ' + why : ''})`);
+    // what a late jump to the #anchor does; the stage must be back within four frames (an instant jump, not a glide that a
+    // busy phone keeps restarting)
+    const kept = await q.evaluate(() => new Promise((res) => {
+      scrollTo({ top: document.getElementById('explore').offsetTop, behavior: 'instant' });
+      let n = 0; const f = () => (++n < 4 ? requestAnimationFrame(f) : res(document.querySelector('.fam.on')?.id)); requestAnimationFrame(f);
+    }));
+    check(kept === 'fibre', `${name}: while the drawer is open, its family is back on stage within four frames when the page is moved (${kept})`);
     const spec = await q.evaluate(() => ({ grade: document.getElementById('sheetGradeRow').hidden ? null : document.getElementById('sheetGrade').textContent, rows: document.querySelectorAll('#productSheet .spec div:not([hidden])').length }));
     check(spec.grade === 'A' && spec.rows === 5, `${name}: the drawer's spec sheet shows the grade for a graded yarn (${JSON.stringify(spec)})`);
     await q.close();
@@ -125,6 +133,23 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
     const home = await q.evaluate(() => ({ parent: document.getElementById('enquiryForm').parentElement.className, open: document.getElementById('productSheet').open }));
     check(home.parent === 'form-alt' && !home.open, `${name}: closing the drawer returns the form to Contact Us (${JSON.stringify(home)})`);
+    await q.close();
+  }
+  { // Explore is a bright showroom (owner's reference 97f87dc2): light walls, ink text, an ink header over it; it starts
+    // dark as it rises into view after the film, so the visitor walks out of the dark into the light
+    const q = await ctx.newPage(); await q.goto(ORIGIN + '/'); await q.waitForTimeout(2000);
+    await q.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; const e = document.getElementById('explore'); scrollTo(0, e.offsetTop - innerHeight * 0.6); });
+    await q.waitForTimeout(800);
+    const entering = await q.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.dawn')).opacity));
+    await q.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.12); });
+    await q.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {}); await q.waitForTimeout(1500);
+    const s = await q.evaluate(() => {
+      const lum = (c) => { const [r, g, b] = c.match(/[\d.]+/g).map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; };
+      return { wall: +lum(getComputedStyle(document.querySelector('.explore-stage')).backgroundColor).toFixed(2), h3: +lum(getComputedStyle(document.querySelector('.fam.on h3')).color).toFixed(2),
+        header: document.documentElement.classList.contains('light-top'), dawn: parseFloat(getComputedStyle(document.querySelector('.dawn')).opacity), logo: getComputedStyle(document.querySelector('.brand-mark-ink')).display !== 'none' };
+    });
+    check(entering > 0.4 && s.wall > 0.85 && s.h3 < 0.2 && s.header && s.logo && s.dawn < 0.05,
+      `${name}: Explore is a bright showroom reached out of the dark, with ink text and an ink header (entering dark ${entering.toFixed(2)}, ${JSON.stringify(s)})`);
     await q.close();
   }
   { // each family stands on a plinth: its number and name, and arrows to the families either side (owner's references)

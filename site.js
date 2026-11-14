@@ -242,7 +242,7 @@ explore.addEventListener('keydown', (e) => {
   if (to < 0 || to >= fams.length) return;
   e.preventDefault();
   const y = famScrollY(to);
-  scrollTo(0, y); // synchronous, so the loop reads the same family on its next frame
+  scrollTo({ top: y, behavior: 'instant' }); // synchronous, so the loop reads the same family on its next frame
   lenis?.scrollTo(y, { immediate: true, force: true });
   setFamily(to);
   const next = stops(fams[to]);
@@ -301,12 +301,18 @@ function tick(now = performance.now()) {
     const e = progressOf(explore), n = fams.length;
     const idx = Math.min(n - 1, Math.floor(e * n));
     setFamily(idx);
+    // an open drawer keeps its product's family on stage behind it, whatever moved the page (such as the browser's own
+    // late jump to a shared link's #anchor)
+    if (sheet.open && !sheetLeaving && sheetFam >= 0 && idx !== sheetFam) { const y = famScrollY(sheetFam); scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true }); }
     const t = clamp(e * n - idx);
     fams[idx].style.setProperty('--t', t.toFixed(4));
     const active = now - lastInput < 1000;
     if (active) { pointer[0] += (target[0] - pointer[0]) * 0.08; pointer[1] += (target[1] - pointer[1]) * 0.08; }
     else { pointer[0] = target[0]; pointer[1] = target[1]; }
     const er = explore.getBoundingClientRect();
+    // the showroom is reached out of the dark: dark while it rises into view, light once it fills the screen, dusk as it leaves
+    const dark = Math.max(1 - clamp((innerHeight - er.top) / innerHeight), clamp(1 - er.bottom / innerHeight));
+    stage.style.setProperty('--dark', dark.toFixed(3));
     const inView = er.top < innerHeight && er.bottom > 0;
     if (studies && inView && (active || settling || !restDrawn || studies.dirty)) { // dirty: a texture arrived or the canvas moved/resized
       if (idx !== mountedFam) { mountedFam = idx; studies.mount(fams[idx].querySelector('.arch')); sizeStudies(); }
@@ -326,6 +332,10 @@ function tick(now = performance.now()) {
 
   // chapters: 01 Arrive, 02 Discover, 03 Transition (film), 04 Explore, 05 Enquire
   const mid = innerHeight / 2, fr = film.getBoundingClientRect(), er = explore.getBoundingClientRect();
+  // header and chapter bar turn to ink while the lit showroom is behind them
+  const lit = (er.bottom - er.top) > 0 && parseFloat(stage.style.getPropertyValue('--dark') || '0') < 0.5;
+  root.classList.toggle('light-top', lit && er.top <= 0 && er.bottom > 72);
+  root.classList.toggle('light-bottom', lit && er.top < innerHeight - 70 && er.bottom >= innerHeight);
   let c = 4;
   if (fr.bottom > mid) c = p < 0.115 ? 0 : p < 0.4 ? 1 : 2;
   else if (er.bottom > mid) c = 3;
@@ -417,7 +427,7 @@ tray.addEventListener('click', (e) => { e.preventDefault(); const t = $('#enquir
 // ------------------------------------------------------------------ product sheet
 $$('.product').forEach((el) => el.addEventListener('pointerenter', () => sound.cue('hover', el)));
 const sheet = $('#productSheet');
-let sheetProduct = '';
+let sheetProduct = '', sheetFam = -1; // the open product, and its family's index
 // The drawer arrives on a gentle spring and leaves on a short ease-in (Motion); the native dialog closes only after the
 // exit has played, so Escape, the close button, the backdrop and "Ask Rifat" all leave the same way. Reduced motion,
 // or Motion missing: it opens and closes instantly. Desktop slides from the right, phones (bottom sheet) from below.
@@ -472,6 +482,7 @@ function quoteSendHome() {
 }
 function showProduct(btn, { push = true } = {}) {
   sheetProduct = btn.textContent.trim();
+  sheetFam = fams.indexOf(btn.closest('.fam'));
   $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
   $('#sheetImg').alt = `${btn.dataset.family} photograph`;
   $('#sheetFamily').textContent = btn.dataset.family;
@@ -505,15 +516,9 @@ addEventListener('popstate', () => { const btn = productAt(); if (btn?.classList
     const toFamily = () => {
       if (reduced || k < 0) { btn.scrollIntoView({ block: 'center' }); return; }
       const y = explore.offsetTop + (explore.offsetHeight - innerHeight) * ((k + 0.35) / n);
-      scrollTo(0, y); lenis?.scrollTo(y, { immediate: true, force: true });
+      scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true });
     };
-    toFamily();
-    // the browser's own jump to the #anchor comes at load and lands on the stage's first family; go back to this one
-    if (document.readyState !== 'complete') addEventListener('load', () => {
-      if (productAt() !== btn) return;
-      requestAnimationFrame(toFamily);
-      setTimeout(() => { if (productAt() === btn && famActive !== k) toFamily(); }, 500); // a late jump to the anchor
-    }, { once: true });
+    toFamily(); // once the drawer is open, the loop keeps this family on stage behind it
     setTimeout(() => showProduct(btn, { push: false }), 60);
   }
 }

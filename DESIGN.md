@@ -18,6 +18,11 @@ colors:
   line: "#d7be9333"
   line-2: "#dbeaf61f"
   glass: "#0c2440c7"
+  wall: "#eef0eb"
+  floor: "#dde1da"
+  paper: "#ffffffcc"
+  ink-dim: "#081c31b8"
+  ink-line: "#081c3124"
 typography:
   display:
     fontFamily: "Gloock, Georgia, serif"
@@ -153,7 +158,7 @@ Citation convention: every root custom property appears with its leading double 
 
 **Creative North Star: "The Blue-Hour Showroom"**
 
-One continuous dusk-blue world, lit by a single warm natural-fibre accent. The page is a dark navy ground (ink-0) under a faint blue radial glow, with real material photography and a scroll-scrubbed film doing the colour work. Interface chrome is translucent ink glass with hairline fibre borders, so the material stays the brightest thing on screen. The North Star is taken from the build's own stylesheet header ("one continuous blue-hour world") and has not been separately confirmed by the owner.
+A dusk-blue world with one lit room, after the owner's showroom reference (97f87dc2): the opening studio, the film, About Us and Rifat are dusk, lit by a single warm natural-fibre accent; Explore is a bright gallery (wall, floor, paper, Deep Ink text, Brand Blue accents) reached out of the dark and left into dusk again. The page is a dark navy ground (ink-0) under a faint blue radial glow, with real material photography and a scroll-scrubbed film doing the colour work. Interface chrome is translucent ink glass with hairline fibre borders, so the material stays the brightest thing on screen. The North Star is taken from the build's own stylesheet header ("one continuous blue-hour world") and has not been separately confirmed by the owner.
 
 Density moves from cinematic to quiet. The opening chapters are full-viewport pinned stages with very large Gloock headlines; once the visitor reaches ordering and Rifat, the layout tightens into contained panels, pill controls and plain grotesk text. Motion is scroll-bound and pointer-bound rather than decorative looping, and every motion layer has a static document equivalent.
 
@@ -188,6 +193,11 @@ The token block below is the source of truth and mirrors styles.css `:root` exac
 --line: #d7be9333;          /* fibre hairline: borders of pills, panels, sheet, ticket */
 --line-2: #dbeaf61f;        /* cool hairline: inner dividers, input borders, footer rule */
 --glass: #0c2440c7;         /* translucent ink panel: Rifat chat, plain form */
+--wall: #eef0eb;             /* showroom wall: Explore's lit gallery ground; header and chapter bar fade to it there */
+--floor: #dde1da;            /* showroom floor: the gallery's lower gradient, the arch's ground */
+--paper: #ffffffcc;          /* white surfaces on the showroom: product chips, plinth, labels, header pills over it */
+--ink-dim: #081c31b8;        /* secondary text on the showroom (Deep Ink at 72%; 6.3:1 on wall) */
+--ink-line: #081c3124;       /* hairline on the showroom: chips, plinth, arrows */
 --display: "Gloock",Georgia,serif;                      /* display family: h1 to h3, card and step titles */
 --text: "Schibsted Grotesk",system-ui,sans-serif;       /* text family: body, UI, labels */
 --ease: cubic-bezier(.16,1,.3,1);       /* default easing: expo-out for state changes and entrances */
