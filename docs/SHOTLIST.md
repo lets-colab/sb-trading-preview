@@ -1,6 +1,6 @@
 # Shoot-day shot list: SB Trading's own footage and photographs
 
-This replaces every stock and generated clip on the site with SB Trading's own. It is the main step between the current site and award level. Direction: "Source to bale" documentary at dusk for the film, "Specimen studio" stills for Explore and the product drawer (see the photo direction notes in HANDOFF_CODEX.md).
+This replaces the generated film (built from the owner's reference clip) with SB Trading's own footage, following the same journey: dark grove into light, the material close, the gallery. It is the main step between the current site and award level. Direction: "Source to bale" documentary at dusk for the film, "Specimen studio" stills for Explore and the product drawer (see the photo direction notes in HANDOFF_CODEX.md).
 
 ## Rules for every shot
 
@@ -38,5 +38,5 @@ Dark slate or ink-blue ground, one warm light at 45 degrees from the left, no fi
 ## After the shoot
 
 1. Send the files with the record sheet. Product names and grades shown in the stills must be the real ones.
-2. The film frames, depth maps, captions and per-shot source labels are rebuilt from the new footage; the "generated footage and Pexels stock" label is removed only for the shots that are then SB Trading's own.
+2. The film frames, depth maps, captions and per-shot source labels are rebuilt from the new footage; the "generated footage" label is removed only for the shots that are then SB Trading's own.
 3. The Remotion film in video/ re-renders from the same photographs, and its draft notice is removed once SB Trading confirms them.

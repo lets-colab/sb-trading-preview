@@ -24,9 +24,6 @@ const ORIGIN = `http://127.0.0.1:${server.address().port}`;
 // kind: media (pictures and film), text, control (buttons, links, inputs), chrome (header, bars, labels), panel
 const PARTS = [
   ['.film-canvas', 'Film: scroll-scrubbed footage, full bleed', 'media'],
-  ['.studio .beam', 'Overhead light beam', 'light'],
-  ['.studio .floor', 'Floor light', 'light'],
-  ['.studio .lit', "Arch window: SB Trading's bamboo photograph", 'media'],
   ['.dust', 'Gold dust (drawn over the film)', 'none'],
   ['.top', 'Header', 'chrome', ''],
   ['.brand', 'SB mark', 'control', 'SB'],
@@ -42,8 +39,6 @@ const PARTS = [
   ['#film .beat:not(.beat-hero) h2', 'Caption', 'text'],
   ['.fam-cards', 'Family cards ×3: Bamboo · Banana fibre yarn · Bark and leaves', 'control'],
   ['.film-label', 'Source label (names each shot)', 'chrome'],
-  ['.gallery .mini-arch', 'Arch: family photograph', 'media'],
-  ['.gallery-plinth', 'Plinth: number and family name', 'control'],
   ['.fam.on .fam-text h3', 'Family name', 'text'],
   ['.fam.on .fam-lede', 'Family lede', 'text'],
   ['.fam.on .products', 'Product chips (open the spec drawer)', 'control'],
@@ -75,16 +70,14 @@ const PARTS = [
 const filmAt = (q) => `(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * ${q}); })()`;
 const exploreAt = (q) => `(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * ${q}); })()`;
 const FRAMES = [
-  { id: 'arrive', chapter: '01 Arrive', title: 'The studio', go: filmAt(0), wait: 2500,
-    note: 'The page opens in a dark room. One beam falls from an overhead skylight onto an arch window holding SB Trading’s own split-bamboo photograph; a pool of light sits under it, and gold dust rises through the beam. The title, the three facts and the two actions sit on the left (above the arch on phones). Scrolling opens the dark outward from the arch into the film.' },
-  { id: 'discover', chapter: '02 Discover', title: 'The film', go: filmAt(0.16), wait: 2500,
-    note: 'The scroll is the film’s playhead: full-bleed footage moves forward and back with the scroll. One short caption at a time sits bottom-left; the source label names each shot (stock, generated, or SB Trading’s own). Dust stays faintly over the footage.' },
-  { id: 'transition', chapter: '03 Transition', title: 'The end of the film', go: filmAt(0.95), wait: 2500,
-    note: 'The last caption, “Bamboo, yarn and bark.”, with three family cards that jump straight to each family in Explore.' },
-  { id: 'showroom', chapter: '04 Explore', title: 'The showroom', go: exploreAt(0.03), wait: 2500,
-    note: 'Out of the dark film into a bright gallery: warm white walls, all three families side by side, each a small arch on a numbered plinth (01 / 03 Bamboo, 02 / 03 Banana fibre yarn, 03 / 03 Banana bark and leaves). Choosing one goes straight to it; scrolling on moves in on Bamboo first.' },
+  { id: 'arrive', chapter: '01 Arrive', title: 'The grove', go: filmAt(0), wait: 2500,
+    note: 'The film opens in darkness, as the owner’s showroom video does: first light between bamboo, gold dust in the light shafts. The title, the three facts and the two actions sit on the left (lower on phones). Scrolling is the camera walking forward through the grove.' },
+  { id: 'discover', chapter: '02 Discover', title: 'Into the light', go: filmAt(0.27), wait: 2500,
+    note: 'The grove opens onto a bright showroom; then the material up close: wet bamboo, fibres lifting, the golden twist. One short caption at a time, each on its own soft scrim so the footage keeps its light; the source label names the footage as generated.' },
+  { id: 'transition', chapter: '03 Transition', title: 'The gallery', go: filmAt(0.95), wait: 2500,
+    note: 'The film ends in the reference’s gallery of three lit, numbered cases. Caption Bamboo, yarn and bark. with three family cards that go straight to each family in the showroom.' },
   { id: 'explore', chapter: '04 Explore', title: 'A family on stage', go: exploreAt(0.15), wait: 2500,
-    note: 'A bright showroom after the dark film: warm white walls, ink text, brand-blue accents; the stage brightens as it rises into view and dims to dusk as it leaves. One pinned stage, three families in turn. Text and product chips on the left; on the right, an arch window with the family’s photograph drawn in depth (it tilts with the pointer). Under the arch, a plinth carries the family’s number (01 / 03), its name and arrows to the families either side. On phones the arch and plinth sit above the text.' },
+    note: 'A bright showroom straight after the film’s gallery: warm white walls, ink text, brand-blue accents; it dims to dusk as it leaves. One pinned stage, three families in turn. Text and product chips on the left; on the right, an arch window with the family’s photograph drawn in depth (it tilts with the pointer). Under the arch, a plinth carries the family’s number (01 / 03), its name and arrows to the families either side. On phones the arch and plinth sit above the text.' },
   { id: 'drawer', chapter: '04 Explore', title: 'The spec drawer', go: exploreAt(0.15), wait: 2000, click: '.fam.on .product', after: 1500,
     note: 'A product chip opens a pane of frosted glass that floats clear of the edges (from the right on desktop, from the bottom on phones), with the family still visible behind it. Photograph, name, spec list, Request a quote (the main action) and Add to enquiry, Ask Rifat about it, and the hand-off line. Request a quote turns the drawer into the enquiry form beside the same product, then offers Send on WhatsApp there. Each product has its own shareable address.' },
   { id: 'about', chapter: 'About Us', title: 'How ordering works', go: `document.querySelector('.steps-wrap').scrollIntoView({ block: 'center' })`, wait: 2000,
@@ -219,7 +212,7 @@ summary{cursor:pointer;color:var(--dim);font-size:14px}
 </style></head><body><main>
 <h1>SB Trading: wireframes</h1>
 <p class="intro">The immersive site's seven key frames, measured from the built page (${new Date().toISOString().slice(0, 10)}) on desktop and phone. Boxes are where each element really sits; hover a box for its name. Each frame is also written out in words, and "Everything on screen" lists every element. No colour, footage or type here: this is layout only.</p>
-<ul class="key"><li class="k-media"><i></i>Picture or film</li><li class="k-control"><i></i>Something to press</li><li class="k-panel"><i></i>Panel</li><li><i></i>Text</li><li class="k-light"><i></i>Light (studio)</li></ul>
+<ul class="key"><li class="k-media"><i></i>Picture or film</li><li class="k-control"><i></i>Something to press</li><li class="k-panel"><i></i>Panel</li><li><i></i>Text</li><li class="k-light"><i></i>Light</li></ul>
 <nav class="toc" aria-label="Frames">${FRAMES.map((f, i) => `<a href="#${f.id}">${i + 1}. ${esc(f.title)}</a>`).join('')}</nav>
 ${sections}
 </main></body></html>

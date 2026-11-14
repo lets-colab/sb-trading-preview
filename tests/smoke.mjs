@@ -48,22 +48,21 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.waitForFunction((src) => new RegExp(src, 'i').test(document.querySelector('.film-label').textContent), want.source, { timeout: 15000 }).catch(() => {}); // the film eases to the scroll position
     return p.evaluate(() => document.querySelector('.film-label').textContent.trim());
   };
-  const studioLabel = await labelAt(0.02, /own photograph/);
-  check(/^This shot: SB Trading's own photograph\.$/.test(studioLabel), `${name}: under the title, the studio shows SB Trading's own photograph and the label says so (${studioLabel})`);
-  const studioShot = await p.evaluate(() => { const s = document.querySelector('.studio'), img = s.querySelector('img'); return { shown: getComputedStyle(s).visibility === 'visible', own: /assets\/img\//.test(img.currentSrc), loaded: img.complete && img.naturalWidth > 0 }; });
-  check(studioShot.shown && studioShot.own && studioShot.loaded, `${name}: the studio arch holds a loaded site photograph (${JSON.stringify(studioShot)})`);
+  // the film is the owner's reference journey (tools/build-film.py): generated footage throughout, labelled as such
+  const topLabel = await labelAt(0.02, /generated footage/);
+  check(/^This shot: generated footage, not SB Trading's own\.$/.test(topLabel), `${name}: from the first frame (the bamboo grove) the label names generated footage (${topLabel})`);
   const dustLit = await p.evaluate(() => { const c = document.querySelector('.dust'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 8) n++; return n; });
   check(dustLit > 20, `${name}: dust motes are drawn over the opening (${dustLit} lit pixels)`);
-  const shots = [[0.105, /stock footage \(Pexels\)/i], [0.5, /generated footage/i], [0.8, /stock footage \(Pexels\)/i], [0.95, /generated footage/i]];
+  const shots = [[0.25, /generated footage/i], [0.5, /generated footage/i], [0.95, /generated footage/i]];
   const seen = [];
-  for (const [x, want] of shots) { const t = await labelAt(x, want); seen.push(`${x}: ${t}`); if (!want.test(t) || !/not SB Trading's own/.test(t) || (/generated/i.test(t) && /Pexels/.test(t))) seen.push('MISMATCH'); }
-  check(!seen.includes('MISMATCH'), `${name}: once the studio opens, the film label names each shot's own source (${seen.filter((s) => s !== 'MISMATCH').join(' | ')})`);
-  { // the label follows the frame actually on the canvas: with frames 1-30 (stock) failing to load, frame 30 is drawn from
-    // the nearest loaded frame, which is generated footage, so the label must say generated (Codex finding on #16)
+  for (const [x, want] of shots) { const t = await labelAt(x, want); seen.push(`${x}: ${t}`); if (!want.test(t) || !/not SB Trading's own/.test(t) || /Pexels|stock/i.test(t)) seen.push('MISMATCH'); }
+  check(!seen.includes('MISMATCH'), `${name}: through the whole film the label names generated footage and never stock (${seen.filter((s) => s !== 'MISMATCH').join(' | ')})`);
+  { // the label follows the frame actually on the canvas: with frames 1-30 failing to load, frame 30 is drawn from the
+    // nearest loaded frame and the label still names that frame's source (Codex finding on #16)
     const q = await ctx.newPage();
     await q.route(/\/assets\/film\/[dm]\/0(0[1-9]|[12][0-9]|30)\.webp$/, (r) => r.abort());
     await q.goto(ORIGIN + '/'); await q.waitForTimeout(2500);
-    await q.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * (29 / 254)); });
+    await q.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * (29 / 141)); });
     await q.waitForFunction(() => /generated footage, not/i.test(document.querySelector('.film-label').textContent), null, { timeout: 15000 }).catch(() => {});
     const t = await q.evaluate(() => document.querySelector('.film-label').textContent.trim());
     check(/generated footage, not SB Trading's own/.test(t) && !/Pexels/.test(t), `${name}: the label follows the frame drawn, not the frame asked for (${t})`);
@@ -141,8 +140,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     check(home.parent === 'form-alt' && !home.open, `${name}: closing the drawer returns the form to Contact Us (${JSON.stringify(home)})`);
     await q.close();
   }
-  { // Explore is a bright showroom (owner's reference 97f87dc2): light walls, ink text, an ink header over it; it starts
-    // dark as it rises into view after the film, so the visitor walks out of the dark into the light
+  { // Explore is a bright showroom (owner's reference 97f87dc2): light walls, ink text, an ink header over it. The film
+    // already ends in the lit gallery, so the showroom is not darkened on the way in; it dims to dusk on the way out
     const q = await ctx.newPage(); await q.goto(ORIGIN + '/'); await q.waitForTimeout(2000);
     await q.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; const e = document.getElementById('explore'); scrollTo(0, e.offsetTop - innerHeight * 0.6); });
     await q.waitForTimeout(800);
@@ -152,22 +151,13 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const s = await q.evaluate(() => {
       const lum = (c) => { const [r, g, b] = c.match(/[\d.]+/g).map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; };
       return { wall: +lum(getComputedStyle(document.querySelector('.explore-stage')).backgroundColor).toFixed(2), h3: +lum(getComputedStyle(document.querySelector('.fam.on h3')).color).toFixed(2),
-        header: document.documentElement.classList.contains('light-top'), dawn: parseFloat(getComputedStyle(document.querySelector('.dawn')).opacity), logo: getComputedStyle(document.querySelector('.brand-mark-ink')).display !== 'none' };
+        header: document.documentElement.classList.contains('light-top'), logo: getComputedStyle(document.querySelector('.brand-mark-ink')).display !== 'none' };
     });
-    check(entering > 0.4 && s.wall > 0.85 && s.h3 < 0.2 && s.header && s.logo && s.dawn < 0.05,
-      `${name}: Explore is a bright showroom reached out of the dark, with ink text and an ink header (entering dark ${entering.toFixed(2)}, ${JSON.stringify(s)})`);
-    await q.close();
-  }
-  { // the showroom opens on all three families side by side (the reference's establishing shot), then moves in on one;
-    // choosing one from the keyboard lands on that family's first product
-    const q = await ctx.newPage(); await q.goto(ORIGIN + '/'); await q.waitForTimeout(2000);
-    await q.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.02); });
-    await q.waitForTimeout(1200);
-    const g = await q.evaluate(() => ({ overview: document.querySelector('.explore-stage').classList.contains('overview'), items: [...document.querySelectorAll('.gallery a')].filter((a) => a.checkVisibility({ visibilityProperty: true, opacityProperty: true })).map((a) => a.innerText.replace(/\s+/g, ' ').trim()), fam: [...document.querySelectorAll('.fam')].some((f) => f.checkVisibility({ visibilityProperty: true, opacityProperty: true })) }));
-    check(g.overview && g.items.length === 3 && /^01 \/ 03 Bamboo/.test(g.items[0]) && !g.fam, `${name}: the showroom opens on all three families side by side (${JSON.stringify(g)})`);
-    await q.focus('.gallery a[data-fam="1"]'); await q.keyboard.press('Enter');
-    const landed = await q.waitForFunction(() => document.querySelector('.fam.on')?.id === 'fibre' && document.activeElement?.textContent.trim() === 'Grade A: banana silk', null, { timeout: 6000 }).then(() => true, () => false);
-    check(landed, `${name}: choosing a family from the showroom with the keyboard brings it on stage with focus on its first product`);
+    await q.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + e.offsetHeight - innerHeight * 0.4); });
+    await q.waitForTimeout(800);
+    const leaving = await q.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.dawn')).opacity));
+    check(entering < 0.05 && leaving > 0.4 && s.wall > 0.85 && s.h3 < 0.2 && s.header && s.logo,
+      `${name}: Explore is a bright showroom with ink text and an ink header, entered in the light and left into dusk (entering ${entering.toFixed(2)}, leaving ${leaving.toFixed(2)}, ${JSON.stringify(s)})`);
     await q.close();
   }
   { // each family stands on a plinth: its number and name, and arrows to the families either side (owner's references)

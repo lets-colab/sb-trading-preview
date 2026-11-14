@@ -6,7 +6,7 @@ Read this file, then `PRODUCT.md` (brand and product brief) and `README.md` (fil
 - **Preview:** `main` at merge `876d5df` (PR #15) is what Cloudflare Pages deploys to https://sb-trading.lastbenchbd.com, still behind the Cloudflare Access login. Nobody has confirmed the deployed page from inside this workflow (the login blocks it): NOT VERIFIED live.
 - **Merged since 10 Nov (PRs #10, #14, #15):** photographs in depth (`assets/photodepth.js`) replacing the procedural 3D; specimen-stage opening; film 460vh with a new ending; spec drawer (Motion spring in, eased exit) and enquiry tray; phone enquiry summary; opt-in generated score with note ripples and a live meter (`assets/sound.js`); caption contrast gate; Remotion film rebuilt from the site's design system (`video/`, `tests/film-sync.mjs`); `docs/SHOTLIST.md`.
 - **This branch (open PR, not merged):**
-  - the film label names each shot's own source (Pexels stock or generated);
+  - the film label names the footage as generated (the owner's showroom reference clip; no stock footage);
   - `tests/access.mjs`: reduced motion, keyboard path, axe-core WCAG A/AA scan (no serious or critical violations in five states, desktop and phone);
   - staged frame loading and lazy 3D setup (simulated mid-range phone: main-thread blocking about 970 ms -> about 100 ms; Lighthouse mobile performance 42 -> 57, accessibility 100, best practices 100; SEO 63 only because the draft is `noindex`);
   - the client brief's navigation (About Us, Products, Contact Us) with an About Us section built from facts already on the page;
@@ -41,7 +41,7 @@ src/rifat-fn.js       Pages Function source (Anthropic TypeScript SDK) -> functi
 src/materials3d.js    3D studies (three.js r187)        -> assets/materials3d.js
 src/smooth.js         Lenis re-export                   -> assets/vendor/smooth.js
 assets/sound.js       tactile sound cues (lazy-loaded on the Sound press)
-assets/film/{d,m}/    255 WebP frames (desktop 1280x720, phone 405x720 crop): 1-30 Pexels bamboo canopy, 31-191 generated bamboo-to-fibre, 192-223 Pexels banana leaves, 224-255 generated bamboo -> fibre -> yarn ball + bark sheet (owner's Gemini clip 65bdd3ff, 3.4-6.0 s only: its HUD, fake 'spec drawer' with invented MOQ/grade and a wrong WhatsApp number are excluded). Do NOT use gemini_generated_video_9f29a4ec (owner withdrew it).
+assets/film/{d,m}/    142 WebP frames (desktop 1280x720, phone 405x720 crop) built by tools/build-film.py from the owner's showroom reference clip 97f87dc2 (generated): grove 0-1.95 s, fibre close-ups 3.0-5.95 s (zoomed, edges softened: drifting cards with invented text), gallery 6.0-7.4 s. Excluded: 2.0-2.95 s (plinth cards misspell the company name) and 8.3 s on (drawn-in fake quote form). docs/storyboard.html: reference vs site, scene by scene. Do NOT use gemini_generated_video_9f29a4ec (owner withdrew it).
 assets/img/           five real product photographs + logo variants (see rule 5)
 assets/vendor/        Motion 12, Lenis, three.js licence, fonts (Gloock, Schibsted Grotesk; OFL)
 functions/api/rifat.js  GET -> { ai }, POST -> { reply, enquiry, ready }; 503 without ANTHROPIC_API_KEY
@@ -58,7 +58,7 @@ docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions
 ## Commands
 ```bash
 npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
-CHROMIUM_PATH=<chrome> npm test                          # 178 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone (incl. opening studio, label, dust, spec drawer)
+CHROMIUM_PATH=<chrome> npm test                          # 166 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone (incl. film label, dust, spec drawer)
 node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector: 10 findings, all documented intent
 cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
 ```
@@ -131,7 +131,7 @@ No Access, DNS, credential, or production permission changes were made during th
 - If evidence is missing, mark the item `NOT PROVEN` and stop at the smallest reversible diagnostic check.
 
 ## Open items, in priority order
-1. **SB Trading's own footage and photographs:** run `docs/SHOTLIST.md` (two days: location at dusk, then studio). Every film shot is currently Pexels stock or generated and says so on screen. Stock sources (Pexels licence): videos 40042753 (bamboo), 37009850 (banana leaves).
+1. **SB Trading's own footage and photographs:** run `docs/SHOTLIST.md` (two days: location at dusk, then studio). Every film shot is currently generated footage (the owner's reference clip) and says so on screen; no stock footage is used.
 2. **Owner content:** email and phone (WhatsApp +880 1878-707910 is live); origin, minimum order, shipping terms, lead times, certifications; confirmed product names, grades and per-product photos (banana bark and woven mats have none; "Ski poles" is an unverified label). Approval of the derived light logo. About Us states only what the page already said; extend it only with facts SB Trading confirms.
 3. **Rifat AI key (owner decision on spend first):** add `ANTHROPIC_API_KEY` in Cloudflare (steps above), then test five real buyer conversations, including attempts to get prices or a confirmed order (Rifat must refuse and hand to the team). Add rate limiting per IP (Cloudflare WAF rule on `/api/rifat`) before any public launch.
 4. **Owner's ten-minute check on a real phone (nothing here is verified on a real device):**

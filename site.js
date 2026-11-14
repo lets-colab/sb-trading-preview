@@ -96,7 +96,7 @@ const sound = (() => {
 })();
 
 // ------------------------------------------------------------------ film (stages 01–03)
-const FRAMES = 255;
+const FRAMES = 142; // tools/build-film.py
 const SET = innerWidth / innerHeight < 0.9 ? 'm' : 'd';
 const film = $('#film'), canvas = $('.film-canvas'), ctx = canvas.getContext('2d');
 const frames = new Array(FRAMES);
@@ -148,22 +148,15 @@ async function loadFrames() {
 // never blurred together and nothing reads as SB Trading's own. Without motion the HTML's whole-film sentence stays.
 const filmLabel = $('.film-label', film);
 const filmShots = (filmLabel?.dataset.shots || '').split('|').filter(Boolean).map((s) => { const [r, src] = s.split(':'), [a, b] = r.split('-').map(Number); return { a, b, src }; });
-let filmShot = null, studioOn = true;
-const STUDIO_SHOT = { src: 'studio' };
+let filmShot = null;
 function labelShot(i) { // i: the index of the loaded frame on the canvas (not the one the scroll asked for), -1 before any
-  if (!filmLabel) return;
-  if (studioOn) { // the studio covers the film: what is on screen is SB Trading's photograph, not footage
-    if (filmShot !== STUDIO_SHOT) { filmShot = STUDIO_SHOT; filmLabel.textContent = "This shot: SB Trading's own photograph."; }
-    return;
-  }
-  if (i < 0) return;
+  if (!filmLabel || i < 0) return;
   const shot = filmShots.find((s) => i + 1 >= s.a && i + 1 <= s.b);
   if (!shot || shot === filmShot) return;
   filmShot = shot;
   filmLabel.textContent = `This shot: ${shot.src}, not SB Trading's own.`;
 }
-const studio = $('.studio', film);
-let studioO = 1;
+let heroO = 1; // the opening title's opacity: the dust is brightest in the grove's light shafts while it shows
 function beats(p) {
   for (const { el, at: [a, b] } of filmBeats) {
     const fade = 0.035;
@@ -171,16 +164,14 @@ function beats(p) {
     el.style.opacity = o.toFixed(3);
     el.style.transform = `translateY(${((1 - o) * 28).toFixed(1)}px)`;
     el.style.visibility = o < 0.01 ? 'hidden' : 'visible';
-    if (a <= 0) { // the opening: the scroll ring fills as the film begins; the studio fades with the title
+    if (a <= 0) { // the opening: the scroll ring fills as the film begins
       el.style.setProperty('--hp', clamp(p / b).toFixed(3));
-      studioO = o;
-      studioOn = o > 0.9; // the opening starts at the arch, so footage shows there first
-      if (studio) { studio.style.setProperty('--open', (1 - o).toFixed(3)); studio.style.visibility = o < 0.01 ? 'hidden' : 'visible'; }
+      heroO = o;
     }
   }
 }
 
-// Dust: slow gold motes that rise through the film, bright inside the studio's beam and faint over the footage. Seeded,
+// Dust: slow gold motes that rise through the film, bright in the grove's light shafts and faint over the footage. Seeded,
 // so every visit draws the same air; drawn only while the film is on screen, and not at all with reduced motion.
 const dust = (() => {
   const cv = $('.dust', film), g = cv?.getContext('2d');
@@ -189,18 +180,18 @@ const dust = (() => {
   const rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const motes = Array.from({ length: fine ? 70 : 40 }, () => ({ x: rnd(), y: rnd(), r: 0.6 + rnd() * rnd() * 2.2, up: 5 + rnd() * 14, sway: 6 + rnd() * 18, ph: rnd() * 6.28, a: 0.25 + rnd() * 0.6 }));
   let w = 0, h = 0, dpr = 1, last = 0;
-  const lx = () => (innerWidth <= 760 ? 0.5 : 0.7);
+  const lx = () => (innerWidth <= 760 ? 0.5 : 0.42); // where the grove's light shafts fall
   return {
     size() { dpr = Math.min(devicePixelRatio || 1, 1.5); w = innerWidth; h = innerHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); },
     draw(now) {
       const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
-      const t = now / 1000, cx = lx(), halfBeam = innerWidth <= 760 ? 0.36 : 0.17;
+      const t = now / 1000, cx = lx(), halfBeam = innerWidth <= 760 ? 0.45 : 0.3;
       g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
       g.globalCompositeOperation = 'lighter';
       for (const m of motes) {
         m.y -= (m.up * dt) / h; if (m.y < -0.02) { m.y = 1.02; m.x = rnd(); }
         const x = m.x * w + Math.sin(t * 0.35 + m.ph) * m.sway, y = m.y * h;
-        const inBeam = Math.exp(-(((x / w - cx) / halfBeam) ** 2) * (1 + (1 - m.y))) * studioO;
+        const inBeam = Math.exp(-(((x / w - cx) / halfBeam) ** 2) * (1 + (1 - m.y))) * Math.max(heroO, 1 - clamp(filmP / 0.33)); // the shafts light the grove, the first third of the film
         const a = m.a * (0.22 + 0.78 * inBeam) * (0.7 + 0.3 * Math.sin(t * 1.3 + m.ph * 3));
         if (a < 0.02) continue;
         const r = m.r * (1 + inBeam * 0.6);
@@ -231,9 +222,7 @@ function setFamily(i) {
 
 // Keyboard: only the visible family is focusable (the others are inert), so Tab past its last stop (products, then the
 // plinth arrows) moves the stage to the next family and focuses its first product; Shift+Tab from a first product goes back.
-// The first part of Explore's scroll shows the whole showroom (all three families side by side); the rest is the families.
-const OVER = 0.08;
-const famScrollY = (i, f = 0.12) => explore.offsetTop + (explore.offsetHeight - innerHeight) * (OVER + (1 - OVER) * (i / fams.length + f));
+const famScrollY = (i, f = 0.12) => explore.offsetTop + (explore.offsetHeight - innerHeight) * (i / fams.length + f);
 explore.addEventListener('keydown', (e) => {
   if (e.key !== 'Tab' || reduced) return;
   const fam = e.target.closest('.fam');
@@ -300,9 +289,8 @@ function tick(now = performance.now()) {
   }
 
   if (!reduced) {
-    const e = progressOf(explore), n = fams.length, f = clamp((e - OVER) / (1 - OVER));
+    const f = progressOf(explore), n = fams.length;
     const idx = Math.min(n - 1, Math.floor(f * n));
-    stage.classList.toggle('overview', e < OVER);
     setFamily(idx);
     // an open drawer keeps its product's family on stage behind it, whatever moved the page (such as the browser's own
     // late jump to a shared link's #anchor)
@@ -313,8 +301,8 @@ function tick(now = performance.now()) {
     if (active) { pointer[0] += (target[0] - pointer[0]) * 0.08; pointer[1] += (target[1] - pointer[1]) * 0.08; }
     else { pointer[0] = target[0]; pointer[1] = target[1]; }
     const er = explore.getBoundingClientRect();
-    // the showroom is reached out of the dark: dark while it rises into view, light once it fills the screen, dusk as it leaves
-    const dark = Math.max(1 - clamp((innerHeight - er.top) / innerHeight), clamp(1 - er.bottom / innerHeight));
+    // the showroom dims to dusk as it leaves for About Us and Rifat (the film before it ends in the lit gallery)
+    const dark = clamp(1 - er.bottom / innerHeight);
     stage.style.setProperty('--dark', dark.toFixed(3));
     const inView = er.top < innerHeight && er.bottom > 0;
     if (studies && inView && (active || settling || !restDrawn || studies.dirty)) { // dirty: a texture arrived or the canvas moved/resized
@@ -340,7 +328,7 @@ function tick(now = performance.now()) {
   root.classList.toggle('light-top', lit && er.top <= 0 && er.bottom > 72);
   root.classList.toggle('light-bottom', lit && er.top < innerHeight - 70 && er.bottom >= innerHeight);
   let c = 4;
-  if (fr.bottom > mid) c = p < 0.115 ? 0 : p < 0.4 ? 1 : 2;
+  if (fr.bottom > mid) c = p < 0.13 ? 0 : p < 0.34 ? 1 : 2;
   else if (er.bottom > mid) c = 3;
   setChapter(c);
   sound.scene(c, Math.max(0, famActive));
@@ -375,17 +363,17 @@ if (fine && !reduced) {
     requestAnimationFrame(raf);
   }).catch(() => { /* native scrolling stays */ });
 }
-// Family cards at the end of the film, the showroom's gallery and the plinth arrows land on that family inside the
+// Family cards at the end of the film and the plinth arrows land on that family inside the
 // pinned Explore stage. From the keyboard the jump is instant and focus goes to the family's first product, so it is
 // never left on a link that has just been hidden.
-for (const a of $$('.fam-cards a, .plinth a[data-fam], .gallery a[data-fam]')) {
+for (const a of $$('.fam-cards a, .plinth a[data-fam]')) {
   a.addEventListener('click', (e) => {
     if (reduced) return; // without the pinned stage the plain anchor is right
     e.preventDefault();
     const i = Number(a.dataset.fam), y = famScrollY(i);
     if (e.detail === 0) {
       scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true });
-      stage.classList.remove('overview'); setFamily(i);
+      setFamily(i);
       $('.product', fams[i])?.focus({ preventScroll: true });
     } else if (lenis) lenis.scrollTo(y); else scrollTo({ top: y, behavior: 'smooth' });
     sound.cue('open', a);

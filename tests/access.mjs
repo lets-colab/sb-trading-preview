@@ -30,7 +30,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 let failures = 0;
 const check = (ok, msg) => { console.log(ok ? 'ok  ' : 'FAIL', msg); if (!ok) failures++; };
 const open = async (opts) => { const ctx = await browser.newContext(opts); const p = await ctx.newPage(); p.__film = 0;
-  p.on('request', (r) => { if (/\/assets\/film\/[dm]\/\d+\.webp/.test(r.url()) && !/\/060\.webp/.test(r.url())) p.__film++; });
+  p.on('request', (r) => { if (/\/assets\/film\/[dm]\/\d+\.webp/.test(r.url()) && !/\/044\.webp/.test(r.url())) p.__film++; });
   await p.goto(ORIGIN + '/'); await p.waitForTimeout(2500); return [ctx, p]; };
 
 // ---------------------------------------------------------------- 1. reduced motion
@@ -47,7 +47,7 @@ const open = async (opts) => { const ctx = await browser.newContext(opts); const
   check(!s.motion, 'reduced motion: the page does not turn its motion layer on');
   check(p.__film === 0, `reduced motion: the film is a poster, so no film frames are downloaded (${p.__film} frame requests)`);
   check(s.poster && s.canvas === 'none' && s.beats, 'reduced motion: the film is a still poster with every caption visible');
-  check(/^Film: generated footage and Pexels stock clips, not SB Trading's own/.test(s.label), `reduced motion: the film label keeps its whole-film sentence (${s.label})`);
+  check(/^Film: generated footage, not SB Trading's own/.test(s.label), `reduced motion: the film label keeps its whole-film sentence (${s.label})`);
   await p.evaluate(() => document.querySelector('#bamboo .product').scrollIntoView({ block: 'center' }));
   await p.click('#bamboo .product >> nth=0');
   const opened = await p.evaluate(() => { const d = document.getElementById('productSheet'); return d.open && getComputedStyle(d).transform === 'none' && d.getAnimations().length === 0; });

@@ -100,16 +100,15 @@ html[data-score="playing"] .sound-toggle[aria-pressed="true"] .bars i{animation:
 .film-stage{position:sticky;top:0;height:100svh;overflow:hidden}
 .film-canvas,.film-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .film-poster{display:none}
-.film-shade{position:absolute;inset:0;background:
-  linear-gradient(90deg,#051222e6 0%,#05122288 38%,#05122200 70%),
-  linear-gradient(0deg,#051222 0%,#05122200 40%),
-  linear-gradient(180deg,#05122299 0%,#05122200 22%)}
+/* the film keeps its own light (the reference walks out of the dark into a bright gallery): only thin bands for the
+   header and the chapter bar; each caption carries its own local scrim below */
+.film-shade{position:absolute;inset:0;background:linear-gradient(0deg,#051222cc 0%,#05122200 26%),linear-gradient(180deg,#05122273 0%,#05122200 15%)}
 .beat{position:absolute;left:var(--gutter);right:var(--gutter);bottom:clamp(96px,16vh,170px);max-width:1000px}
 .beat h2{max-width:13ch}
 .beat-hero h1{max-width:9ch}
-/* The end beat sits over the brightest frames (yarn ball, bark sheet); a local ink scrim travels with its opacity */
-.beat-end{isolation:isolate}
-.beat-end::before{content:"";position:absolute;inset:-18% -14% -16% -8%;z-index:-1;pointer-events:none;background:linear-gradient(90deg,#051222eb 0%,#051222cc 58%,#05122200 100%);-webkit-mask-image:linear-gradient(0deg,transparent,#000 20%,#000 80%,transparent);mask-image:linear-gradient(0deg,transparent,#000 20%,#000 80%,transparent)}
+/* each caption carries a local ink scrim that travels with its opacity, so the footage around it keeps its light */
+.beat:not(.beat-hero){isolation:isolate}
+.beat:not(.beat-hero)::before{content:"";position:absolute;inset:-18% -14% -16% -8%;z-index:-1;pointer-events:none;background:linear-gradient(90deg,#051222eb 0%,#051222cc 58%,#05122200 100%);-webkit-mask-image:linear-gradient(0deg,transparent,#000 20%,#000 80%,transparent);mask-image:linear-gradient(0deg,transparent,#000 20%,#000 80%,transparent)}
 .fam-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:900px;margin-top:30px}
 .fam-cards a{position:relative;display:flex;flex-direction:column;justify-content:space-between;min-height:150px;padding:20px;border-radius:var(--r-md);overflow:hidden;text-decoration:none;
   background:linear-gradient(120deg,#0c2440cc 0%,#0c244066 60%,#0c244000 100%);border:1px solid #dbeaf633;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
@@ -131,36 +130,8 @@ html[data-score="playing"] .sound-toggle[aria-pressed="true"] .bars i{animation:
 .scroll-ring svg{width:44px;height:44px;transform:rotate(-90deg)}
 .scroll-ring circle{fill:none;stroke:var(--line-2);stroke-width:1.5}
 .scroll-ring circle.fill{stroke:var(--fibre);stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--hp,0))}
-/* the specimen studio: a dark room, one overhead beam on SB Trading's own bamboo photograph in the arch window; it
-   fades as the film begins, so the film opens out of the dark. --lx is the beam's centre. */
-/* --open (0 to 1, set by site.js as the title fades): the dark opens outward from the arch, so the film is reached
-   through the window instead of by a cross-fade */
-.studio{--lx:70%;--ly:48%;position:absolute;inset:0;pointer-events:none;overflow:hidden;
-  background:radial-gradient(ellipse 60% 70% at var(--lx) 30%,var(--ink-2),var(--ink-0) 70%);
-  -webkit-mask-image:radial-gradient(circle at var(--lx) var(--ly),#0000 calc(var(--open,0) * 150% - 22%),#000 calc(var(--open,0) * 150%));
-  mask-image:radial-gradient(circle at var(--lx) var(--ly),#0000 calc(var(--open,0) * 150% - 22%),#000 calc(var(--open,0) * 150%))}
-.skylight{position:absolute;left:var(--lx);top:-7vh;width:min(36vw,480px);aspect-ratio:3;translate:-50% 0;border-radius:50%;
-  background:radial-gradient(closest-side,var(--cloud),#dbeaf6d9 50%,#dbeaf600);filter:blur(4px)}
-.beam{position:absolute;left:var(--lx);top:0;width:min(48vw,660px);height:100%;translate:-50% 0;mix-blend-mode:screen;filter:blur(22px)}
-.beam::before{content:"";position:absolute;inset:0;clip-path:polygon(33% 0,67% 0,100% 100%,0 100%);
-  background:linear-gradient(180deg,#dbeaf64d 0%,#dbeaf624 55%,#dbeaf60d 100%)}
-.floor{position:absolute;left:var(--lx);bottom:6vh;width:min(44vw,600px);aspect-ratio:4.6;translate:-50% 0;border-radius:50%;
-  background:radial-gradient(closest-side,#dbeaf652,#dbeaf61f 55%,#dbeaf600)}
-.lit{position:absolute;left:var(--lx);top:var(--ly);height:min(58svh,560px);aspect-ratio:73/120;translate:-50% -50%;margin:0;
-  border-radius:999px 999px var(--r-lg) var(--r-lg);overflow:hidden;box-shadow:0 50px 120px #000a,0 0 0 1px #d7be9324}
-.lit img{width:100%;height:100%;object-fit:cover;object-position:50% 100%;transform:scale(1.45);transform-origin:50% 92%}
-/* the beam lights the top of the specimen; its foot falls into shadow */
-.lit::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#dbeaf61a 0%,#05122200 30%,#05122266 72%,#051222e6 100%)}
 .dust{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .beat-hero .specimen{max-width:600px}
-/* phone: a small specimen high in the beam, clear of the title below it */
-@media (max-width:760px){
-  .studio{--lx:50%;--ly:calc(9.5svh + 9svh)}
-  .lit{height:18svh}
-  .floor{bottom:auto;top:calc(9.5svh + 18svh - 1.6svh);width:46vw}
-  .beam{width:80vw}
-  .skylight{width:64vw;top:-5vh}
-}
 .specimen{display:flex;gap:clamp(20px,3vw,40px);margin:28px 0 0;padding:16px 0 0;border-top:1px solid var(--line)}
 .specimen div{margin:0}
 .specimen dt{font-size:13px;color:var(--dim)}
@@ -170,7 +141,7 @@ html[data-score="playing"] .sound-toggle[aria-pressed="true"] .bars i{animation:
 @keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
 .film-label{position:absolute;right:var(--gutter);bottom:72px;margin:0;padding:4px 10px;border-radius:var(--r-pill);background:#051222b3;font-size:12px;color:var(--dim)}
 html:not(.js) .film,html:not(.motion) .film{height:auto}
-html:not(.motion) .studio,html:not(.motion) .dust,html:not(.motion) .scroll-ring{display:none}
+html:not(.motion) .dust,html:not(.motion) .scroll-ring{display:none}
 html:not(.js) .film-stage,html:not(.motion) .film-stage{position:relative;height:auto;min-height:100svh;padding:140px var(--gutter) 120px;display:flex;flex-direction:column;justify-content:flex-end;gap:56px}
 html:not(.js) .film-poster,html:not(.motion) .film-poster{display:block}
 html:not(.js) .film-canvas,html:not(.motion) .film-canvas{display:none}
@@ -178,7 +149,7 @@ html:not(.js) .beat,html:not(.motion) .beat{position:relative;left:auto;right:au
 html:not(.js) .film-label,html:not(.motion) .film-label{position:relative;right:auto;bottom:auto}
 
 /* ------------------------------------------------------------ 04 explore: pinned stage, arched windows */
-.explore{position:relative;height:480vh}
+.explore{position:relative;height:420vh}
 .explore-stage{position:sticky;top:0;height:100svh;overflow:hidden;isolation:isolate}
 .ambient{position:absolute;inset:0;z-index:-1}
 .ambient img{position:absolute;inset:-12%;width:124%;height:124%;object-fit:cover;filter:blur(46px) saturate(1.25) brightness(.42);opacity:0;transition:opacity 1.2s var(--ease)}
@@ -454,7 +425,7 @@ html.at-end .tray{opacity:0;pointer-events:none;transform:translateY(12px)}
   .study-label{left:var(--gutter);right:auto;bottom:62px;font-size:11px}
   .film-label{bottom:64px;left:var(--gutter);right:auto}
   .beat{bottom:clamp(92px,14vh,140px)}
-  .film-shade{background:linear-gradient(0deg,#051222 0%,#051222e0 38%,#0512224d 70%,#05122200 100%),linear-gradient(180deg,#05122299 0%,#05122200 22%)}
+  .film-shade{background:linear-gradient(0deg,#051222e6 0%,#05122200 30%),linear-gradient(180deg,#05122273 0%,#05122200 14%)}
 }
 
 @media (prefers-reduced-motion:reduce){
@@ -467,14 +438,21 @@ html.at-end .tray{opacity:0;pointer-events:none;transform:translateY(12px)}
 /* ------------------------------------------------------------ 04 explore as a bright showroom
    After the dark film the visitor walks into a lit gallery (owner's reference 97f87dc2): warm white walls under a
    ceiling light, a paler floor, ink text, brand-blue accents. Inside .explore the text tokens switch to their ink
-   counterparts, so every component keeps its own rules. .dawn (opacity --dark, set by site.js) darkens the stage
-   as it rises into view and as it leaves, so the light is reached, not cut to. */
+   counterparts, so every component keeps its own rules. .dawn (opacity --dark, set by site.js) dims the stage to
+   dusk as it leaves for About Us and Rifat; the film before it already ends in the lit gallery. */
 .explore{--cloud:var(--ink);--dim:var(--ink-dim);--faint:var(--ink-dim);--line:var(--ink-line);color:var(--ink);background-color:var(--wall)}
 .explore-stage{background-color:var(--wall);
   background-image:radial-gradient(55% 38% at 68% -6%,#ffffff 0%,#ffffff00 72%),linear-gradient(180deg,#f5f6f2 0%,var(--wall) 52%,var(--floor) 100%)}
 .explore .ambient img{filter:blur(64px) saturate(1.1) brightness(1.1)}
-.explore .ambient img.on{opacity:.2}
-.explore .ambient::after{background:linear-gradient(90deg,#eef0ebf2 0%,#eef0ebc2 45%,#eef0eb66 100%)}
+.explore .ambient img.on{opacity:0}
+/* the showroom stays inside the film's last room (the reference's gallery of lit cases), softly out of focus behind the
+   family; a light wash keeps the text side readable */
+.explore .ambient::before{content:"";position:absolute;inset:-3%;background:url(assets/film/d/118.webp) center/cover;filter:blur(5px) saturate(.95)}
+.explore .ambient::after{background:linear-gradient(90deg,#eef0ebf5 0%,#eef0ebd9 40%,#eef0eb40 78%,#eef0eb26 100%)}
+@media (max-width:820px){
+  .explore .ambient::before{background-image:url(assets/film/m/118.webp)}
+  .explore .ambient::after{background:linear-gradient(0deg,#eef0ebf5 0%,#eef0ebe6 52%,#eef0eb66 100%)}
+}
 .dawn{position:absolute;inset:0;z-index:6;pointer-events:none;background:var(--ink-0);opacity:var(--dark,0)}
 html:not(.motion) .dawn{display:none}
 .explore .product{background:var(--paper);box-shadow:0 1px 2px #081c3114}
@@ -513,25 +491,3 @@ html:not(.motion) .dawn{display:none}
 .drawer [aria-invalid="true"]{border-color:var(--error)}
 .drawer input:focus,.drawer select:focus,.drawer textarea:focus,.drawer :focus-visible{outline-color:var(--blue)}
 .drawer .quote-done p{color:var(--ink)}
-
-/* the showroom's establishing view (owner's reference 97f87dc2): all three families side by side on their plinths;
-   site.js shows it (.overview) for the first part of Explore's scroll, then moves in on one family */
-.gallery{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;gap:clamp(18px,4vw,64px);padding:110px var(--gutter)}
-.gallery-item{display:flex;flex-direction:column;align-items:center;gap:16px;color:var(--ink);text-decoration:none;transition:transform .5s var(--ease)}
-.mini-arch{display:block;width:clamp(150px,15vw,230px);aspect-ratio:73/120;border-radius:999px 999px var(--r-md) var(--r-md);overflow:hidden;background:var(--floor);box-shadow:0 30px 60px #081c3133}
-.mini-arch img{width:100%;height:100%;object-fit:cover;transition:transform .8s var(--ease)}
-.gallery-plinth{width:auto;padding:10px 18px;gap:10px}
-.gallery-item:hover{transform:translateY(-6px)}
-.gallery-item:hover .mini-arch img{transform:scale(1.05)}
-.gallery-item:hover .gallery-plinth{border-color:var(--blue)}
-.motion .gallery{transition:opacity .6s var(--ease),transform .9s var(--ease)}
-.motion .explore-stage:not(.overview) .gallery{opacity:0;visibility:hidden;transform:scale(1.08);transition:opacity .45s var(--ease),transform .9s var(--ease),visibility 0s .45s}
-.motion .overview .fam{opacity:0;visibility:hidden}
-.motion .fam.on{transition:opacity .6s var(--ease) .1s}
-html:not(.motion) .gallery{position:relative;inset:auto;padding:110px var(--gutter) 24px;flex-wrap:wrap}
-@media (max-width:760px){
-  .gallery{gap:10px;padding:96px 12px}
-  .mini-arch{width:calc((100vw - 44px) / 3)}
-  .gallery-plinth{flex-direction:column;gap:2px;padding:8px 10px;border-radius:var(--r-md);text-align:center}
-  .gallery-plinth .plinth-name{margin:0;font-size:15px}
-}
