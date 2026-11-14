@@ -448,6 +448,16 @@ $('.sheet-close', sheet).addEventListener('submit', (e) => { e.preventDefault();
 // title, so it can be shared; Back closes it, Forward reopens it, and loading the address opens it directly.
 const pageTitle = document.title;
 const productAt = () => (/^#p-[a-z0-9-]+$/.test(location.hash) ? document.getElementById(location.hash.slice(1)) : null);
+// Before adding, the drawer's main action is "Add to enquiry"; once added, the actions swap roles so the next step,
+// finishing the enquiry with Rifat (the same hand-off as "Ask Rifat about it"), is the main button.
+function setSheetActions(added) {
+  const add = $('#sheetAdd'), ask = $('#sheetAsk'), label = ask.lastChild;
+  add.classList.toggle('btn-ghost', added);
+  ask.classList.toggle('btn-ghost', !added);
+  add.textContent = added ? 'Added ✓' : 'Add to enquiry';
+  label.textContent = added ? 'Finish enquiry with Rifat' : 'Ask Rifat about it';
+  add.parentElement.prepend(added ? ask : add);
+}
 function showProduct(btn, { push = true } = {}) {
   sheetProduct = btn.textContent.trim();
   $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
@@ -459,7 +469,7 @@ function showProduct(btn, { push = true } = {}) {
   $('#sheetGradeRow').hidden = !grade;
   $('#sheetGrade').textContent = grade ? grade[1] : '';
   $('#sheetStatus').textContent = '';
-  $('#sheetAdd').textContent = 'Add to enquiry';
+  setSheetActions(false);
   if (push && location.hash !== `#${btn.id}`) history.pushState({ product: btn.id }, '', `#${btn.id}`);
   document.title = `${sheetProduct} · SB Trading`;
   openSheet();
@@ -501,8 +511,9 @@ $('#sheetAsk').addEventListener('click', () => {
 });
 $('#sheetAdd').addEventListener('click', (e) => {
   const list = rifat.addProduct(sheetProduct);
-  $('#sheetStatus').textContent = `Added. Your enquiry: ${list}. Add more products, or finish with Rifat.`;
-  e.currentTarget.textContent = 'Added to enquiry ✓';
+  const n = list ? list.split(', ').length : 0;
+  $('#sheetStatus').textContent = `Added. Your enquiry has ${n} product${n === 1 ? '' : 's'}.`;
+  setSheetActions(true);
   sound.cue('tick', e.currentTarget);
 });
 sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });

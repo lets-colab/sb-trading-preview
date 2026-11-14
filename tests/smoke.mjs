@@ -127,6 +127,9 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await p.click('#sheetAdd'); await p.waitForTimeout(300);
   check(await p.evaluate(() => !document.getElementById('enquiryTray').hidden && document.getElementById('trayCount').textContent === '1' && /Bamboo splits/.test(document.getElementById('trayItems').textContent)),
     `${name}: "Add to enquiry" in the spec drawer puts the product in the enquiry tray`);
+  const after = await p.evaluate(() => { const ask = document.getElementById('sheetAsk'), add = document.getElementById('sheetAdd'); return { ask: ask.textContent.trim(), askPrimary: !ask.classList.contains('btn-ghost'), addGhost: add.classList.contains('btn-ghost'), status: document.getElementById('sheetStatus').textContent }; });
+  check(/^Finish enquiry with Rifat$/.test(after.ask) && after.askPrimary && after.addGhost && after.status === 'Added. Your enquiry has 1 product.',
+    `${name}: once a product is added, the drawer's main action becomes finishing the enquiry with Rifat (${JSON.stringify(after)})`);
   await p.click('#sheetAsk');
   await p.waitForFunction(() => document.activeElement?.id === 'rifatInput', null, { timeout: 10000 }).catch(() => {});
   check((await p.evaluate(() => document.activeElement.id)) === 'rifatInput', `${name}: focus lands in Rifat's message field after "Ask Rifat"`);
