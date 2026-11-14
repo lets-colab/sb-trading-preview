@@ -7,7 +7,7 @@
   --blue:#004a98; --blue-glow:#1d64b3; --ink-0:#051222; --ink:#081c31; --ink-2:#102a43; --ink-3:#173a5c;
   --cloud:#f3f8fc; --mist:#dbeaf6; --fibre:#d7be93; --fibre-2:#e7d6b6; --fibre-3:#a8875a;
   --dim:#dbeaf6b8; --faint:#dbeaf699; --line:#d7be9333; --line-2:#dbeaf61f; --glass:#0c2440c7;
-  --wall:#eef0eb; --floor:#dde1da; --paper:#ffffffcc; --ink-dim:#081c31b8; --ink-line:#081c3124;
+  --wall:#eef0eb; --floor:#dde1da; --paper:#ffffffcc; --ink-dim:#081c31b8; --ink-line:#081c3124; --error:#a8261c;
   --display:"Gloock",Georgia,serif; --text:"Schibsted Grotesk",system-ui,sans-serif;
   --ease:cubic-bezier(.16,1,.3,1); --ease-io:cubic-bezier(.65,0,.35,1);
   --gutter:clamp(16px,4vw,64px); --r-sm:12px; --r-md:20px; --r-lg:28px; --r-pill:999px;
@@ -178,7 +178,7 @@ html:not(.js) .beat,html:not(.motion) .beat{position:relative;left:auto;right:au
 html:not(.js) .film-label,html:not(.motion) .film-label{position:relative;right:auto;bottom:auto}
 
 /* ------------------------------------------------------------ 04 explore: pinned stage, arched windows */
-.explore{position:relative;height:420vh}
+.explore{position:relative;height:480vh}
 .explore-stage{position:sticky;top:0;height:100svh;overflow:hidden;isolation:isolate}
 .ambient{position:absolute;inset:0;z-index:-1}
 .ambient img{position:absolute;inset:-12%;width:124%;height:124%;object-fit:cover;filter:blur(46px) saturate(1.25) brightness(.42);opacity:0;transition:opacity 1.2s var(--ease)}
@@ -493,3 +493,45 @@ html:not(.motion) .dawn{display:none}
 .light-bottom .chapters{background:linear-gradient(#eef0eb00,#eef0ebeb 55%)}
 .light-bottom .chapters a{color:var(--ink-dim)}
 .light-bottom .chapters a:hover,.light-bottom .chapters a.on{color:var(--ink)}
+
+/* the spec drawer is the showroom's white frosted glass (owner's reference 97f87dc2: a light quote panel with a
+   brand-blue button over the white gallery); it only ever opens over the showroom */
+.sheet.drawer{--cloud:var(--ink);--mist:var(--ink);--dim:var(--ink-dim);--faint:var(--ink-dim);--line:var(--ink-line);--line-2:var(--ink-line);color:var(--ink);background:var(--paper)}
+.sheet.drawer[open]{background:var(--paper);border-color:#ffffffe6;box-shadow:0 40px 120px #081c3147,inset 0 1px 0 #ffffff}
+.drawer::backdrop{background:#081c3129;backdrop-filter:blur(3px)}
+.drawer .btn{background:var(--blue);color:#f3f8fc} /* Cloud: the drawer redefines --cloud as ink for its text */
+@media (hover:hover){.drawer .btn:hover{background:var(--blue-glow)}}
+.drawer .btn-ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink-line)}
+.drawer .btn-ghost:hover{background:#081c310d;box-shadow:inset 0 0 0 1px var(--ink)}
+.drawer .btn[aria-disabled="true"]{background:#081c310f;color:var(--ink-dim);box-shadow:none}
+.drawer .sheet-status{color:var(--blue)}
+.drawer .sheet-close button{background:var(--paper);color:var(--ink);border-color:var(--ink-line)}
+.drawer input,.drawer select,.drawer textarea{background:#ffffffe6;color:var(--ink);border-color:var(--ink-line)}
+.drawer select option,.drawer select optgroup{background:#fff;color:var(--ink)}
+.drawer .req{color:var(--blue)}
+.drawer .err{color:var(--error)}
+.drawer [aria-invalid="true"]{border-color:var(--error)}
+.drawer input:focus,.drawer select:focus,.drawer textarea:focus,.drawer :focus-visible{outline-color:var(--blue)}
+.drawer .quote-done p{color:var(--ink)}
+
+/* the showroom's establishing view (owner's reference 97f87dc2): all three families side by side on their plinths;
+   site.js shows it (.overview) for the first part of Explore's scroll, then moves in on one family */
+.gallery{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;gap:clamp(18px,4vw,64px);padding:110px var(--gutter)}
+.gallery-item{display:flex;flex-direction:column;align-items:center;gap:16px;color:var(--ink);text-decoration:none;transition:transform .5s var(--ease)}
+.mini-arch{display:block;width:clamp(150px,15vw,230px);aspect-ratio:73/120;border-radius:999px 999px var(--r-md) var(--r-md);overflow:hidden;background:var(--floor);box-shadow:0 30px 60px #081c3133}
+.mini-arch img{width:100%;height:100%;object-fit:cover;transition:transform .8s var(--ease)}
+.gallery-plinth{width:auto;padding:10px 18px;gap:10px}
+.gallery-item:hover{transform:translateY(-6px)}
+.gallery-item:hover .mini-arch img{transform:scale(1.05)}
+.gallery-item:hover .gallery-plinth{border-color:var(--blue)}
+.motion .gallery{transition:opacity .6s var(--ease),transform .9s var(--ease)}
+.motion .explore-stage:not(.overview) .gallery{opacity:0;visibility:hidden;transform:scale(1.08);transition:opacity .45s var(--ease),transform .9s var(--ease),visibility 0s .45s}
+.motion .overview .fam{opacity:0;visibility:hidden}
+.motion .fam.on{transition:opacity .6s var(--ease) .1s}
+html:not(.motion) .gallery{position:relative;inset:auto;padding:110px var(--gutter) 24px;flex-wrap:wrap}
+@media (max-width:760px){
+  .gallery{gap:10px;padding:96px 12px}
+  .mini-arch{width:calc((100vw - 44px) / 3)}
+  .gallery-plinth{flex-direction:column;gap:2px;padding:8px 10px;border-radius:var(--r-md);text-align:center}
+  .gallery-plinth .plinth-name{margin:0;font-size:15px}
+}

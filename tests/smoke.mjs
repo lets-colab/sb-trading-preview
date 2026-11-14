@@ -73,7 +73,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
 
   // product sheet -> Rifat
-  await toExplore(0.1);
+  await toExplore(0.15);
   // every product has its own link: opening one sets the address and the page title; Back closes it, Forward reopens it
   const title0 = await p.title();
   await p.click('#bamboo.on .product >> nth=1'); await p.waitForTimeout(700);
@@ -114,6 +114,12 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     check(kept === 'fibre', `${name}: while the drawer is open, its family is back on stage within four frames when the page is moved (${kept})`);
     const spec = await q.evaluate(() => ({ grade: document.getElementById('sheetGradeRow').hidden ? null : document.getElementById('sheetGrade').textContent, rows: document.querySelectorAll('#productSheet .spec div:not([hidden])').length }));
     check(spec.grade === 'A' && spec.rows === 5, `${name}: the drawer's spec sheet shows the grade for a graded yarn (${JSON.stringify(spec)})`);
+    const look = await q.evaluate(() => {
+      const lum = (c) => { const [r, g, b] = c.match(/[\d.]+/g).map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; };
+      const d = document.getElementById('productSheet');
+      return { panel: +lum(getComputedStyle(d).backgroundColor).toFixed(2), title: +lum(getComputedStyle(document.getElementById('sheetTitle')).color).toFixed(2), primary: getComputedStyle(document.getElementById('sheetQuote')).backgroundColor };
+    });
+    check(look.panel > 0.85 && look.title < 0.2 && look.primary === 'rgb(0, 74, 152)', `${name}: the spec drawer is white frosted glass with ink text and a brand-blue main button, as in the showroom reference (${JSON.stringify(look)})`);
     await q.close();
   }
   { // "Request a quote" opens the enquiry form inside the drawer, beside the product (owner's references). It is the same
@@ -141,7 +147,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; const e = document.getElementById('explore'); scrollTo(0, e.offsetTop - innerHeight * 0.6); });
     await q.waitForTimeout(800);
     const entering = await q.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.dawn')).opacity));
-    await q.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.12); });
+    await q.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.15); });
     await q.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {}); await q.waitForTimeout(1500);
     const s = await q.evaluate(() => {
       const lum = (c) => { const [r, g, b] = c.match(/[\d.]+/g).map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; };
@@ -152,9 +158,21 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       `${name}: Explore is a bright showroom reached out of the dark, with ink text and an ink header (entering dark ${entering.toFixed(2)}, ${JSON.stringify(s)})`);
     await q.close();
   }
+  { // the showroom opens on all three families side by side (the reference's establishing shot), then moves in on one;
+    // choosing one from the keyboard lands on that family's first product
+    const q = await ctx.newPage(); await q.goto(ORIGIN + '/'); await q.waitForTimeout(2000);
+    await q.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.02); });
+    await q.waitForTimeout(1200);
+    const g = await q.evaluate(() => ({ overview: document.querySelector('.explore-stage').classList.contains('overview'), items: [...document.querySelectorAll('.gallery a')].filter((a) => a.checkVisibility({ visibilityProperty: true, opacityProperty: true })).map((a) => a.innerText.replace(/\s+/g, ' ').trim()), fam: [...document.querySelectorAll('.fam')].some((f) => f.checkVisibility({ visibilityProperty: true, opacityProperty: true })) }));
+    check(g.overview && g.items.length === 3 && /^01 \/ 03 Bamboo/.test(g.items[0]) && !g.fam, `${name}: the showroom opens on all three families side by side (${JSON.stringify(g)})`);
+    await q.focus('.gallery a[data-fam="1"]'); await q.keyboard.press('Enter');
+    const landed = await q.waitForFunction(() => document.querySelector('.fam.on')?.id === 'fibre' && document.activeElement?.textContent.trim() === 'Grade A: banana silk', null, { timeout: 6000 }).then(() => true, () => false);
+    check(landed, `${name}: choosing a family from the showroom with the keyboard brings it on stage with focus on its first product`);
+    await q.close();
+  }
   { // each family stands on a plinth: its number and name, and arrows to the families either side (owner's references)
     const q = await ctx.newPage(); await q.goto(ORIGIN + '/'); await q.waitForTimeout(2000);
-    await q.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.12); });
+    await q.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.15); });
     await q.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
     const plinth = await q.evaluate(() => document.querySelector('#bamboo .plinth')?.innerText.replace(/\s+/g, ' ').trim() || '');
     check(/^01 \/ 03 Bamboo/.test(plinth), `${name}: the family on stage stands on a numbered plinth (${plinth})`);
@@ -220,7 +238,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     check(await p.evaluate(() => document.documentElement.classList.contains('has-3d')), `${name}: the 3D studies load`);
     // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
     // wait until the Bamboo family is the live one (an inert family cannot take focus), then focus its last product
-    await toExplore(0.1); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
+    await toExplore(0.15); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
     await p.focus('#bamboo .product >> nth=3');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const focused = () => p.evaluate(() => document.activeElement?.textContent.trim() || document.activeElement?.tagName);

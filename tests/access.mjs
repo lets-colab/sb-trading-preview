@@ -71,7 +71,7 @@ const open = async (opts) => { const ctx = await browser.newContext(opts); const
   await p.keyboard.press('Tab');
   const skip = await p.evaluate(() => { const a = document.activeElement, r = a.getBoundingClientRect(); return { cls: a.className, top: r.top, shown: r.top >= 0 && r.bottom <= innerHeight }; });
   check(skip.cls === 'skip' && skip.shown, `keyboard: the skip link is the first tab stop and comes into view (${skip.cls || 'other element'}, top ${Math.round(skip.top)})`);
-  await p.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.1); });
+  await p.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.15); });
   await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
   check(await p.waitForFunction(() => /has-3d|no-3d/.test(document.documentElement.className), null, { timeout: 10000 }).then(() => true, () => false), 'load: the 3D studies are set up once Explore is reached');
   await p.focus('#bamboo .product >> nth=1'); await p.keyboard.press('Enter'); await p.waitForTimeout(900);
@@ -94,7 +94,7 @@ for (const [name, opts] of [['desktop 1440', { viewport: { width: 1440, height: 
     check(bad.length === 0, `axe ${name}, ${state}: no serious or critical WCAG violations${bad.length ? ' - ' + bad.map((v) => `${v.id} (${v.nodes.length}: ${v.nodes.slice(0, 2).map((n) => n.target.join(' ')).join(', ')})`).join('; ') : ''}`);
   };
   await scan('page top');
-  await p.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.1); });
+  await p.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.15); });
   await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {}); await p.waitForTimeout(1500);
   await scan('Explore');
   await p.click('#bamboo.on .product >> nth=0'); await p.waitForTimeout(900);

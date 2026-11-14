@@ -231,7 +231,9 @@ function setFamily(i) {
 
 // Keyboard: only the visible family is focusable (the others are inert), so Tab past its last stop (products, then the
 // plinth arrows) moves the stage to the next family and focuses its first product; Shift+Tab from a first product goes back.
-const famScrollY = (i) => explore.offsetTop + (explore.offsetHeight - innerHeight) * (i / fams.length + 0.12);
+// The first part of Explore's scroll shows the whole showroom (all three families side by side); the rest is the families.
+const OVER = 0.08;
+const famScrollY = (i, f = 0.12) => explore.offsetTop + (explore.offsetHeight - innerHeight) * (OVER + (1 - OVER) * (i / fams.length + f));
 explore.addEventListener('keydown', (e) => {
   if (e.key !== 'Tab' || reduced) return;
   const fam = e.target.closest('.fam');
@@ -298,13 +300,14 @@ function tick(now = performance.now()) {
   }
 
   if (!reduced) {
-    const e = progressOf(explore), n = fams.length;
-    const idx = Math.min(n - 1, Math.floor(e * n));
+    const e = progressOf(explore), n = fams.length, f = clamp((e - OVER) / (1 - OVER));
+    const idx = Math.min(n - 1, Math.floor(f * n));
+    stage.classList.toggle('overview', e < OVER);
     setFamily(idx);
     // an open drawer keeps its product's family on stage behind it, whatever moved the page (such as the browser's own
     // late jump to a shared link's #anchor)
     if (sheet.open && !sheetLeaving && sheetFam >= 0 && idx !== sheetFam) { const y = famScrollY(sheetFam); scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true }); }
-    const t = clamp(e * n - idx);
+    const t = clamp(f * n - idx);
     fams[idx].style.setProperty('--t', t.toFixed(4));
     const active = now - lastInput < 1000;
     if (active) { pointer[0] += (target[0] - pointer[0]) * 0.08; pointer[1] += (target[1] - pointer[1]) * 0.08; }
@@ -372,13 +375,19 @@ if (fine && !reduced) {
     requestAnimationFrame(raf);
   }).catch(() => { /* native scrolling stays */ });
 }
-// Family cards at the end of the film land on that family inside the pinned Explore stage.
-for (const a of $$('.fam-cards a, .plinth a[data-fam]')) {
+// Family cards at the end of the film, the showroom's gallery and the plinth arrows land on that family inside the
+// pinned Explore stage. From the keyboard the jump is instant and focus goes to the family's first product, so it is
+// never left on a link that has just been hidden.
+for (const a of $$('.fam-cards a, .plinth a[data-fam], .gallery a[data-fam]')) {
   a.addEventListener('click', (e) => {
     if (reduced) return; // without the pinned stage the plain anchor is right
     e.preventDefault();
-    const y = explore.offsetTop + (explore.offsetHeight - innerHeight) * (Number(a.dataset.fam) / 3 + 0.12);
-    if (lenis) lenis.scrollTo(y); else scrollTo({ top: y, behavior: 'smooth' });
+    const i = Number(a.dataset.fam), y = famScrollY(i);
+    if (e.detail === 0) {
+      scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true });
+      stage.classList.remove('overview'); setFamily(i);
+      $('.product', fams[i])?.focus({ preventScroll: true });
+    } else if (lenis) lenis.scrollTo(y); else scrollTo({ top: y, behavior: 'smooth' });
     sound.cue('open', a);
   });
   a.addEventListener('pointerenter', () => sound.cue('hover', a));
@@ -515,7 +524,7 @@ addEventListener('popstate', () => { const btn = productAt(); if (btn?.classList
     const fam = btn.closest('.fam'), n = fams.length, k = fams.indexOf(fam);
     const toFamily = () => {
       if (reduced || k < 0) { btn.scrollIntoView({ block: 'center' }); return; }
-      const y = explore.offsetTop + (explore.offsetHeight - innerHeight) * ((k + 0.35) / n);
+      const y = famScrollY(k, 0.35 / n);
       scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true });
     };
     toFamily(); // once the drawer is open, the loop keeps this family on stage behind it
