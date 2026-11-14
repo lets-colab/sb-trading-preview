@@ -98,7 +98,7 @@
             <li><button type="button" class="product" id="p-woven-mats" data-img="bamboo-sections" data-family="Bamboo" data-note="No photograph of woven mats yet; weave, size and finish are to be confirmed.">Woven mats</button></li>
           </ul>
         </div>
-        <figure class="arch"><img src="assets/img/bamboo-sections.webp" alt="Cut bamboo sections bundled and tied, ends facing the camera" width="727" height="1300" loading="lazy"><img src="assets/img/bamboo-poles.webp" alt="Long bamboo poles stacked in daylight" width="730" height="1300" loading="lazy"></figure>
+        <div class="exhibit"><figure class="arch"><img src="assets/img/bamboo-sections.webp" alt="Cut bamboo sections bundled and tied, ends facing the camera" width="727" height="1300" loading="lazy"><img src="assets/img/bamboo-poles.webp" alt="Long bamboo poles stacked in daylight" width="730" height="1300" loading="lazy"></figure><div class="plinth"><span class="plinth-num">01 / 03</span> <span class="plinth-name">Bamboo</span> <span class="plinth-arrows"><span class="plinth-end" aria-hidden="true">←</span><a href="#fibre" data-fam="1" rel="next" aria-label="Next family: Banana fibre yarn">→</a></span></div></div>
       </article>
 
       <article class="fam" id="fibre" data-i="1" aria-labelledby="h-fibre">
@@ -111,7 +111,7 @@
             <li><button type="button" class="product" id="p-grade-c-industrial-banana-fibre-yarn" data-img="banana-fibre" data-family="Banana fibre yarn" data-note="Which photograph shows Grade C is still to be confirmed.">Grade C: industrial banana fibre yarn</button></li>
           </ul>
         </div>
-        <figure class="arch"><img src="assets/img/banana-fibre.webp" alt="Hanks of natural banana fibre laid out on grass" width="975" height="1300" loading="lazy"><img src="assets/img/banana-fibre-loose.webp" alt="Loose banana fibre strands drying in the open" width="975" height="1300" loading="lazy"></figure>
+        <div class="exhibit"><figure class="arch"><img src="assets/img/banana-fibre.webp" alt="Hanks of natural banana fibre laid out on grass" width="975" height="1300" loading="lazy"><img src="assets/img/banana-fibre-loose.webp" alt="Loose banana fibre strands drying in the open" width="975" height="1300" loading="lazy"></figure><div class="plinth"><span class="plinth-num">02 / 03</span> <span class="plinth-name">Banana fibre yarn</span> <span class="plinth-arrows"><a href="#bamboo" data-fam="0" rel="prev" aria-label="Previous family: Bamboo">←</a><a href="#bark" data-fam="2" rel="next" aria-label="Next family: Banana bark and leaves">→</a></span></div></div>
       </article>
 
       <article class="fam" id="bark" data-i="2" aria-labelledby="h-bark">
@@ -123,7 +123,7 @@
             <li><button type="button" class="product" id="p-banana-leaves" data-img="banana-leaves" data-family="Banana bark and leaves" data-note="Packing, sizes and availability are confirmed by SB Trading with the quotation.">Banana leaves</button></li>
           </ul>
         </div>
-        <figure class="arch"><img src="assets/img/banana-leaves.webp" alt="Green banana leaves, folded and packed in clear bags" width="987" height="1300" loading="lazy"></figure>
+        <div class="exhibit"><figure class="arch"><img src="assets/img/banana-leaves.webp" alt="Green banana leaves, folded and packed in clear bags" width="987" height="1300" loading="lazy"></figure><div class="plinth"><span class="plinth-num">03 / 03</span> <span class="plinth-name">Banana bark and leaves</span> <span class="plinth-arrows"><a href="#fibre" data-fam="1" rel="prev" aria-label="Previous family: Banana fibre yarn">←</a><span class="plinth-end" aria-hidden="true">→</span></span></div></div>
       </article>
       <p class="explore-note">Product names, grades and photographs are being confirmed by SB Trading.</p>
     </div>
@@ -242,10 +242,22 @@
     </dl>
     <p class="source" id="sheetNote"></p>
     <div class="sheet-actions">
-      <button class="btn" type="button" id="sheetAdd">Add to enquiry</button>
-      <button class="btn btn-ghost" type="button" id="sheetAsk"><span class="orb orb-xs" aria-hidden="true"><i></i><i></i><i></i></span>Ask Rifat about it</button>
+      <button class="btn" type="button" id="sheetQuote">Request a quote</button>
+      <button class="btn btn-ghost" type="button" id="sheetAdd">Add to enquiry</button>
     </div>
+    <button class="ask-link" type="button" id="sheetAsk"><span class="orb orb-xs" aria-hidden="true"><i></i><i></i><i></i></span>Ask Rifat about it</button>
     <p class="sheet-status" id="sheetStatus" role="status"></p>
+    <div class="quote" id="quotePane" hidden>
+      <button class="quote-back" type="button" id="quoteBack"><span aria-hidden="true">←</span> Back to the product</button>
+      <h4 class="quote-title">Request a quote</h4>
+      <div class="quote-done" id="quoteDone" hidden>
+        <p>Your enquiry is ready. Nothing has been sent yet: send it to SB Trading on WhatsApp, or review it with Rifat first.</p>
+        <div class="sheet-actions">
+          <a class="btn" id="quoteWa" href="#enquire" rel="noopener" target="_blank">Send on WhatsApp</a>
+          <button class="btn btn-ghost" type="button" id="quoteReview">Review your enquiry</button>
+        </div>
+      </div>
+    </div>
     <p class="handoff">Rifat (AI) gathers your enquiry; you send it to SB Trading on WhatsApp, +880 1878-707910.</p>
   </div>
 </dialog>

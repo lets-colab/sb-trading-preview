@@ -229,14 +229,15 @@ function setFamily(i) {
   sound.cue(forward ? 'knock' : 'knock-soft', fams[i].querySelector('.arch'));
 }
 
-// Keyboard: only the visible family is focusable (the others are inert), so Tab past its last product moves the
-// stage to the next family and focuses its first product; Shift+Tab from a first product goes back.
+// Keyboard: only the visible family is focusable (the others are inert), so Tab past its last stop (products, then the
+// plinth arrows) moves the stage to the next family and focuses its first product; Shift+Tab from a first product goes back.
 const famScrollY = (i) => explore.offsetTop + (explore.offsetHeight - innerHeight) * (i / fams.length + 0.12);
 explore.addEventListener('keydown', (e) => {
   if (e.key !== 'Tab' || reduced) return;
   const fam = e.target.closest('.fam');
   if (!fam) return;
-  const i = Number(fam.dataset.i), list = $$('.product', fam);
+  const stops = (f) => $$('.product, .plinth a', f); // each family's tab stops: its products, then its plinth arrows
+  const i = Number(fam.dataset.i), list = stops(fam);
   const to = e.shiftKey ? (e.target === list[0] ? i - 1 : -1) : (e.target === list.at(-1) ? i + 1 : -1);
   if (to < 0 || to >= fams.length) return;
   e.preventDefault();
@@ -244,7 +245,7 @@ explore.addEventListener('keydown', (e) => {
   scrollTo(0, y); // synchronous, so the loop reads the same family on its next frame
   lenis?.scrollTo(y, { immediate: true, force: true });
   setFamily(to);
-  const next = $$('.product', fams[to]);
+  const next = stops(fams[to]);
   (e.shiftKey ? next.at(-1) : next[0]).focus({ preventScroll: true });
 });
 
@@ -362,7 +363,7 @@ if (fine && !reduced) {
   }).catch(() => { /* native scrolling stays */ });
 }
 // Family cards at the end of the film land on that family inside the pinned Explore stage.
-for (const a of $$('.fam-cards a')) {
+for (const a of $$('.fam-cards a, .plinth a[data-fam]')) {
   a.addEventListener('click', (e) => {
     if (reduced) return; // without the pinned stage the plain anchor is right
     e.preventDefault();
@@ -435,11 +436,11 @@ function openSheet() {
 function closeSheet() {
   if (sheetLeaving) return sheetLeaving;
   if (!sheet.open) return Promise.resolve();
-  if (reduced || !M) { sheet.close(); return Promise.resolve(); }
+  if (reduced || !M) { sheet.close(); quoteSendHome(); return Promise.resolve(); }
   sheet.dataset.closing = '';
   const off = sheetOff();
   sheetLeaving = M.animate(sheet, { x: off.x, y: off.y, opacity: 0.5 }, { duration: 0.28, ease: [0.4, 0, 1, 1] }).finished
-    .catch(() => {}).then(() => { sheet.close(); delete sheet.dataset.closing; sheetLeaving = null; });
+    .catch(() => {}).then(() => { sheet.close(); quoteSendHome(); delete sheet.dataset.closing; sheetLeaving = null; });
   return sheetLeaving;
 }
 sheet.addEventListener('cancel', (e) => { e.preventDefault(); closeSheet(); }); // Escape
@@ -448,15 +449,26 @@ $('.sheet-close', sheet).addEventListener('submit', (e) => { e.preventDefault();
 // title, so it can be shared; Back closes it, Forward reopens it, and loading the address opens it directly.
 const pageTitle = document.title;
 const productAt = () => (/^#p-[a-z0-9-]+$/.test(location.hash) ? document.getElementById(location.hash.slice(1)) : null);
-// Before adding, the drawer's main action is "Add to enquiry"; once added, the actions swap roles so the next step,
-// finishing the enquiry with Rifat (the same hand-off as "Ask Rifat about it"), is the main button.
-function setSheetActions(added) {
-  const add = $('#sheetAdd'), ask = $('#sheetAsk'), label = ask.lastChild;
-  add.classList.toggle('btn-ghost', added);
-  ask.classList.toggle('btn-ghost', !added);
-  add.textContent = added ? 'Added ✓' : 'Add to enquiry';
-  label.textContent = added ? 'Finish enquiry with Rifat' : 'Ask Rifat about it';
-  add.parentElement.prepend(added ? ask : add);
+function setSheetActions(added) { $('#sheetAdd').textContent = added ? 'Added ✓' : 'Add to enquiry'; }
+
+// Request a quote: Contact Us's enquiry form moves into the drawer beside the product (one form, one enquiry), and
+// goes home when the drawer closes, open or closed as it was.
+const quotePane = $('#quotePane'), quoteDone = $('#quoteDone');
+let formWasOpen = false;
+function quoteOpen() {
+  const f = $('#enquiryForm');
+  if (f.parentElement !== quotePane) { formWasOpen = !f.hidden; quotePane.insertBefore(f, quoteDone); }
+  f.hidden = false; quoteDone.hidden = true;
+  $('#f-product').value = sheetProduct;
+  sheet.classList.add('quoting'); quotePane.hidden = false;
+  (['#f-name', '#f-email', '#f-country'].map((s) => $(s)).find((i) => !i.value) || $('#f-qty')).focus();
+  sound.cue('open', $('#sheetQuote'));
+}
+function quoteBack() { sheet.classList.remove('quoting'); quotePane.hidden = true; }
+function quoteSendHome() {
+  const f = $('#enquiryForm');
+  if (f.parentElement === quotePane) { $('.form-alt').append(f); f.hidden = !formWasOpen; }
+  quoteBack();
 }
 function showProduct(btn, { push = true } = {}) {
   sheetProduct = btn.textContent.trim();
@@ -470,6 +482,7 @@ function showProduct(btn, { push = true } = {}) {
   $('#sheetGrade').textContent = grade ? grade[1] : '';
   $('#sheetStatus').textContent = '';
   setSheetActions(false);
+  quoteSendHome();
   if (push && location.hash !== `#${btn.id}`) history.pushState({ product: btn.id }, '', `#${btn.id}`);
   document.title = `${sheetProduct} · SB Trading`;
   openSheet();
@@ -496,7 +509,11 @@ addEventListener('popstate', () => { const btn = productAt(); if (btn?.classList
     };
     toFamily();
     // the browser's own jump to the #anchor comes at load and lands on the stage's first family; go back to this one
-    if (document.readyState !== 'complete') addEventListener('load', () => { if (productAt() === btn) requestAnimationFrame(toFamily); }, { once: true });
+    if (document.readyState !== 'complete') addEventListener('load', () => {
+      if (productAt() !== btn) return;
+      requestAnimationFrame(toFamily);
+      setTimeout(() => { if (productAt() === btn && famActive !== k) toFamily(); }, 500); // a late jump to the anchor
+    }, { once: true });
     setTimeout(() => showProduct(btn, { push: false }), 60);
   }
 }
@@ -517,6 +534,13 @@ $('#sheetAdd').addEventListener('click', (e) => {
   sound.cue('tick', e.currentTarget);
 });
 sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });
+sheet.addEventListener('close', quoteSendHome);
+$('#sheetQuote').addEventListener('click', quoteOpen);
+$('#quoteBack').addEventListener('click', () => { quoteBack(); $('#sheetQuote').focus(); });
+$('#quoteReview').addEventListener('click', () => {
+  sheetKeepsScroll = true;
+  closeSheet().then(() => { const t = $('.ticket'); t.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' }); });
+});
 
 // ------------------------------------------------------------------ the plain form (an alternative to Rifat)
 const form = $('#enquiryForm'), toggle = $('#formToggle');
@@ -552,7 +576,15 @@ form.addEventListener('submit', (e) => {
   const enquiry = { product: d.product, country: d.country, name: d.name, email: d.email, company: d.company, notes: d.notes };
   if (d.quantity) { enquiry.quantity = Number(d.quantity); enquiry.unit = d.unit; }
   rifat.setEnquiry(enquiry);
-  $('#summary').textContent = 'Enquiry prepared. Review it under “Your enquiry” above, then send it on WhatsApp or copy it. Nothing has been sent yet.';
   sound.cue('send', form.querySelector('button[type=submit]'));
+  if (form.parentElement === quotePane) { // in the drawer: the hand-off stays beside the product
+    const wa = $('#waSend'), off = wa.getAttribute('aria-disabled') === 'true', send = $('#quoteWa');
+    send.href = off ? '#enquire' : wa.href;
+    send.toggleAttribute('aria-disabled', off);
+    form.hidden = true; quoteDone.hidden = false;
+    send.focus();
+    return;
+  }
+  $('#summary').textContent = 'Enquiry prepared. Review it under “Your enquiry” above, then send it on WhatsApp or copy it. Nothing has been sent yet.';
   $('.ticket').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
 });

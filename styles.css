@@ -199,6 +199,19 @@ html:not(.has-3d) .studies,html:not(.has-3d) .study-label{display:none}
 .arch{position:relative;z-index:1;justify-self:center;height:min(76svh,780px);aspect-ratio:73/120;max-width:100%;margin:0;border-radius:999px 999px var(--r-lg) var(--r-lg);overflow:hidden;
   background:var(--ink-2);box-shadow:0 40px 120px #000a,0 0 0 1px #d7be9326}
 .arch img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* the exhibit: each family's arch stands on a plinth, numbered, with arrows to the families either side */
+.exhibit{position:relative;z-index:1;justify-self:center;display:flex;flex-direction:column;align-items:center;gap:18px;max-width:100%}
+.exhibit .arch{height:min(64svh,680px)}
+.plinth{display:flex;align-items:center;gap:14px;width:min(100%,360px);padding:8px 8px 8px 20px;border-radius:var(--r-pill);
+  background:var(--glass);border:1px solid var(--line);border-bottom-color:#d7be9380;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 22px 50px #0008,inset 0 1px 0 #ffffff1a}
+.plinth-num{font:600 12px/1 var(--text);letter-spacing:.14em;color:var(--fibre);white-space:nowrap}
+.plinth-name{margin-right:auto;font:400 19px/1.1 var(--display);color:var(--cloud)}
+.plinth-arrows{display:flex;gap:6px}
+.plinth-arrows a,.plinth-end{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);color:var(--cloud);text-decoration:none;font-size:16px;transition:background .4s var(--ease),color .4s var(--ease),border-color .4s var(--ease)}
+.plinth-arrows a:hover{background:var(--fibre);color:var(--ink-0);border-color:var(--fibre)}
+.plinth-end{opacity:.28}
+.motion .fam .plinth{opacity:0;transform:translateY(16px);transition:opacity .6s var(--ease),transform .8s var(--ease)}
+.motion .fam.on .plinth{opacity:1;transform:none;transition-delay:.35s}
 .explore-note{position:absolute;left:var(--gutter);bottom:72px;margin:0;font-size:13px;color:var(--faint)}
 /* motion mode: families stack in one stage; JS sets .on and --t (0..1 progress within a family) */
 .motion .fam .fam-text>*{opacity:0;transform:translateY(34px);transition:opacity .6s var(--ease),transform .8s var(--ease)}
@@ -372,6 +385,19 @@ html.at-end .chapters{opacity:0;pointer-events:none}
 .spec dd{margin:0;font-size:15px;color:var(--cloud)}
 .spec dd.tbc{color:var(--dim)}
 .handoff{margin:18px 0 0;padding-top:14px;border-top:1px solid var(--line-2);font-size:13px;color:var(--dim)}
+.ask-link,.quote-back{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:6px 0 0;padding:0;border:0;background:none;color:var(--dim);font:500 15px/1.2 var(--text);text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.ask-link:hover,.quote-back:hover{color:var(--cloud)}
+.quote-back{margin:0;text-decoration:none}
+/* quote mode: the spec steps aside and the enquiry form takes its place, beside the same product */
+.sheet.quoting .spec,.sheet.quoting #sheetNote,.sheet.quoting .sheet-body>.sheet-actions,.sheet.quoting .ask-link,.sheet.quoting .sheet-status,.sheet.quoting .handoff{display:none}
+.drawer.quoting .sheet-img{height:15svh}
+.quote-title{margin:10px 0 0;font:400 clamp(24px,2.2vw,30px)/1.1 var(--display);letter-spacing:-.015em}
+.quote .form{margin-top:14px;padding:0;border:0;background:none;backdrop-filter:none;gap:14px}
+.quote .row{grid-template-columns:1fr;gap:14px}
+.quote .row.qty-row{grid-template-columns:1fr}
+.quote-done{margin-top:14px}
+.quote-done p{margin:0;color:var(--mist)}
+.quote-done .sheet-actions{margin-top:16px}
 .sheet-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
 .sheet-actions .btn{margin-top:0}
 .sheet-status{margin:12px 0 0;font-size:14px;color:var(--fibre)}
@@ -411,7 +437,10 @@ html.at-end .tray{opacity:0;pointer-events:none;transform:translateY(12px)}
 /* ------------------------------------------------------------ phones: arch on top, text below, inside the pinned stage */
 @media (max-width:820px){
   .fam{grid-template-columns:1fr;grid-template-rows:auto 1fr;align-items:start;gap:18px;padding:80px var(--gutter) 70px}
-  .fam .arch{order:-1;height:38svh;aspect-ratio:auto;width:min(100%,60svh);border-radius:999px 999px var(--r-md) var(--r-md)}
+  .fam .exhibit{order:-1;width:100%;gap:10px}
+  .fam .arch,.exhibit .arch{height:30svh;aspect-ratio:auto;width:min(100%,60svh);border-radius:999px 999px var(--r-md) var(--r-md)}
+  .plinth{width:min(100%,60svh);padding:4px 4px 4px 16px;gap:10px}
+  .plinth-name{font-size:16px}
   .motion .fam .arch{clip-path:inset(100% 0 0 0 round 999px 999px var(--r-md) var(--r-md))}
   .motion .fam.on .arch{clip-path:inset(0 0 0 0 round 999px 999px var(--r-md) var(--r-md))}
   .motion .fam.past .arch{clip-path:inset(0 0 100% 0 round 999px 999px var(--r-md) var(--r-md))}

@@ -108,6 +108,36 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     check(spec.grade === 'A' && spec.rows === 5, `${name}: the drawer's spec sheet shows the grade for a graded yarn (${JSON.stringify(spec)})`);
     await q.close();
   }
+  { // "Request a quote" opens the enquiry form inside the drawer, beside the product (owner's references). It is the same
+    // form as Contact Us's, so there is still one enquiry; it goes home when the drawer closes.
+    const q = await ctx.newPage(); await q.goto(ORIGIN + '/#p-grade-b-standard-banana-fibre-yarn');
+    await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 12000 }).catch(() => {});
+    await q.waitForTimeout(1200);
+    await q.click('#sheetQuote'); await q.waitForTimeout(600);
+    const open = await q.evaluate(() => ({ inside: !!document.querySelector('#productSheet #enquiryForm'), shown: !document.getElementById('enquiryForm').hidden, product: document.getElementById('f-product').value, focus: document.activeElement?.id }));
+    check(open.inside && open.shown && open.product === 'Grade B: standard banana fibre yarn' && open.focus === 'f-name', `${name}: "Request a quote" opens the enquiry form in the drawer with the product chosen (${JSON.stringify(open)})`);
+    await q.fill('#f-name', 'Ayesha Rahman'); await q.fill('#f-email', 'ayesha@example.com'); await q.fill('#f-qty', '500'); await q.fill('#f-country', 'Belgium');
+    await q.click('#enquiryForm button[type=submit]'); await q.waitForTimeout(700);
+    const done = await q.evaluate(() => ({ wa: document.getElementById('quoteWa')?.getAttribute('href') || '', shown: !document.getElementById('quoteDone')?.hidden, ticket: document.getElementById('ticketList').textContent }));
+    check(done.shown && /^https:\/\/wa\.me\/8801878707910\?text=/.test(done.wa) && /Grade B/.test(done.ticket) && /Belgium/.test(done.ticket),
+      `${name}: the quote is prepared in the drawer, fills "Your enquiry", and offers Send on WhatsApp there (${done.wa.slice(0, 40)})`);
+    await q.keyboard.press('Escape');
+    await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+    const home = await q.evaluate(() => ({ parent: document.getElementById('enquiryForm').parentElement.className, open: document.getElementById('productSheet').open }));
+    check(home.parent === 'form-alt' && !home.open, `${name}: closing the drawer returns the form to Contact Us (${JSON.stringify(home)})`);
+    await q.close();
+  }
+  { // each family stands on a plinth: its number and name, and arrows to the families either side (owner's references)
+    const q = await ctx.newPage(); await q.goto(ORIGIN + '/'); await q.waitForTimeout(2000);
+    await q.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.12); });
+    await q.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
+    const plinth = await q.evaluate(() => document.querySelector('#bamboo .plinth')?.innerText.replace(/\s+/g, ' ').trim() || '');
+    check(/^01 \/ 03 Bamboo/.test(plinth), `${name}: the family on stage stands on a numbered plinth (${plinth})`);
+    await q.click('#bamboo .plinth a[rel=next]');
+    const moved = await q.waitForFunction(() => document.querySelector('.fam.on')?.id === 'fibre', null, { timeout: 8000 }).then(() => true, () => false);
+    check(moved, `${name}: the plinth's next arrow brings the next family on stage`);
+    await q.close();
+  }
   // the drawer leaves with an exit animation, then the dialog closes (Escape and the close button alike)
   for (const how of ['Escape', 'the close button']) {
     await p.click('#bamboo.on .product >> nth=0'); await p.waitForTimeout(800);
@@ -127,9 +157,9 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await p.click('#sheetAdd'); await p.waitForTimeout(300);
   check(await p.evaluate(() => !document.getElementById('enquiryTray').hidden && document.getElementById('trayCount').textContent === '1' && /Bamboo splits/.test(document.getElementById('trayItems').textContent)),
     `${name}: "Add to enquiry" in the spec drawer puts the product in the enquiry tray`);
-  const after = await p.evaluate(() => { const ask = document.getElementById('sheetAsk'), add = document.getElementById('sheetAdd'); return { ask: ask.textContent.trim(), askPrimary: !ask.classList.contains('btn-ghost'), addGhost: add.classList.contains('btn-ghost'), status: document.getElementById('sheetStatus').textContent }; });
-  check(/^Finish enquiry with Rifat$/.test(after.ask) && after.askPrimary && after.addGhost && after.status === 'Added. Your enquiry has 1 product.',
-    `${name}: once a product is added, the drawer's main action becomes finishing the enquiry with Rifat (${JSON.stringify(after)})`);
+  const after = await p.evaluate(() => { const q = document.getElementById('sheetQuote'), add = document.getElementById('sheetAdd'); return { quote: q.textContent.trim(), quotePrimary: !q.classList.contains('btn-ghost'), add: add.textContent.trim(), addGhost: add.classList.contains('btn-ghost'), ask: !!document.getElementById('sheetAsk'), status: document.getElementById('sheetStatus').textContent }; });
+  check(after.quote === 'Request a quote' && after.quotePrimary && after.add === 'Added ✓' && after.addGhost && after.ask && after.status === 'Added. Your enquiry has 1 product.',
+    `${name}: the drawer's main action is "Request a quote"; "Add to enquiry" confirms as "Added ✓" (${JSON.stringify(after)})`);
   await p.click('#sheetAsk');
   await p.waitForFunction(() => document.activeElement?.id === 'rifatInput', null, { timeout: 10000 }).catch(() => {});
   check((await p.evaluate(() => document.activeElement.id)) === 'rifatInput', `${name}: focus lands in Rifat's message field after "Ask Rifat"`);
@@ -169,14 +199,19 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.focus('#bamboo .product >> nth=3');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const focused = () => p.evaluate(() => document.activeElement?.textContent.trim() || document.activeElement?.tagName);
+    await p.keyboard.press('Tab'); // past the products, to the plinth's next arrow
+    const toArrow = await p.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
     await p.keyboard.press('Tab');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Grade A: banana silk', null, { timeout: 5000 }).catch(() => {});
     const afterTab = await focused();
-    check(afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products into the fibre products (focus: ${afterTab})`);
+    check(toArrow === 'Next family: Banana fibre yarn' && afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products to the plinth's next arrow, then into the fibre products (focus: ${toArrow} -> ${afterTab})`);
+    await p.keyboard.press('Shift+Tab'); // back to Bamboo's plinth arrow, then its last product
+    await p.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Next family: Banana fibre yarn', null, { timeout: 5000 }).catch(() => {});
+    const backArrow = await p.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
     await p.keyboard.press('Shift+Tab');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const afterShift = await focused();
-    check(afterShift === 'Woven mats', `${name}: Shift+Tab returns to the bamboo products (focus: ${afterShift})`);
+    check(backArrow === 'Next family: Banana fibre yarn' && afterShift === 'Woven mats', `${name}: Shift+Tab returns through Bamboo's plinth arrow to its products (focus: ${backArrow} -> ${afterShift})`);
     await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
     const playing = await p.waitForFunction(() => document.documentElement.dataset.score === 'playing', null, { timeout: 6000 }).then(() => true, () => false);
