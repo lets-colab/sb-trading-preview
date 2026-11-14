@@ -14,7 +14,7 @@ colors:
   fibre-2: "#e7d6b6"
   fibre-3: "#a8875a"
   dim: "#dbeaf6b8"
-  faint: "#dbeaf673"
+  faint: "#dbeaf699"
   line: "#d7be9333"
   line-2: "#dbeaf61f"
   glass: "#0c2440c7"
