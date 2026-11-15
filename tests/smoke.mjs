@@ -100,8 +100,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
 
-  { // the storyteller: a family with a recorded narration offers "Hear its story"; pressing it plays the narration and
-    // shows its words as subtitles; pressing again stops it. Families without a recording show no button.
+  { // the storyteller: every family offers "Hear its story"; pressing it plays that family's narration (one voice for all
+    // three) and shows its words as subtitles; pressing again stops it.
     const famY = (i) => p.evaluate((k) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * (k / 3 + 0.12)); }, i);
     await famY(2); await p.waitForTimeout(1800);
     const btn = await p.evaluate(() => { const b = document.querySelector('#bark .story'); return b && !b.hidden ? b.textContent.trim() : null; });
@@ -109,9 +109,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const playing = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), cap: document.querySelector('.story-caption').textContent.trim(), shown: !document.querySelector('.story-caption').hidden, audio: !!window.__story && !window.__story.paused }));
     await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(400);
     const stopped = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), shown: !document.querySelector('.story-caption').hidden }));
-    const noAudio = await p.evaluate(() => document.querySelector('#bamboo .story')?.hidden !== false);
-    check(btn === 'Hear its story' && playing.pressed === 'true' && playing.shown && /banana plant/i.test(playing.cap) && playing.audio && stopped.pressed === 'false' && !stopped.shown && noAudio,
-      `${name}: "Hear its story" narrates banana bark and leaves with subtitles, and stops on a second press (${JSON.stringify({ btn, playing, stopped, noAudio })})`);
+    check(btn === 'Hear its story' && playing.pressed === 'true' && playing.shown && /banana plant/i.test(playing.cap) && playing.audio && stopped.pressed === 'false' && !stopped.shown,
+      `${name}: "Hear its story" narrates banana bark and leaves with subtitles, and stops on a second press (${JSON.stringify({ btn, playing, stopped })})`);
     { // switching Sound off also silences a story that Sound started (Codex finding on #18)
       await p.click('#soundToggle'); await p.waitForTimeout(800);
       await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(800);
@@ -119,6 +118,18 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       await p.click('#soundToggle'); await p.waitForTimeout(500);
       const off = await p.evaluate(() => ({ playing: !!window.__story && !window.__story.paused, pressed: document.querySelector('#bark .story').getAttribute('aria-pressed') }));
       check(on && !off.playing && off.pressed === 'false', `${name}: switching Sound off stops the storyteller too (${JSON.stringify({ on, off })})`);
+    }
+    { // bamboo and banana fibre tell their own stories too, each from its own recording, with its own subtitles
+      const told = [];
+      for (const [i, fam, words] of [[0, 'bamboo', /bamboo has held up homes/i], [1, 'fibre', /banana plant fruits only once/i]]) {
+        await famY(i); await p.waitForTimeout(1800);
+        const offered = await p.evaluate((f) => { const b = document.querySelector(`#${f} .story`); return !!b && !b.hidden; }, fam);
+        await p.evaluate((f) => document.querySelector(`#${f} .story`)?.click(), fam); await p.waitForTimeout(1200);
+        const s = await p.evaluate(() => ({ cap: document.querySelector('.story-caption').textContent.trim(), audio: !!window.__story && !window.__story.paused, src: window.__story?.src || '' }));
+        await p.evaluate((f) => document.querySelector(`#${f} .story`)?.click(), fam); await p.waitForTimeout(300);
+        told.push({ fam, offered, cap: s.cap.slice(0, 40), audio: s.audio, own: s.src.includes(`/voice/${fam}.mp3`), ok: offered && words.test(s.cap) && s.audio && s.src.includes(`/voice/${fam}.mp3`) });
+      }
+      check(told.every((t) => t.ok), `${name}: bamboo and banana fibre each tell their own story, with subtitles (${JSON.stringify(told)})`);
     }
     await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   }
@@ -190,15 +201,16 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const home = await q.evaluate(() => ({ parent: document.getElementById('enquiryForm').parentElement.className, open: document.getElementById('productSheet').open }));
     check(home.parent === 'form-alt' && !home.open, `${name}: closing the drawer returns the form to Contact Us (${JSON.stringify(home)})`);
     { // the drawer still closes when its exit animation cannot run (a starved software renderer on CI, #18, or a hidden tab):
-      // here every animation is paused the moment Escape is pressed, and the dialog must close on its own within a second
+      // here every animation is paused the moment Escape is pressed (so it never finishes), and the dialog must still close
+      // on its own: the code allows 0.6 s; a loaded machine fires that timer late, so this waits up to 3 s
       await q.evaluate(() => document.getElementById('p-banana-leaves').click());
       await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
       await q.waitForTimeout(900);
       await q.keyboard.press('Escape');
       await q.evaluate(() => document.getAnimations().forEach((a) => a.pause()));
-      await q.waitForTimeout(1000);
+      await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 3000 }).catch(() => {});
       const stuck = await q.evaluate(() => ({ open: document.getElementById('productSheet').open, parent: document.getElementById('enquiryForm').parentElement.className }));
-      check(!stuck.open && stuck.parent === 'form-alt', `${name}: the drawer closes within a second even when its exit animation cannot run (${JSON.stringify(stuck)})`);
+      check(!stuck.open && stuck.parent === 'form-alt', `${name}: the drawer closes on its own even when its exit animation cannot run (${JSON.stringify(stuck)})`);
     }
     await q.close();
   }
@@ -358,25 +370,30 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       check(frames <= 3, `${name}: at 1 frame a second, the 3D comes to rest within 3 frames of the last input (${frames} frames)`);
       await q.close();
     }
-    // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
+    // keyboard reaches every family: Tab past the last bamboo product reaches its story, the plinth's next arrow, then
+    // the first fibre product, and back the same way
     // wait until the Bamboo family is the live one (an inert family cannot take focus), then focus its last product
     await toExplore(0.15); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
     await p.focus('#bamboo .product >> nth=3');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const focused = () => p.evaluate(() => document.activeElement?.textContent.trim() || document.activeElement?.tagName);
-    await p.keyboard.press('Tab'); // past the products, to the plinth's next arrow
+    await p.keyboard.press('Tab'); // past the products, to the family's story
+    const toStory = await focused();
+    await p.keyboard.press('Tab'); // then the plinth's next arrow
     const toArrow = await p.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
     await p.keyboard.press('Tab');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Grade A: banana silk', null, { timeout: 5000 }).catch(() => {});
     const afterTab = await focused();
-    check(toArrow === 'Next family: Banana fibre yarn' && afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products to the plinth's next arrow, then into the fibre products (focus: ${toArrow} -> ${afterTab})`);
+    check(toStory === 'Hear its story' && toArrow === 'Next family: Banana fibre yarn' && afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products to its story, the plinth's next arrow, then into the fibre products (focus: ${toStory} -> ${toArrow} -> ${afterTab})`);
     await p.keyboard.press('Shift+Tab'); // back to Bamboo's plinth arrow, then its last product
     await p.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Next family: Banana fibre yarn', null, { timeout: 5000 }).catch(() => {});
     const backArrow = await p.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
     await p.keyboard.press('Shift+Tab');
+    const backStory = await focused();
+    await p.keyboard.press('Shift+Tab');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const afterShift = await focused();
-    check(backArrow === 'Next family: Banana fibre yarn' && afterShift === 'Woven mats', `${name}: Shift+Tab returns through Bamboo's plinth arrow to its products (focus: ${backArrow} -> ${afterShift})`);
+    check(backArrow === 'Next family: Banana fibre yarn' && backStory === 'Hear its story' && afterShift === 'Woven mats', `${name}: Shift+Tab returns through Bamboo's plinth arrow and story to its products (focus: ${backArrow} -> ${backStory} -> ${afterShift})`);
     await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
     const playing = await p.waitForFunction(() => document.documentElement.dataset.score === 'playing', null, { timeout: 6000 }).then(() => true, () => false);
