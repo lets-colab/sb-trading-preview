@@ -3,3 +3,14 @@
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Every file the page loads is named with a version tag (?v= and a hash of its contents, tools/stamp.mjs), so a changed
+# file always has a new address and these can be kept for a year. The page itself keeps Cloudflare's default
+# (public, max-age=0, must-revalidate): it is checked on every visit, and names the current files. GitHub Pages ignores
+# this file; there the tags alone keep old and new files apart.
+/assets/*
+  Cache-Control: private, max-age=31536000, immutable
+/styles.css
+  Cache-Control: private, max-age=31536000, immutable
+/site.js
+  Cache-Control: private, max-age=31536000, immutable

@@ -4,7 +4,7 @@
 //           and the function returns the enquiry fields it recorded.
 //   guide - otherwise (no key, local preview, network error): a step-by-step guide, labelled as such.
 // Nothing is sent anywhere until the buyer presses "Send on WhatsApp", which opens WhatsApp with the text filled in.
-import { searchKnowledge } from './rifat-knowledge.js';
+import { searchKnowledge } from './rifat-knowledge.js?v=42fcffde';
 
 export const PRODUCTS = [
   'Bamboo poles', 'Bamboo splits', 'Ski poles', 'Woven mats',

@@ -115,3 +115,4 @@ for i, im in enumerate(frames, 1):
 with open(os.path.join(ROOT, 'assets/film/film.json'), 'w') as f:
     json.dump({'frames': len(frames), 'shots': starts, 'card': track}, f, separators=(',', ':'))
 print(f'{len(frames)} frames; shots {starts}; card track {len(track)} frames')
+print('now run: node tools/stamp.mjs  (gives the new film a new version tag, so no cache shows old frames)')

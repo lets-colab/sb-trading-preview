@@ -3,8 +3,11 @@
 // Explore stage (three families in arched windows, stage 04), the ordering fibre line, the chapter bar, and the
 // opt-in sound. Motion (motion.dev, MIT) runs reveals; Lenis (MIT) smooths wheel scrolling. Rifat (stage 05) lives
 // in assets/rifat.js. All content is in the HTML: without JavaScript, or with reduced motion, it reads as a document.
-import { createRifat } from './assets/rifat.js';
+import { createRifat } from './assets/rifat.js?v=205e2f23';
 
+// Every file is loaded at a versioned address (?v= and a hash of its contents, kept current by tools/stamp.mjs), so a
+// returning visitor's cache can never pair this page with an old file. The film's frames share one tag for the folder.
+const FILM = 'assets/film/?v=c9d6c2ba', filmFile = (p) => FILM.replace('?', `${p}?`);
 const root = document.documentElement;
 root.classList.add('js');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -56,7 +59,7 @@ const sound = (() => {
       const C = window.AudioContext || window.webkitAudioContext;
       if (!C) return;
       actx = new C({ latencyHint: 'interactive' });
-      import('./assets/sound.js').then((m) => {
+      import('./assets/sound.js?v=64c4a1d1').then((m) => {
         engine = m.createSoundEngine(actx);
         engine.onNote(ripple);
         guard(() => engine.cue('toggle', 0.5));
@@ -139,7 +142,7 @@ async function loadFrames() {
     const worker = async () => {
       while (next < order.length) {
         const i = order[next++], img = new Image();
-        img.src = `assets/film/${SET}/${String(i + 1).padStart(3, '0')}.webp`;
+        img.src = filmFile(`${SET}/${String(i + 1).padStart(3, '0')}.webp`);
         try { await img.decode(); frames[i] = img; if (drawnFrom < 0 || Math.abs(i - wanted) < Math.abs(drawnFrom - wanted)) shown = -1; }
         catch (e) { /* a missing frame is covered by its neighbours */ }
       }
@@ -166,7 +169,7 @@ function labelShot(i) { // i: the index of the loaded frame on the canvas (not t
 // loaded frame on the canvas; on phones (a centre crop) it sits above the chapter bar.
 const specCard = $('.spec-card', film);
 let cardTrack = null;
-fetch('assets/film/film.json').then((r) => r.json()).then((j) => { cardTrack = new Map(j.card.map(([i, ...b]) => [i, b])); }).catch(() => { /* the card stays in its CSS place */ });
+fetch(filmFile('film.json')).then((r) => r.json()).then((j) => { cardTrack = new Map(j.card.map(([i, ...b]) => [i, b])); }).catch(() => { /* the card stays in its CSS place */ });
 let cardFrame = -1;
 function placeCard(i) {
   if (!specCard || !cardTrack || SET === 'm' || i === cardFrame) return;
@@ -261,9 +264,9 @@ let famActive = -1;
 // with its words as subtitles. "Hear its story" plays or stops it; with Sound on it also starts as the family comes on
 // stage, once per family. The score ducks under the voice. A family whose recording is not made yet shows no button.
 const STORIES = {
-  bamboo: { src: null, text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots. Dried and bundled, it leaves the grove as poles, splits and sections, ready to build with.' },
-  fibre: { src: null, text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
-  bark: { src: 'assets/voice/bark.mp3', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
+  bamboo: { src: 'assets/voice/bamboo.mp3?v=53d87132', text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots. Dried and bundled, it leaves the grove as poles, splits and sections, ready to build with.' },
+  fibre: { src: 'assets/voice/fibre.mp3?v=16255d51', text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
+  bark: { src: 'assets/voice/bark.mp3?v=08edcb15', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
 };
 const storyCap = $('.story-caption'), storyBtns = $$('.story'), told = new Set();
 let storyNow = null;
@@ -349,7 +352,7 @@ async function loadStudies() {
     const dbg = probe.getExtension('WEBGL_debug_renderer_info');
     const soft = /swiftshader|llvmpipe|software/i.test(dbg ? String(probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '');
     probe.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
-    const { createSpecimens } = await import('./assets/vendor/specimens.js');
+    const { createSpecimens } = await import('./assets/vendor/specimens.js?v=3798b600');
     studies = createSpecimens(studiesCanvas, { low: soft || innerWidth < 820 });
     sizeStudies();
     studiesCanvas.addEventListener('webglcontextlost', () => { studies = null; root.classList.replace('has-3d', 'no-3d'); }); // the photographs come back
@@ -470,7 +473,7 @@ if (reduced) addEventListener('scroll', () => requestAnimationFrame(tick), { pas
 requestAnimationFrame(tick);
 let lenis = null;
 if (fine && !reduced) {
-  import('./assets/vendor/smooth.js').then(({ default: Lenis }) => {
+  import('./assets/vendor/smooth.js?v=36d1e113').then(({ default: Lenis }) => {
     lenis = new Lenis({ lerp: 0.1, anchors: true });
     const raf = (t) => { lenis.raf(t); requestAnimationFrame(raf); };
     requestAnimationFrame(raf);
@@ -556,13 +559,13 @@ function openSheet() {
 function closeSheet() {
   if (sheetLeaving) return sheetLeaving;
   if (!sheet.open) return Promise.resolve();
-  if (reduced || !M) { sheet.close(); quoteSendHome(); return Promise.resolve(); }
+  if (reduced || !M) { sheet.close(); leaveAddress(); quoteSendHome(); return Promise.resolve(); }
   sheet.dataset.closing = '';
   const off = sheetOff();
   const exit = M.animate(sheet, { x: off.x, y: off.y, opacity: 0.5 }, { duration: 0.28, ease: [0.4, 0, 1, 1] }).finished.catch(() => {});
   // a deadline, so the drawer still closes when the exit cannot play (a hidden tab, a starved software renderer)
   const deadline = new Promise((r) => setTimeout(r, 600));
-  sheetLeaving = Promise.race([exit, deadline]).then(() => { sheet.close(); quoteSendHome(); delete sheet.dataset.closing; sheetLeaving = null; });
+  sheetLeaving = Promise.race([exit, deadline]).then(() => { sheet.close(); leaveAddress(); quoteSendHome(); delete sheet.dataset.closing; sheetLeaving = null; });
   return sheetLeaving;
 }
 sheet.addEventListener('cancel', (e) => { e.preventDefault(); closeSheet(); }); // Escape
@@ -593,9 +596,11 @@ function quoteSendHome() {
   quoteBack();
 }
 function showProduct(btn, { push = true } = {}) {
+  const busy = sheetLeaving || steppingBack; // the last drawer is still sliding out, or its address is being left (stepBack)
+  if (busy) { busy.then(() => showProduct(btn, { push })); return; }
   sheetProduct = btn.textContent.trim();
   sheetFam = fams.indexOf(btn.closest('.fam'));
-  $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
+  $('#sheetImg').src = btn.dataset.img;
   $('#sheetImg').alt = `${btn.dataset.family} photograph`;
   $('#sheetFamily').textContent = btn.dataset.family;
   $('#sheetTitle').textContent = sheetProduct;
@@ -608,6 +613,7 @@ function showProduct(btn, { push = true } = {}) {
   quoteSendHome();
   if (push && location.hash !== `#${btn.id}`) history.pushState({ product: btn.id }, '', `#${btn.id}`);
   document.title = `${sheetProduct} · SB Trading`;
+  addressLeft = false;
   openSheet();
 }
 for (const btn of $$('.product')) btn.addEventListener('click', () => { showProduct(btn); sound.cue('open', btn); });
@@ -615,12 +621,32 @@ for (const btn of $$('.product')) btn.addEventListener('click', () => { showProd
 // several products does not fill the Back history; "Ask Rifat" has started scrolling to Enquire, and a shared link has
 // no entry of its own, so those rewrite the address in place instead (stepping back would restore the old scroll).
 let sheetKeepsScroll = false;
-sheet.addEventListener('close', () => {
+// The browser lands that step back a moment later (popstate). A product opened before it lands waits for it: otherwise
+// the late step would land on the old product's address and show that product again, or reopen one after a close.
+let steppingBack = null, steppedBack = null;
+function landed() { if (steppedBack) { const done = steppedBack; steppingBack = steppedBack = null; done(); } }
+function stepBack() {
+  const step = new Promise((r) => { steppedBack = r; });
+  steppingBack = step;
+  // a step that never lands does not hold the drawer; an earlier step's timer cannot release this one
+  setTimeout(() => { if (steppingBack === step) landed(); }, 1500);
+  history.back();
+}
+// Leaving the address happens once per open product, at the moment the page closes the drawer (closeSheet). The dialog's
+// own close event comes a moment later: it leaves the address only after a close the browser made itself, and is stale
+// (ignored) when a product has been opened in between.
+let addressLeft = true;
+function leaveAddress() {
+  if (addressLeft) return;
+  addressLeft = true;
   document.title = pageTitle;
-  if (productAt()) { if (history.state?.product && !sheetKeepsScroll) history.back(); else history.replaceState(null, '', location.pathname + location.search); }
+  if (productAt()) { if (history.state?.product && !sheetKeepsScroll) stepBack(); else history.replaceState(null, '', location.pathname + location.search); }
   sheetKeepsScroll = false;
-});
-addEventListener('popstate', () => { const btn = productAt(); if (btn?.classList.contains('product')) showProduct(btn, { push: false }); else closeSheet(); });
+}
+sheet.addEventListener('close', () => { if (!sheet.open) leaveAddress(); });
+addEventListener('popstate', () => {
+  if (steppedBack) { landed(); return; } // our own step back over a closed product's address
+  const btn = productAt(); if (btn?.classList.contains('product')) showProduct(btn, { push: false }); else closeSheet(); });
 { // a shared product link: bring its family on stage, then open it
   const btn = productAt();
   if (btn?.classList.contains('product')) {
@@ -651,7 +677,7 @@ $('#sheetAdd').addEventListener('click', (e) => {
   sound.cue('tick', e.currentTarget);
 });
 sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });
-sheet.addEventListener('close', quoteSendHome);
+sheet.addEventListener('close', () => { if (!sheet.open) quoteSendHome(); });
 $('#sheetQuote').addEventListener('click', quoteOpen);
 $('#quoteBack').addEventListener('click', () => { quoteBack(); $('#sheetQuote').focus(); });
 $('#quoteReview').addEventListener('click', () => {

@@ -5,7 +5,7 @@
 // so it reads as an object while it turns about a quarter-turn either way (a single photograph has no back).
 //
 // API (site.js), the same as the depth studies it replaces:
-//   createSpecimens(canvas, { low, base }) -> { mount(el), setSize(w, h), render(state) -> settling, whenReady(fam), dirty }
+//   createSpecimens(canvas, { low }) -> { mount(el), setSize(w, h), render(state) -> settling, whenReady(fam), dirty }
 //   render({ fam, t, pointer, now, settle }) draws one frame and returns true while it is still easing; settle snaps.
 import {
   WebGLRenderer, Scene, PerspectiveCamera, HemisphereLight, DirectionalLight, Mesh, Group, BoxGeometry, PlaneGeometry,
@@ -14,10 +14,11 @@ import {
   BufferGeometry, BufferAttribute, Points, PointsMaterial, AdditiveBlending, MathUtils,
 } from 'three';
 
+// Paths from the site root, each with its version tag (tools/stamp.mjs), so a new photograph always has a new address.
 const FAMILIES = [
-  { cut: 'cutout/bamboo.webp', depth: 'depth/bamboo-sections-depth.webp' },
-  { cut: 'cutout/fibre.webp', depth: 'depth/banana-fibre-loose-depth.webp' },
-  { cut: 'cutout/leaves.webp', depth: 'depth/banana-leaves-depth.webp' },
+  { cut: 'assets/img/cutout/bamboo.webp?v=240197dc', depth: 'assets/img/depth/bamboo-sections-depth.webp?v=3b0e5e6b' },
+  { cut: 'assets/img/cutout/fibre.webp?v=52e3b162', depth: 'assets/img/depth/banana-fibre-loose-depth.webp?v=b6b48b3a' },
+  { cut: 'assets/img/cutout/leaves.webp?v=c82e6945', depth: 'assets/img/depth/banana-leaves-depth.webp?v=36c4dd84' },
 ];
 const CASE = { w: 2.5, h: 3.0, d: 1.6 }, PED = { w: 2.7, h: 1.1, d: 1.8 }, RELIEF = 0.75;
 const FIT = { w: 3.1, h: CASE.h + PED.h + 0.25, cy: (CASE.h - PED.h) / 2 - 0.05 };
@@ -49,7 +50,7 @@ function specimenGeometry(cutImg, depthImg, low) {
   return { geo, h };
 }
 
-export function createSpecimens(canvas, { low = false, base = 'assets/img/' } = {}) {
+export function createSpecimens(canvas, { low = false } = {}) {
   const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: !low, powerPreference: low ? 'low-power' : 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, low ? 1 : 1.75));
   renderer.setClearColor(0x000000, 0);
@@ -89,7 +90,7 @@ export function createSpecimens(canvas, { low = false, base = 'assets/img/' } = 
   for (const [i, f] of FAMILIES.entries()) {
     const s = specimens[i];
     s.group.visible = false; scene.add(s.group);
-    s.ready = Promise.all([loadImage(base + f.cut), loadImage(base + f.depth), loader.loadAsync(base + f.cut)]).then(([cut, depth, tex]) => {
+    s.ready = Promise.all([loadImage(f.cut), loadImage(f.depth), loader.loadAsync(f.cut)]).then(([cut, depth, tex]) => {
       tex.colorSpace = SRGBColorSpace; tex.anisotropy = 4;
       const { geo, h } = specimenGeometry(cut, depth, low);
       const mesh = new Mesh(geo, new MeshStandardMaterial({ map: tex, alphaTest: 0.42, roughness: 0.82, metalness: 0, side: DoubleSide }));

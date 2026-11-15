@@ -100,8 +100,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
 
-  { // the storyteller: a family with a recorded narration offers "Hear its story"; pressing it plays the narration and
-    // shows its words as subtitles; pressing again stops it. Families without a recording show no button.
+  { // the storyteller: every family offers "Hear its story"; pressing it plays that family's narration (one voice for all
+    // three) and shows its words as subtitles; pressing again stops it.
     const famY = (i) => p.evaluate((k) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * (k / 3 + 0.12)); }, i);
     await famY(2); await p.waitForTimeout(1800);
     const btn = await p.evaluate(() => { const b = document.querySelector('#bark .story'); return b && !b.hidden ? b.textContent.trim() : null; });
@@ -109,9 +109,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const playing = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), cap: document.querySelector('.story-caption').textContent.trim(), shown: !document.querySelector('.story-caption').hidden, audio: !!window.__story && !window.__story.paused }));
     await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(400);
     const stopped = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), shown: !document.querySelector('.story-caption').hidden }));
-    const noAudio = await p.evaluate(() => document.querySelector('#bamboo .story')?.hidden !== false);
-    check(btn === 'Hear its story' && playing.pressed === 'true' && playing.shown && /banana plant/i.test(playing.cap) && playing.audio && stopped.pressed === 'false' && !stopped.shown && noAudio,
-      `${name}: "Hear its story" narrates banana bark and leaves with subtitles, and stops on a second press (${JSON.stringify({ btn, playing, stopped, noAudio })})`);
+    check(btn === 'Hear its story' && playing.pressed === 'true' && playing.shown && /banana plant/i.test(playing.cap) && playing.audio && stopped.pressed === 'false' && !stopped.shown,
+      `${name}: "Hear its story" narrates banana bark and leaves with subtitles, and stops on a second press (${JSON.stringify({ btn, playing, stopped })})`);
     { // switching Sound off also silences a story that Sound started (Codex finding on #18)
       await p.click('#soundToggle'); await p.waitForTimeout(800);
       await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(800);
@@ -119,6 +118,18 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       await p.click('#soundToggle'); await p.waitForTimeout(500);
       const off = await p.evaluate(() => ({ playing: !!window.__story && !window.__story.paused, pressed: document.querySelector('#bark .story').getAttribute('aria-pressed') }));
       check(on && !off.playing && off.pressed === 'false', `${name}: switching Sound off stops the storyteller too (${JSON.stringify({ on, off })})`);
+    }
+    { // bamboo and banana fibre tell their own stories too, each from its own recording, with its own subtitles
+      const told = [];
+      for (const [i, fam, words] of [[0, 'bamboo', /bamboo has held up homes/i], [1, 'fibre', /banana plant fruits only once/i]]) {
+        await famY(i); await p.waitForTimeout(1800);
+        const offered = await p.evaluate((f) => { const b = document.querySelector(`#${f} .story`); return !!b && !b.hidden; }, fam);
+        await p.evaluate((f) => document.querySelector(`#${f} .story`)?.click(), fam); await p.waitForTimeout(1200);
+        const s = await p.evaluate(() => ({ cap: document.querySelector('.story-caption').textContent.trim(), audio: !!window.__story && !window.__story.paused, src: window.__story?.src || '' }));
+        await p.evaluate((f) => document.querySelector(`#${f} .story`)?.click(), fam); await p.waitForTimeout(300);
+        told.push({ fam, offered, cap: s.cap.slice(0, 40), audio: s.audio, own: s.src.includes(`/voice/${fam}.mp3`), ok: offered && words.test(s.cap) && s.audio && s.src.includes(`/voice/${fam}.mp3`) });
+      }
+      check(told.every((t) => t.ok), `${name}: bamboo and banana fibre each tell their own story, with subtitles (${JSON.stringify(told)})`);
     }
     await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   }
@@ -145,6 +156,41 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     }
     const grew = (await p.evaluate(() => history.length)) - before;
     check(grew <= 1, `${name}: opening and closing three products does not fill the Back history (${grew} extra entries)`);
+  }
+  { // closing a product steps back over its address, and the browser lands that step a moment later: a product opened
+    // at once must still be the one shown, and closing it must leave the drawer closed (the late step used to land on the
+    // old product's address and reopen it; on CI, closing then reopened an earlier product)
+    const q = await ctx.newPage(); await q.goto(ORIGIN + '/'); await q.waitForTimeout(1500);
+    const sheetOpen = () => q.evaluate(() => document.getElementById('productSheet').open);
+    await q.evaluate(() => document.getElementById('p-bamboo-poles').click());
+    await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+    await q.waitForTimeout(700); await q.keyboard.press('Escape');
+    await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+    await q.evaluate(() => document.getElementById('p-banana-leaves').click());
+    await q.waitForFunction(() => document.getElementById('productSheet').open && location.hash === '#p-banana-leaves', null, { timeout: 6000 }).catch(() => {});
+    await q.waitForTimeout(500);
+    const shown = await q.evaluate(() => ({ open: document.getElementById('productSheet').open, title: document.getElementById('sheetTitle').textContent, hash: location.hash }));
+    await q.keyboard.press('Escape');
+    await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 6000 }).catch(() => {});
+    await q.waitForTimeout(1500); // and it stays closed
+    const after = { open: await sheetOpen(), hash: await q.evaluate(() => location.hash) };
+    check(shown.open && shown.title === 'Banana leaves' && shown.hash === '#p-banana-leaves' && !after.open && after.hash === '',
+      `${name}: a product opened just after closing another is the one shown, and closing it leaves the drawer closed (${JSON.stringify({ shown, after })})`);
+    // the same while the first drawer is still sliding out
+    await q.evaluate(() => document.getElementById('p-bamboo-poles').click());
+    await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+    await q.waitForTimeout(700); await q.keyboard.press('Escape'); await q.waitForTimeout(60);
+    await q.evaluate(() => document.getElementById('p-banana-leaves').click());
+    await q.waitForFunction(() => document.getElementById('productSheet').open && location.hash === '#p-banana-leaves', null, { timeout: 6000 }).catch(() => {});
+    await q.waitForTimeout(500);
+    const mid = await q.evaluate(() => ({ open: document.getElementById('productSheet').open, title: document.getElementById('sheetTitle').textContent, hash: location.hash }));
+    await q.keyboard.press('Escape');
+    await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 6000 }).catch(() => {});
+    await q.waitForTimeout(1500); // and it stays closed
+    const midAfter = { open: await sheetOpen(), hash: await q.evaluate(() => location.hash) };
+    check(mid.open && mid.title === 'Banana leaves' && mid.hash === '#p-banana-leaves' && !midAfter.open && midAfter.hash === '',
+      `${name}: a product opened while another is still sliding out is the one shown, at its own address (${JSON.stringify({ mid, midAfter })})`);
+    await q.close();
   }
   { // a shared product link opens that product directly
     const q = await ctx.newPage(); await q.goto(ORIGIN + '/#p-grade-a-banana-silk');
@@ -190,15 +236,16 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const home = await q.evaluate(() => ({ parent: document.getElementById('enquiryForm').parentElement.className, open: document.getElementById('productSheet').open }));
     check(home.parent === 'form-alt' && !home.open, `${name}: closing the drawer returns the form to Contact Us (${JSON.stringify(home)})`);
     { // the drawer still closes when its exit animation cannot run (a starved software renderer on CI, #18, or a hidden tab):
-      // here every animation is paused the moment Escape is pressed, and the dialog must close on its own within a second
+      // here every animation is paused the moment Escape is pressed (so it never finishes), and the dialog must still close
+      // on its own: the code allows 0.6 s; a loaded machine fires that timer late, so this waits up to 3 s
       await q.evaluate(() => document.getElementById('p-banana-leaves').click());
       await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
       await q.waitForTimeout(900);
       await q.keyboard.press('Escape');
       await q.evaluate(() => document.getAnimations().forEach((a) => a.pause()));
-      await q.waitForTimeout(1000);
+      await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 3000 }).catch(() => {});
       const stuck = await q.evaluate(() => ({ open: document.getElementById('productSheet').open, parent: document.getElementById('enquiryForm').parentElement.className }));
-      check(!stuck.open && stuck.parent === 'form-alt', `${name}: the drawer closes within a second even when its exit animation cannot run (${JSON.stringify(stuck)})`);
+      check(!stuck.open && stuck.parent === 'form-alt', `${name}: the drawer closes on its own even when its exit animation cannot run (${JSON.stringify(stuck)})`);
     }
     await q.close();
   }
@@ -267,7 +314,10 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
 
   // guided flow
   const say = async (t) => { await p.fill('#rifatInput', t); await p.press('#rifatInput', 'Enter'); await p.waitForTimeout(1500); };
-  { // Rifat appears at the end of the journey: his portrait in a cyan ring, always labelled AI, and his face in the chat bar
+  { // Rifat appears at the end of the journey: his portrait in a cyan ring, always labelled AI, and his face in the chat bar.
+    // His ring lights once the page has scrolled him into view; "Ask Rifat" focuses the input at about the same moment
+    // (a near-tie measured at ~1 s on a phone, scroll still moving), so wait for the arrival rather than read mid-scroll
+    await p.waitForFunction(() => document.querySelector('.enquire .presence')?.classList.contains('here'), null, { timeout: 8000 }).catch(() => {});
     const pres = await p.evaluate(() => { const f = document.querySelector('.enquire .presence'), img = f?.querySelector('img'), r = img?.getBoundingClientRect();
       return { here: f?.classList.contains('here'), loaded: !!img?.complete && img.naturalWidth > 0, w: Math.round(r?.width || 0), ai: f?.querySelector('.ai-tag')?.textContent.trim(), alt: img?.alt || '',
         face: !!document.querySelector('.rifat-top .orb img')?.naturalWidth }; });
@@ -309,10 +359,12 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       const box = await p.evaluate(() => { const r = document.querySelector('#bamboo .exhibit').getBoundingClientRect(); return { x: Math.max(0, r.left), y: Math.max(0, r.top), width: Math.min(r.width, innerWidth - r.left), height: Math.min(r.height, innerHeight - r.top) }; });
       // On a software renderer the GPU process can be saturated; if this capture times out, say what the page was doing
       // (frame rate, long tasks, 3D state, renderer) before failing, so a CI-only stall leaves evidence (#18).
-      const shot = (o) => p.screenshot(o).catch(async (err) => {
-        const diag = await Promise.race([p.evaluate(() => new Promise((r) => { let n = 0; const t = performance.now(); const f = () => { n++; if (performance.now() - t < 2000) requestAnimationFrame(f); else r({ fps: n / 2, cls: document.documentElement.className, state: document.querySelector('.studies')?.dataset.renderState, renderer: (() => { const g = document.createElement('canvas').getContext('webgl2'), d = g?.getExtension('WEBGL_debug_renderer_info'); return d ? String(g.getParameter(d.UNMASKED_RENDERER_WEBGL)) : 'none'; })() }); }; requestAnimationFrame(f); })), new Promise((r) => setTimeout(() => r('page did not answer within 20 s'), 20000))]);
-        console.log('DIAG screenshot timeout:', JSON.stringify(diag));
-        throw err;
+      // CI's software renderer has stalled a capture while the page stayed healthy (60 fps, 3D idle): record what the page
+      // was doing, then try the capture once more; the pixel comparison below still has to pass on real captures.
+      const diag = () => Promise.race([p.evaluate(() => new Promise((r) => { let n = 0; const t = performance.now(); const f = () => { n++; if (performance.now() - t < 2000) requestAnimationFrame(f); else r({ fps: n / 2, cls: document.documentElement.className, state: document.querySelector('.studies')?.dataset.renderState, dialogs: [...document.querySelectorAll('dialog[open]')].map((d) => d.id), media: [...document.querySelectorAll('audio, video')].filter((m) => !m.paused).length + (window.__story && !window.__story.paused ? 1 : 0), animations: document.getAnimations().filter((a) => a.playState === 'running').length, renderer: (() => { const g = document.createElement('canvas').getContext('webgl2'), d = g?.getExtension('WEBGL_debug_renderer_info'); return d ? String(g.getParameter(d.UNMASKED_RENDERER_WEBGL)) : 'none'; })() }); }; requestAnimationFrame(f); })), new Promise((r) => setTimeout(() => r('page did not answer within 20 s'), 20000))]);
+      const shot = (o) => p.screenshot({ ...o, timeout: 30000 }).catch(async (err) => {
+        console.log('DIAG screenshot timeout (trying once more):', JSON.stringify(await diag()));
+        return p.screenshot({ ...o, timeout: 30000 }).catch(async (again) => { console.log('DIAG second capture timeout:', JSON.stringify(await diag())); throw again; });
       });
       const withObj = (await shot({ clip: box })).toString('base64');
       await p.evaluate(() => { document.querySelector('.studies').style.visibility = 'hidden'; });
@@ -358,25 +410,30 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       check(frames <= 3, `${name}: at 1 frame a second, the 3D comes to rest within 3 frames of the last input (${frames} frames)`);
       await q.close();
     }
-    // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
+    // keyboard reaches every family: Tab past the last bamboo product reaches its story, the plinth's next arrow, then
+    // the first fibre product, and back the same way
     // wait until the Bamboo family is the live one (an inert family cannot take focus), then focus its last product
     await toExplore(0.15); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
     await p.focus('#bamboo .product >> nth=3');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const focused = () => p.evaluate(() => document.activeElement?.textContent.trim() || document.activeElement?.tagName);
-    await p.keyboard.press('Tab'); // past the products, to the plinth's next arrow
+    await p.keyboard.press('Tab'); // past the products, to the family's story
+    const toStory = await focused();
+    await p.keyboard.press('Tab'); // then the plinth's next arrow
     const toArrow = await p.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
     await p.keyboard.press('Tab');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Grade A: banana silk', null, { timeout: 5000 }).catch(() => {});
     const afterTab = await focused();
-    check(toArrow === 'Next family: Banana fibre yarn' && afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products to the plinth's next arrow, then into the fibre products (focus: ${toArrow} -> ${afterTab})`);
+    check(toStory === 'Hear its story' && toArrow === 'Next family: Banana fibre yarn' && afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products to its story, the plinth's next arrow, then into the fibre products (focus: ${toStory} -> ${toArrow} -> ${afterTab})`);
     await p.keyboard.press('Shift+Tab'); // back to Bamboo's plinth arrow, then its last product
     await p.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Next family: Banana fibre yarn', null, { timeout: 5000 }).catch(() => {});
     const backArrow = await p.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
     await p.keyboard.press('Shift+Tab');
+    const backStory = await focused();
+    await p.keyboard.press('Shift+Tab');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const afterShift = await focused();
-    check(backArrow === 'Next family: Banana fibre yarn' && afterShift === 'Woven mats', `${name}: Shift+Tab returns through Bamboo's plinth arrow to its products (focus: ${backArrow} -> ${afterShift})`);
+    check(backArrow === 'Next family: Banana fibre yarn' && backStory === 'Hear its story' && afterShift === 'Woven mats', `${name}: Shift+Tab returns through Bamboo's plinth arrow and story to its products (focus: ${backArrow} -> ${backStory} -> ${afterShift})`);
     await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
     const playing = await p.waitForFunction(() => document.documentElement.dataset.score === 'playing', null, { timeout: 6000 }).then(() => true, () => false);

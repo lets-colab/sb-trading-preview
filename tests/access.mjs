@@ -97,7 +97,10 @@ for (const [name, opts] of [['desktop 1440', { viewport: { width: 1440, height: 
   await p.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.15); });
   await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {}); await p.waitForTimeout(1500);
   await scan('Explore');
-  await p.click('#bamboo.on .product >> nth=0'); await p.waitForTimeout(900);
+  await p.click('#bamboo.on .product >> nth=0');
+  // scan once the drawer has finished arriving: mid-slide its text is part-transparent and reads as low contrast
+  await p.waitForFunction(() => { const d = document.getElementById('productSheet'); return d.open && Number(getComputedStyle(d).opacity) === 1 && d.getAnimations({ subtree: true }).every((a) => a.playState !== 'running'); }, null, { timeout: 10000 }).catch(() => {});
+  await p.waitForTimeout(200);
   await scan('product drawer open');
   await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
   await p.evaluate(() => document.getElementById('enquire').scrollIntoView()); await p.waitForTimeout(1800);
