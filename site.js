@@ -177,6 +177,25 @@ function placeCard(i) {
   specCard.style.left = `${Math.round(cx - w / 2)}px`; specCard.style.width = `${Math.round(w)}px`;
   specCard.style.top = `${Math.round(Math.min(oy + y0 * 720 * s, innerHeight - specCard.offsetHeight - 76))}px`;
 }
+// Hold to split: the beam shot's own prompt reads "hold or scroll to split". Pressing and holding on the film while the
+// specimen is in the beam plays the film forward to the split at a steady pace (0.16 of the film a second); letting go
+// stops it. A touch that starts scrolling is the browser's (pointercancel), so phones keep their normal swipe.
+let holdT = 0;
+const HOLD_FROM = 0.2, HOLD_TO = 0.6;
+film.addEventListener('pointerdown', (e) => {
+  if (reduced || e.button > 0 || e.target.closest('a, button')) return;
+  const q = progressOf(film);
+  if (q >= HOLD_FROM && q < HOLD_TO - 0.01) holdT = performance.now();
+});
+for (const ev of ['pointerup', 'pointercancel', 'blur']) addEventListener(ev, () => { holdT = 0; });
+function hold(now) {
+  if (!holdT) return;
+  const dt = Math.min(0.1, (now - holdT) / 1000); holdT = now;
+  const span = film.offsetHeight - innerHeight, end = film.offsetTop + span * HOLD_TO;
+  const y = Math.min(end, scrollY + span * 0.16 * dt);
+  if (y >= end - 1) holdT = 0;
+  scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true });
+}
 // Film sound design (assets/sound.js), fired when scrolling forward crosses each moment: the cut from the grove into the
 // hall, the beam, the bamboo splitting, the fibre vortex, the close shot and the dome opening (frame numbers from
 // assets/film/film.json: grove 0, beam 41, close 139, dome 161). A jump past several moments plays none of them.
@@ -352,6 +371,7 @@ function setChapter(c) {
 
 // ------------------------------------------------------------------ the loop
 function tick(now = performance.now()) {
+  hold(now);
   const p = progressOf(film);
   filmP = reduced || Math.abs(p - filmP) > 0.2 ? p : filmP + (p - filmP) * 0.16; // a jump (a link, Home/End) lands at once; scrolling glides
   if (Math.abs(p - filmP) < 1e-4) filmP = p;

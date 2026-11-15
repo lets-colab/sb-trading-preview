@@ -83,6 +83,20 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       `${name}: in the beam a real specimen card (Bangladesh, 03 families, 09 products, Explore, Ask Rifat) covers the drawn one (${JSON.stringify(a)})`);
     check(!b.shown, `${name}: the card leaves once the specimen splits open (${JSON.stringify({ shown: b.shown })})`);
   }
+  { // the footage says "hold or scroll to split": in the beam, pressing and holding on the film plays it forward to the split
+    await p.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * 0.3); });
+    await p.waitForTimeout(1200);
+    const prog = () => p.evaluate(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return -r.top / (r.height - innerHeight); });
+    const before = await prog();
+    const box = await p.evaluate(() => { const r = document.querySelector('.film-stage').getBoundingClientRect(); return { x: r.width * 0.5, y: r.height * 0.3 }; });
+    if (touch) { await p.touchscreen.tap(box.x, box.y); } // a phone has no mouse; holding there is a long touch, tested by hand
+    else { await p.mouse.move(box.x, box.y); await p.mouse.down(); await p.waitForTimeout(3000); await p.mouse.up(); }
+    await p.waitForTimeout(400);
+    const after = await prog();
+    if (!touch) check(before < 0.35 && after > 0.55 && after < 0.65, `${name}: holding on the beam plays the film forward to the split (${before.toFixed(2)} -> ${after.toFixed(2)})`);
+    const hint = await p.evaluate(() => document.querySelector('.spec-hint').textContent.trim());
+    check(/hold or scroll/i.test(hint), `${name}: the card says how to split it (${hint})`);
+  }
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
 
