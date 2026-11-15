@@ -48,15 +48,82 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.waitForFunction((src) => new RegExp(src, 'i').test(document.querySelector('.film-label').textContent), want.source, { timeout: 15000 }).catch(() => {}); // the film eases to the scroll position
     return p.evaluate(() => document.querySelector('.film-label').textContent.trim());
   };
-  const shots = [[0.03, /stock footage \(Pexels\)/i], [0.5, /generated footage/i], [0.8, /stock footage \(Pexels\)/i], [0.95, /generated footage/i]];
+  // the film is the owner's reference journey (tools/build-film.py): generated footage throughout, labelled as such
+  const topLabel = await labelAt(0.02, /generated footage/);
+  check(/^This shot: generated footage, not SB Trading's own\.$/.test(topLabel), `${name}: from the first frame (the bamboo grove) the label names generated footage (${topLabel})`);
+  const dustLit = await p.evaluate(() => { const c = document.querySelector('.dust'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 8) n++; return n; });
+  check(dustLit > 20, `${name}: dust motes are drawn over the opening (${dustLit} lit pixels)`);
+  const shots = [[0.25, /generated footage/i], [0.5, /generated footage/i], [0.95, /generated footage/i]];
   const seen = [];
-  for (const [x, want] of shots) { const t = await labelAt(x, want); seen.push(`${x}: ${t}`); if (!want.test(t) || !/not SB Trading's own/.test(t) || (/generated/i.test(t) && /Pexels/.test(t))) seen.push('MISMATCH'); }
-  check(!seen.includes('MISMATCH'), `${name}: the film label names each shot's own source (${seen.filter((s) => s !== 'MISMATCH').join(' | ')})`);
+  for (const [x, want] of shots) { const t = await labelAt(x, want); seen.push(`${x}: ${t}`); if (!want.test(t) || !/not SB Trading's own/.test(t) || /Pexels|stock/i.test(t)) seen.push('MISMATCH'); }
+  check(!seen.includes('MISMATCH'), `${name}: through the whole film the label names generated footage and never stock (${seen.filter((s) => s !== 'MISMATCH').join(' | ')})`);
+  { // the label follows the frame actually on the canvas: with frames 1-30 failing to load, frame 30 is drawn from the
+    // nearest loaded frame and the label still names that frame's source (Codex finding on #16)
+    const q = await ctx.newPage();
+    await q.route(/\/assets\/film\/[dm]\/0(0[1-9]|[12][0-9]|30)\.webp$/, (r) => r.abort());
+    await q.goto(ORIGIN + '/'); await q.waitForTimeout(2500);
+    await q.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * (29 / 195)); });
+    await q.waitForFunction(() => /generated footage, not/i.test(document.querySelector('.film-label').textContent), null, { timeout: 15000 }).catch(() => {});
+    const t = await q.evaluate(() => document.querySelector('.film-label').textContent.trim());
+    check(/generated footage, not SB Trading's own/.test(t) && !/Pexels/.test(t), `${name}: the label follows the frame drawn, not the frame asked for (${t})`);
+    await q.close();
+  }
+  { // the specimen card drawn into the beam shot is blurred out of the footage; a real card with SB Trading's facts and
+    // working buttons sits where it was (desktop: it follows the drawn card's track; phone: pinned near the bottom)
+    const cardAt = async (q) => {
+      await p.evaluate((x) => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * x); }, q);
+      await p.waitForTimeout(1600);
+      return p.evaluate(() => { const c = document.querySelector('.spec-card'), r = c.getBoundingClientRect(), cs = getComputedStyle(c);
+        return { shown: cs.visibility === 'visible' && Number(cs.opacity) > 0.9, top: r.top / innerHeight, left: r.left / innerWidth, right: r.right / innerWidth, bottom: r.bottom / innerHeight,
+          text: c.innerText.replace(/\s+/g, ' ').trim(), links: [...c.querySelectorAll('a')].map((a) => a.getAttribute('href')) }; });
+    };
+    const a = await cardAt(0.3), b = await cardAt(0.65);
+    const placed = touch ? a.bottom <= 0.98 && a.top > 0.45 : a.left > 0.2 && a.right < 0.85 && a.top > 0.5 && a.bottom <= 1.001;
+    check(a.shown && placed && /Origin Bangladesh/i.test(a.text) && /Families 03/i.test(a.text) && /Products 09/i.test(a.text) && !/Banglies|Dadoin/i.test(a.text) && a.links.join() === '#explore,#enquire',
+      `${name}: in the beam a real specimen card (Bangladesh, 03 families, 09 products, Explore, Ask Rifat) covers the drawn one (${JSON.stringify(a)})`);
+    check(!b.shown, `${name}: the card leaves once the specimen splits open (${JSON.stringify({ shown: b.shown })})`);
+  }
+  { // the footage says "hold or scroll to split": in the beam, pressing and holding on the film plays it forward to the split
+    await p.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * 0.3); });
+    await p.waitForTimeout(1200);
+    const prog = () => p.evaluate(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return -r.top / (r.height - innerHeight); });
+    const before = await prog();
+    const box = await p.evaluate(() => { const r = document.querySelector('.film-stage').getBoundingClientRect(); return { x: r.width * 0.5, y: r.height * 0.3 }; });
+    if (touch) { await p.touchscreen.tap(box.x, box.y); } // a phone has no mouse; holding there is a long touch, tested by hand
+    else { await p.mouse.move(box.x, box.y); await p.mouse.down(); await p.waitForTimeout(3000); await p.mouse.up(); }
+    await p.waitForTimeout(400);
+    const after = await prog();
+    if (!touch) check(before < 0.35 && after > 0.55 && after < 0.65, `${name}: holding on the beam plays the film forward to the split (${before.toFixed(2)} -> ${after.toFixed(2)})`);
+    const hint = await p.evaluate(() => document.querySelector('.spec-hint').textContent.trim());
+    check(/hold or scroll/i.test(hint), `${name}: the card says how to split it (${hint})`);
+  }
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
 
+  { // the storyteller: a family with a recorded narration offers "Hear its story"; pressing it plays the narration and
+    // shows its words as subtitles; pressing again stops it. Families without a recording show no button.
+    const famY = (i) => p.evaluate((k) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * (k / 3 + 0.12)); }, i);
+    await famY(2); await p.waitForTimeout(1800);
+    const btn = await p.evaluate(() => { const b = document.querySelector('#bark .story'); return b && !b.hidden ? b.textContent.trim() : null; });
+    await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(1500);
+    const playing = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), cap: document.querySelector('.story-caption').textContent.trim(), shown: !document.querySelector('.story-caption').hidden, audio: !!window.__story && !window.__story.paused }));
+    await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(400);
+    const stopped = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), shown: !document.querySelector('.story-caption').hidden }));
+    const noAudio = await p.evaluate(() => document.querySelector('#bamboo .story')?.hidden !== false);
+    check(btn === 'Hear its story' && playing.pressed === 'true' && playing.shown && /banana plant/i.test(playing.cap) && playing.audio && stopped.pressed === 'false' && !stopped.shown && noAudio,
+      `${name}: "Hear its story" narrates banana bark and leaves with subtitles, and stops on a second press (${JSON.stringify({ btn, playing, stopped, noAudio })})`);
+    { // switching Sound off also silences a story that Sound started (Codex finding on #18)
+      await p.click('#soundToggle'); await p.waitForTimeout(800);
+      await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(800);
+      const on = await p.evaluate(() => !!window.__story && !window.__story.paused);
+      await p.click('#soundToggle'); await p.waitForTimeout(500);
+      const off = await p.evaluate(() => ({ playing: !!window.__story && !window.__story.paused, pressed: document.querySelector('#bark .story').getAttribute('aria-pressed') }));
+      check(on && !off.playing && off.pressed === 'false', `${name}: switching Sound off stops the storyteller too (${JSON.stringify({ on, off })})`);
+    }
+    await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
+  }
   // product sheet -> Rifat
-  await toExplore(0.1);
+  await toExplore(0.15);
   // every product has its own link: opening one sets the address and the page title; Back closes it, Forward reopens it
   const title0 = await p.title();
   await p.click('#bamboo.on .product >> nth=1'); await p.waitForTimeout(700);
@@ -84,6 +151,86 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const direct = await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 12000 }).then(() => true, () => false);
     const got = await q.evaluate(() => `${document.getElementById('sheetTitle').textContent} / ${document.getElementById('sheetFamily').textContent}`);
     check(direct && got === 'Grade A: banana silk / Banana fibre yarn', `${name}: a shared product link opens that product directly (${got})`);
+    await q.waitForTimeout(2500); // past the load event, when the browser's own jump to the anchor happens
+    const behind = await q.evaluate(() => document.querySelector('.fam.on')?.id);
+    const why = behind === 'fibre' ? '' : await q.evaluate(() => { const e = document.getElementById('explore'), r = e.getBoundingClientRect(); return JSON.stringify({ y: Math.round(scrollY), p: +(Math.min(1, Math.max(0, -r.top / (r.height - innerHeight)))).toFixed(3), on: [...document.querySelectorAll('.fam.on')].map((f) => f.id), open: document.getElementById('productSheet').open, vis: document.visibilityState, hash: location.hash }); });
+    check(behind === 'fibre', `${name}: behind the glass drawer, the stage shows that product's family (${behind}${why ? ' ' + why : ''})`);
+    // what a late jump to the #anchor does; the stage must be back within four frames (an instant jump, not a glide that a
+    // busy phone keeps restarting)
+    const kept = await q.evaluate(() => new Promise((res) => {
+      scrollTo({ top: document.getElementById('explore').offsetTop, behavior: 'instant' });
+      let n = 0; const f = () => (++n < 4 ? requestAnimationFrame(f) : res(document.querySelector('.fam.on')?.id)); requestAnimationFrame(f);
+    }));
+    check(kept === 'fibre', `${name}: while the drawer is open, its family is back on stage within four frames when the page is moved (${kept})`);
+    const spec = await q.evaluate(() => ({ grade: document.getElementById('sheetGradeRow').hidden ? null : document.getElementById('sheetGrade').textContent, rows: document.querySelectorAll('#productSheet .spec div:not([hidden])').length }));
+    check(spec.grade === 'A' && spec.rows === 5, `${name}: the drawer's spec sheet shows the grade for a graded yarn (${JSON.stringify(spec)})`);
+    const look = await q.evaluate(() => {
+      const lum = (c) => { const [r, g, b] = c.match(/[\d.]+/g).map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; };
+      const d = document.getElementById('productSheet');
+      return { panel: +lum(getComputedStyle(d).backgroundColor).toFixed(2), title: +lum(getComputedStyle(document.getElementById('sheetTitle')).color).toFixed(2), primary: getComputedStyle(document.getElementById('sheetQuote')).backgroundColor };
+    });
+    check(look.panel > 0.85 && look.title < 0.2 && look.primary === 'rgb(0, 74, 152)', `${name}: the spec drawer is white frosted glass with ink text and a brand-blue main button, as in the showroom reference (${JSON.stringify(look)})`);
+    await q.close();
+  }
+  { // "Request a quote" opens the enquiry form inside the drawer, beside the product (owner's references). It is the same
+    // form as Contact Us's, so there is still one enquiry; it goes home when the drawer closes.
+    const q = await ctx.newPage(); await q.goto(ORIGIN + '/#p-grade-b-standard-banana-fibre-yarn');
+    await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 12000 }).catch(() => {});
+    await q.waitForTimeout(1200);
+    await q.click('#sheetQuote'); await q.waitForTimeout(600);
+    const open = await q.evaluate(() => ({ inside: !!document.querySelector('#productSheet #enquiryForm'), shown: !document.getElementById('enquiryForm').hidden, product: document.getElementById('f-product').value, focus: document.activeElement?.id }));
+    check(open.inside && open.shown && open.product === 'Grade B: standard banana fibre yarn' && open.focus === 'f-name', `${name}: "Request a quote" opens the enquiry form in the drawer with the product chosen (${JSON.stringify(open)})`);
+    await q.fill('#f-name', 'Ayesha Rahman'); await q.fill('#f-email', 'ayesha@example.com'); await q.fill('#f-qty', '500'); await q.fill('#f-country', 'Belgium');
+    await q.click('#enquiryForm button[type=submit]'); await q.waitForTimeout(700);
+    const done = await q.evaluate(() => ({ wa: document.getElementById('quoteWa')?.getAttribute('href') || '', shown: !document.getElementById('quoteDone')?.hidden, ticket: document.getElementById('ticketList').textContent }));
+    check(done.shown && /^https:\/\/wa\.me\/8801878707910\?text=/.test(done.wa) && /Grade B/.test(done.ticket) && /Belgium/.test(done.ticket),
+      `${name}: the quote is prepared in the drawer, fills "Your enquiry", and offers Send on WhatsApp there (${done.wa.slice(0, 40)})`);
+    await q.keyboard.press('Escape');
+    await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+    const home = await q.evaluate(() => ({ parent: document.getElementById('enquiryForm').parentElement.className, open: document.getElementById('productSheet').open }));
+    check(home.parent === 'form-alt' && !home.open, `${name}: closing the drawer returns the form to Contact Us (${JSON.stringify(home)})`);
+    { // the drawer still closes when its exit animation cannot run (a starved software renderer on CI, #18, or a hidden tab):
+      // here every animation is paused the moment Escape is pressed, and the dialog must close on its own within a second
+      await q.evaluate(() => document.getElementById('p-banana-leaves').click());
+      await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+      await q.waitForTimeout(900);
+      await q.keyboard.press('Escape');
+      await q.evaluate(() => document.getAnimations().forEach((a) => a.pause()));
+      await q.waitForTimeout(1000);
+      const stuck = await q.evaluate(() => ({ open: document.getElementById('productSheet').open, parent: document.getElementById('enquiryForm').parentElement.className }));
+      check(!stuck.open && stuck.parent === 'form-alt', `${name}: the drawer closes within a second even when its exit animation cannot run (${JSON.stringify(stuck)})`);
+    }
+    await q.close();
+  }
+  { // Explore is a bright showroom (owner's reference 97f87dc2): light walls, ink text, an ink header over it. The film
+    // already ends in the lit gallery, so the showroom is not darkened on the way in; it dims to dusk on the way out
+    const q = await ctx.newPage(); await q.goto(ORIGIN + '/'); await q.waitForTimeout(2000);
+    await q.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; const e = document.getElementById('explore'); scrollTo(0, e.offsetTop - innerHeight * 0.6); });
+    await q.waitForTimeout(800);
+    const entering = await q.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.dawn')).opacity));
+    await q.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.15); });
+    await q.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {}); await q.waitForTimeout(1500);
+    const s = await q.evaluate(() => {
+      const lum = (c) => { const [r, g, b] = c.match(/[\d.]+/g).map(Number); return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255; };
+      return { wall: +lum(getComputedStyle(document.querySelector('.explore-stage')).backgroundColor).toFixed(2), h3: +lum(getComputedStyle(document.querySelector('.fam.on h3')).color).toFixed(2),
+        header: document.documentElement.classList.contains('light-top'), logo: getComputedStyle(document.querySelector('.brand-mark-ink')).display !== 'none' };
+    });
+    await q.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + e.offsetHeight - innerHeight * 0.4); });
+    await q.waitForTimeout(800);
+    const leaving = await q.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.dawn')).opacity));
+    check(entering < 0.05 && leaving > 0.4 && s.wall > 0.85 && s.h3 < 0.2 && s.header && s.logo,
+      `${name}: Explore is a bright showroom with ink text and an ink header, entered in the light and left into dusk (entering ${entering.toFixed(2)}, leaving ${leaving.toFixed(2)}, ${JSON.stringify(s)})`);
+    await q.close();
+  }
+  { // each family stands on a plinth: its number and name, and arrows to the families either side (owner's references)
+    const q = await ctx.newPage(); await q.goto(ORIGIN + '/'); await q.waitForTimeout(2000);
+    await q.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.15); });
+    await q.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
+    const plinth = await q.evaluate(() => document.querySelector('#bamboo .plinth')?.innerText.replace(/\s+/g, ' ').trim() || '');
+    check(/^01 \/ 03 Bamboo/.test(plinth), `${name}: the family on stage stands on a numbered plinth (${plinth})`);
+    await q.click('#bamboo .plinth a[rel=next]');
+    const moved = await q.waitForFunction(() => document.querySelector('.fam.on')?.id === 'fibre', null, { timeout: 8000 }).then(() => true, () => false);
+    check(moved, `${name}: the plinth's next arrow brings the next family on stage`);
     await q.close();
   }
   // the drawer leaves with an exit animation, then the dialog closes (Escape and the close button alike)
@@ -105,6 +252,9 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await p.click('#sheetAdd'); await p.waitForTimeout(300);
   check(await p.evaluate(() => !document.getElementById('enquiryTray').hidden && document.getElementById('trayCount').textContent === '1' && /Bamboo splits/.test(document.getElementById('trayItems').textContent)),
     `${name}: "Add to enquiry" in the spec drawer puts the product in the enquiry tray`);
+  const after = await p.evaluate(() => { const q = document.getElementById('sheetQuote'), add = document.getElementById('sheetAdd'); return { quote: q.textContent.trim(), quotePrimary: !q.classList.contains('btn-ghost'), add: add.textContent.trim(), addGhost: add.classList.contains('btn-ghost'), ask: !!document.getElementById('sheetAsk'), status: document.getElementById('sheetStatus').textContent }; });
+  check(after.quote === 'Request a quote' && after.quotePrimary && after.add === 'Added ✓' && after.addGhost && after.ask && after.status === 'Added. Your enquiry has 1 product.',
+    `${name}: the drawer's main action is "Request a quote"; "Add to enquiry" confirms as "Added ✓" (${JSON.stringify(after)})`);
   await p.click('#sheetAsk');
   await p.waitForFunction(() => document.activeElement?.id === 'rifatInput', null, { timeout: 10000 }).catch(() => {});
   check((await p.evaluate(() => document.activeElement.id)) === 'rifatInput', `${name}: focus lands in Rifat's message field after "Ask Rifat"`);
@@ -117,6 +267,18 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
 
   // guided flow
   const say = async (t) => { await p.fill('#rifatInput', t); await p.press('#rifatInput', 'Enter'); await p.waitForTimeout(1500); };
+  { // Rifat appears at the end of the journey: his portrait in a cyan ring, always labelled AI, and his face in the chat bar
+    const pres = await p.evaluate(() => { const f = document.querySelector('.enquire .presence'), img = f?.querySelector('img'), r = img?.getBoundingClientRect();
+      return { here: f?.classList.contains('here'), loaded: !!img?.complete && img.naturalWidth > 0, w: Math.round(r?.width || 0), ai: f?.querySelector('.ai-tag')?.textContent.trim(), alt: img?.alt || '',
+        face: !!document.querySelector('.rifat-top .orb img')?.naturalWidth }; });
+    check(pres.here && pres.loaded && pres.w >= 140 && pres.ai === 'AI' && /AI assistant/.test(pres.alt) && pres.face, `${name}: Rifat appears in his ring, labelled AI, with his face in the chat bar (${JSON.stringify(pres)})`);
+  }
+  { // even without the AI, Rifat answers questions from its knowledge base (assets/rifat-knowledge.js), then carries on
+    const before = (await p.textContent('#rifatLog')).length;
+    await say('How does ordering work?');
+    const said = (await p.textContent('#rifatLog')).slice(before);
+    check(/three steps/i.test(said) && /quotation/i.test(said), `${name}: in guided mode Rifat answers "How does ordering work?" from its knowledge base (${said.slice(0, 90).replace(/\s+/g, ' ')})`);
+  }
   await say('5 tonnes'); await say('Japan'); await say('Test Buyer'); await say('not-an-email');
   check(/doesn.t look like an email/.test(await p.textContent('#rifatLog')), `${name}: Rifat rejects a malformed email`);
   await say('buyer@example.com'); await say('Skip'); await say('Nothing else');
@@ -138,20 +300,83 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
 
   if (!touch) {
     check(await p.evaluate(() => document.documentElement.classList.contains('has-3d')), `${name}: the 3D studies load`);
+    { // each family is a 3D cut-out of SB Trading's own photograph, drawn in WebGL (three.js) on a pedestal in a glass
+      // case, not the flat photo (owner's request); the photo stays in the page for no-WebGL and reduced motion
+      await toExplore(0.15); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
+      await p.waitForFunction(() => document.querySelector('.studies')?.dataset.specimen === '0', null, { timeout: 20000 }).catch(() => {});
+      await p.mouse.move(700, 400); await p.mouse.move(760, 430); await p.waitForTimeout(1200);
+      const st = await p.evaluate(() => ({ arch: getComputedStyle(document.querySelector('#bamboo .arch')).opacity, inExhibit: !!document.querySelector('#bamboo .exhibit .studies'), ready: document.querySelector('.studies').dataset.specimen }));
+      const box = await p.evaluate(() => { const r = document.querySelector('#bamboo .exhibit').getBoundingClientRect(); return { x: Math.max(0, r.left), y: Math.max(0, r.top), width: Math.min(r.width, innerWidth - r.left), height: Math.min(r.height, innerHeight - r.top) }; });
+      // On a software renderer the GPU process can be saturated; if this capture times out, say what the page was doing
+      // (frame rate, long tasks, 3D state, renderer) before failing, so a CI-only stall leaves evidence (#18).
+      const shot = (o) => p.screenshot(o).catch(async (err) => {
+        const diag = await Promise.race([p.evaluate(() => new Promise((r) => { let n = 0; const t = performance.now(); const f = () => { n++; if (performance.now() - t < 2000) requestAnimationFrame(f); else r({ fps: n / 2, cls: document.documentElement.className, state: document.querySelector('.studies')?.dataset.renderState, renderer: (() => { const g = document.createElement('canvas').getContext('webgl2'), d = g?.getExtension('WEBGL_debug_renderer_info'); return d ? String(g.getParameter(d.UNMASKED_RENDERER_WEBGL)) : 'none'; })() }); }; requestAnimationFrame(f); })), new Promise((r) => setTimeout(() => r('page did not answer within 20 s'), 20000))]);
+        console.log('DIAG screenshot timeout:', JSON.stringify(diag));
+        throw err;
+      });
+      const withObj = (await shot({ clip: box })).toString('base64');
+      await p.evaluate(() => { document.querySelector('.studies').style.visibility = 'hidden'; });
+      const without = (await shot({ clip: box })).toString('base64');
+      await p.evaluate(() => { document.querySelector('.studies').style.visibility = ''; });
+      const drawn = await p.evaluate(async ([a, b]) => {
+        const px = async (s) => { const im = new Image(); im.src = 'data:image/png;base64,' + s; await im.decode(); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0); return g.getImageData(0, 0, c.width, c.height).data; };
+        const [d1, d2] = await Promise.all([px(a), px(b)]); let n = 0;
+        for (let i = 0; i < d1.length; i += 4) if (Math.abs(d1[i] - d2[i]) + Math.abs(d1[i + 1] - d2[i + 1]) + Math.abs(d1[i + 2] - d2[i + 2]) > 60) n++;
+        return +(n / (d1.length / 4)).toFixed(3);
+      }, [withObj, without]);
+      check(st.arch === '0' && st.inExhibit && st.ready === '0' && drawn > 0.08, `${name}: the family on stage is a 3D cut-out drawn in WebGL in place of the photo (${JSON.stringify(st)}, ${Math.round(drawn * 100)}% of the exhibit drawn)`);
+    }
+    { // a lost WebGL context (GPU reset, too many contexts) must give the products back their photographs (Codex finding on
+      // #18); on its own page, so the 3D in the main page stays alive for the checks that follow
+      const q = await ctx.newPage();
+      await q.goto(ORIGIN + '/'); await q.waitForTimeout(1500);
+      await q.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.15); });
+      await q.waitForFunction(() => document.documentElement.classList.contains('has-3d'), null, { timeout: 20000 }).catch(() => {});
+      await q.waitForTimeout(1000);
+      const lost = await q.evaluate(async () => {
+        document.querySelector('.studies').getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+        await new Promise((r) => setTimeout(r, 400));
+        return { has3d: document.documentElement.classList.contains('has-3d'), no3d: document.documentElement.classList.contains('no-3d'), arch: getComputedStyle(document.querySelector('#bamboo .arch')).opacity };
+      });
+      check(!lost.has3d && lost.no3d && lost.arch === '1', `${name}: when the WebGL context is lost, the product photographs come back (${JSON.stringify(lost)})`);
+      await q.close();
+    }
+    { // on a slow machine (CI's software renderer ran this page at 1 frame a second, #18) the 3D must still come to rest
+      // soon after the visitor stops: easing is measured in time, not frames. Frame-based easing needed ~50 frames, which
+      // at 1 fps kept the page drawing for close to a minute. Here frames are fed 1 s apart, as on that machine.
+      const q = await ctx.newPage();
+      await q.goto(ORIGIN + '/'); await q.waitForTimeout(800);
+      const frames = await q.evaluate(async () => {
+        const { createSpecimens } = await import('/assets/vendor/specimens.js');
+        const c = document.createElement('canvas'); c.width = 400; c.height = 500;
+        const sp = createSpecimens(c, { low: true }); sp.setSize(400, 500); await sp.whenReady(0);
+        let now = 1000; sp.render({ fam: 0, t: 0.5, pointer: [0, 0], now, settle: true });
+        for (let i = 0; i < 6; i++) sp.render({ fam: 0, t: 0.95, pointer: [0.5, 0.4], now: (now += 16) }); // the visitor turns it
+        let n = 0; while (n < 120 && sp.render({ fam: 0, t: 0.95, pointer: [0, 0], now: (now += 1000), settle: true })) n++;
+        return n + 1;
+      });
+      check(frames <= 3, `${name}: at 1 frame a second, the 3D comes to rest within 3 frames of the last input (${frames} frames)`);
+      await q.close();
+    }
     // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
     // wait until the Bamboo family is the live one (an inert family cannot take focus), then focus its last product
-    await toExplore(0.1); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
+    await toExplore(0.15); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
     await p.focus('#bamboo .product >> nth=3');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const focused = () => p.evaluate(() => document.activeElement?.textContent.trim() || document.activeElement?.tagName);
+    await p.keyboard.press('Tab'); // past the products, to the plinth's next arrow
+    const toArrow = await p.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
     await p.keyboard.press('Tab');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Grade A: banana silk', null, { timeout: 5000 }).catch(() => {});
     const afterTab = await focused();
-    check(afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products into the fibre products (focus: ${afterTab})`);
+    check(toArrow === 'Next family: Banana fibre yarn' && afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products to the plinth's next arrow, then into the fibre products (focus: ${toArrow} -> ${afterTab})`);
+    await p.keyboard.press('Shift+Tab'); // back to Bamboo's plinth arrow, then its last product
+    await p.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Next family: Banana fibre yarn', null, { timeout: 5000 }).catch(() => {});
+    const backArrow = await p.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
     await p.keyboard.press('Shift+Tab');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const afterShift = await focused();
-    check(afterShift === 'Woven mats', `${name}: Shift+Tab returns to the bamboo products (focus: ${afterShift})`);
+    check(backArrow === 'Next family: Banana fibre yarn' && afterShift === 'Woven mats', `${name}: Shift+Tab returns through Bamboo's plinth arrow to its products (focus: ${backArrow} -> ${afterShift})`);
     await p.click('#soundToggle'); await p.waitForTimeout(1200);
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
     const playing = await p.waitForFunction(() => document.documentElement.dataset.score === 'playing', null, { timeout: 6000 }).then(() => true, () => false);

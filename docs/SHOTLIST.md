@@ -1,6 +1,6 @@
 # Shoot-day shot list: SB Trading's own footage and photographs
 
-This replaces every stock and generated clip on the site with SB Trading's own. It is the main step between the current site and award level. Direction: "Source to bale" documentary at dusk for the film, "Specimen studio" stills for Explore and the product drawer (see the photo direction notes in HANDOFF_CODEX.md).
+This replaces the generated film (built from the owner's reference clip) with SB Trading's own footage, following the same journey: dark grove into light, the material close, the gallery. It is the main step between the current site and award level. Direction: "Source to bale" documentary at dusk for the film, "Specimen studio" stills for Explore and the product drawer (see the photo direction notes in HANDOFF_CODEX.md).
 
 ## Rules for every shot
 
@@ -35,8 +35,12 @@ Dark slate or ink-blue ground, one warm light at 45 degrees from the left, no fi
 | Arch stills: one in-context still per family, from Day 1 | 3 | Portrait 2:3 | Explore arches (second photo). Bark currently has none. |
 | Product stills, with a ruler or a hand for scale | 9 | 16:10, at least 2000 px wide | Product drawer: Bamboo poles, Bamboo splits, Ski poles, Woven mats, Grade A banana silk, Grade B standard banana fibre yarn, Grade C industrial banana fibre yarn, Banana bark, Banana leaves |
 
+## Turntable (for full 360° specimens)
+
+The 3D specimens in Explore are cut out of single photographs, so they turn only about a quarter-turn either way. For full 360° objects, photograph one specimen per product on a turntable: plain mid-grey ground, even soft light, 36 photographs at 10° steps, plus 12 from 30° above; the product filling most of the frame, sharp throughout. These become photogrammetry models that replace the cut-outs.
+
 ## After the shoot
 
 1. Send the files with the record sheet. Product names and grades shown in the stills must be the real ones.
-2. The film frames, depth maps, captions and per-shot source labels are rebuilt from the new footage; the "generated footage and Pexels stock" label is removed only for the shots that are then SB Trading's own.
+2. The film frames, depth maps, captions and per-shot source labels are rebuilt from the new footage; the "generated footage" label is removed only for the shots that are then SB Trading's own.
 3. The Remotion film in video/ re-renders from the same photographs, and its draft notice is removed once SB Trading confirms them.

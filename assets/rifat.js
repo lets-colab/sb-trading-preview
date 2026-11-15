@@ -4,6 +4,8 @@
 //           and the function returns the enquiry fields it recorded.
 //   guide - otherwise (no key, local preview, network error): a step-by-step guide, labelled as such.
 // Nothing is sent anywhere until the buyer presses "Send on WhatsApp", which opens WhatsApp with the text filled in.
+import { searchKnowledge } from './rifat-knowledge.js';
+
 export const PRODUCTS = [
   'Bamboo poles', 'Bamboo splits', 'Ski poles', 'Woven mats',
   'Grade A: banana silk', 'Grade B: standard banana fibre yarn', 'Grade C: industrial banana fibre yarn',
@@ -214,6 +216,12 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
     if (TEAM_ONLY.test(text) && /\?|^(what|how|can|do|is|are)\b/i.test(text)) {
       return askNext('SB Trading’s team confirms prices, minimum orders, shipping, lead times and certifications with the quotation, so I can’t answer that myself. I can make sure your question reaches them. ');
     }
+    // a question, not an answer: reply from the knowledge base, then return to the step (never file it as a field)
+    if (/\?\s*$|^(what|how|who|why|where|when|which|do|does|can|could|is|are|tell me)\b/i.test(text) && step.key !== 'notes') {
+      const [best] = searchKnowledge(text, 1);
+      if (best && best.score >= 2) return askNext(`${best.text} `);
+      return askNext('That’s a question for SB Trading’s team; they answer it in their reply. ');
+    }
     const got = answerStep(step.key, text);
     if (!got) {
       if (step.key === 'email') return rifatSays('That doesn’t look like an email address. Could you check it? For example name@company.com.');
@@ -319,6 +327,7 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
       const res = await fetch(endpoint, { signal: ctrl.signal }); clearTimeout(t);
       const data = res.ok && /json/.test(res.headers.get('content-type') || '') ? await res.json() : null;
       setMode(data?.ai ? 'ai' : 'guide');
+      if (data?.ai && data.provider === 'gemini') modeLabel.textContent = 'AI assistant · online · Google Gemini (free tier): Google may use messages to improve its models, so share only business details';
     } catch (e) { setMode('guide'); } // no function on this host (local preview): guided mode
     await greet();
   }

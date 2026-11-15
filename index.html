@@ -14,13 +14,14 @@
 <noscript><style>.sound-toggle,.menu-toggle,.chapters,.rifat,.form-toggle{display:none!important}</style></noscript>
 </head>
 <!-- data-whatsapp: SB Trading's WhatsApp number, international format, digits only (+880 1878-707910, given by the owner on 10 Nov 2026). Empty disables the WhatsApp hand-off. -->
-<body data-whatsapp="8801878707910">
+<body data-whatsapp="8801878707910" data-rifat-endpoint="">
 <div class="score-fx" aria-hidden="true"></div>
 <a class="skip" href="#explore">Skip to the materials</a>
 
 <header class="top">
   <a class="brand" href="#top" aria-label="SB Trading, back to the start">
     <img class="brand-mark" src="assets/img/sb-mark-light.webp" alt="" width="256" height="215">
+    <img class="brand-mark brand-mark-ink" src="assets/img/sb-mark.webp" alt="" width="256" height="215">
     <span class="brand-name">SB Trading</span>
   </a>
   <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="mainNav">Menu</button>
@@ -39,10 +40,10 @@
   <section class="film" id="film" aria-label="Introduction">
     <div class="film-stage">
       <canvas class="film-canvas" aria-hidden="true"></canvas>
-      <img class="film-poster" src="assets/film/d/060.webp" alt="" aria-hidden="true">
+      <img class="film-poster" src="assets/film/d/030.webp" alt="" aria-hidden="true">
       <div class="film-shade" aria-hidden="true"></div>
-      <div class="spotlight" aria-hidden="true"></div>
-      <div class="beat beat-hero" data-at="0,0.095">
+      <canvas class="dust" aria-hidden="true"></canvas>
+      <div class="beat beat-hero" data-at="0,0.12">
         <h1>Materials <em>in Motion.</em></h1>
         <p class="lede">Bamboo, banana fibre yarn, and banana bark and leaves, supplied to business buyers. Scroll through the material, then ask Rifat for a quotation.</p>
         <dl class="specimen">
@@ -56,20 +57,24 @@
         </div>
         <p class="scroll-ring" aria-hidden="true"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" pathLength="1"/><circle class="fill" cx="22" cy="22" r="20" pathLength="1"/></svg>Scroll to begin the film</p>
       </div>
-      <div class="beat" data-at="0.123,0.204"><h2>Bamboo, up close.</h2></div>
-      <div class="beat" data-at="0.217,0.296"><h2>Fibre, twisted together.</h2></div>
-      <div class="beat" data-at="0.312,0.389"><h2>Whole poles, stacked.</h2></div>
-      <div class="beat" data-at="0.405,0.624"><h2>Cut, split and opened.</h2></div>
-      <div class="beat" data-at="0.64,0.739"><h2>Natural fibre, close up.</h2></div>
-      <div class="beat" data-at="0.755,0.865"><h2>Banana, leaf by leaf.</h2></div>
-      <div class="beat beat-end" data-at="0.885,1.01"><h2>Bamboo, yarn <em>and bark.</em></h2>
+      <div class="beat" data-at="0.12,0.205"><h2>It starts as a living plant.</h2></div>
+      <div class="spec-card" data-at="0.215,0.5">
+        <p class="spec-ring" aria-hidden="true"></p>
+        <dl><div><dt>Origin</dt><dd>Bangladesh</dd></div><div><dt>Families</dt><dd>03</dd></div><div><dt>Products</dt><dd>09</dd></div></dl>
+        <p class="spec-hint">Hold or scroll to split it open</p>
+        <p class="spec-actions"><a class="btn" href="#explore">Explore the materials</a><a class="btn btn-ghost" href="#enquire">Ask Rifat</a></p>
+      </div>
+      <div class="beat" data-at="0.51,0.6"><h2>Opened: bamboo, fibre and bark.</h2></div>
+      <div class="beat" data-at="0.615,0.705"><h2>Banana fibre, spun into yarn.</h2></div>
+      <div class="beat" data-at="0.72,0.81"><h2>Banana bark and leaves.</h2></div>
+      <div class="beat beat-end" data-at="0.86,1.01"><h2>Bamboo, yarn <em>and bark.</em></h2>
         <nav class="fam-cards" aria-label="Material families">
           <a href="#bamboo" data-fam="0"><img src="assets/img/bamboo-sections.webp" alt="" width="727" height="1300" loading="lazy"><b>Bamboo</b><span class="go" aria-hidden="true">→</span></a>
           <a href="#fibre" data-fam="1"><img src="assets/img/banana-fibre.webp" alt="" width="975" height="1300" loading="lazy"><b>Banana fibre yarn</b><span class="go" aria-hidden="true">→</span></a>
           <a href="#bark" data-fam="2"><img src="assets/img/banana-leaves.webp" alt="" width="987" height="1300" loading="lazy"><b>Banana bark and leaves</b><span class="go" aria-hidden="true">→</span></a>
         </nav>
       </div>
-      <p class="film-label" data-shots="1-30:stock footage (Pexels)|31-191:generated footage|192-223:stock footage (Pexels)|224-255:generated footage">Film: generated footage and Pexels stock clips, not SB Trading's own stock.</p>
+      <p class="film-label" data-shots="1-196:generated footage">Film: generated footage, not SB Trading's own stock.</p>
     </div>
   </section>
 
@@ -78,7 +83,9 @@
     <h2 class="sr" id="h-explore">Three material families, nine products</h2>
     <div class="explore-stage">
       <canvas class="studies" aria-hidden="true"></canvas>
-      <p class="study-label" aria-hidden="true">Depth effect built from SB Trading's own photographs</p>
+      <p class="story-caption" aria-live="polite" hidden></p>
+      <p class="study-label" aria-hidden="true">3D cut-outs of SB Trading's own photographs</p>
+      <div class="dawn" aria-hidden="true"></div>
       <div class="ambient" aria-hidden="true"><img src="assets/img/bamboo-poles.webp" alt=""><img src="assets/img/banana-fibre.webp" alt=""><img src="assets/img/banana-leaves.webp" alt=""></div>
 
       <article class="fam" id="bamboo" data-i="0" aria-labelledby="h-bamboo">
@@ -91,8 +98,9 @@
             <li><button type="button" class="product" id="p-ski-poles" data-img="bamboo-poles" data-family="Bamboo" data-note="“Ski poles” is an unconfirmed product label; the photograph shows general bamboo stock.">Ski poles</button></li>
             <li><button type="button" class="product" id="p-woven-mats" data-img="bamboo-sections" data-family="Bamboo" data-note="No photograph of woven mats yet; weave, size and finish are to be confirmed.">Woven mats</button></li>
           </ul>
+          <button type="button" class="story" data-story="bamboo" aria-pressed="false" hidden><span class="story-icon" aria-hidden="true"></span><span class="story-label">Hear its story</span></button>
         </div>
-        <figure class="arch"><img src="assets/img/bamboo-sections.webp" alt="Cut bamboo sections bundled and tied, ends facing the camera" width="727" height="1300" loading="lazy"><img src="assets/img/bamboo-poles.webp" alt="Long bamboo poles stacked in daylight" width="730" height="1300" loading="lazy"></figure>
+        <div class="exhibit"><figure class="arch"><img src="assets/img/bamboo-sections.webp" alt="Cut bamboo sections bundled and tied, ends facing the camera" width="727" height="1300" loading="lazy"><img src="assets/img/bamboo-poles.webp" alt="Long bamboo poles stacked in daylight" width="730" height="1300" loading="lazy"></figure><div class="plinth"><span class="plinth-num">01 / 03</span> <span class="plinth-name">Bamboo</span> <span class="plinth-arrows"><span class="plinth-end" aria-hidden="true">←</span><a href="#fibre" data-fam="1" rel="next" aria-label="Next family: Banana fibre yarn">→</a></span></div></div>
       </article>
 
       <article class="fam" id="fibre" data-i="1" aria-labelledby="h-fibre">
@@ -104,8 +112,9 @@
             <li><button type="button" class="product" id="p-grade-b-standard-banana-fibre-yarn" data-img="banana-fibre-loose" data-family="Banana fibre yarn" data-note="Which photograph shows Grade B is still to be confirmed.">Grade B: standard banana fibre yarn</button></li>
             <li><button type="button" class="product" id="p-grade-c-industrial-banana-fibre-yarn" data-img="banana-fibre" data-family="Banana fibre yarn" data-note="Which photograph shows Grade C is still to be confirmed.">Grade C: industrial banana fibre yarn</button></li>
           </ul>
+          <button type="button" class="story" data-story="fibre" aria-pressed="false" hidden><span class="story-icon" aria-hidden="true"></span><span class="story-label">Hear its story</span></button>
         </div>
-        <figure class="arch"><img src="assets/img/banana-fibre.webp" alt="Hanks of natural banana fibre laid out on grass" width="975" height="1300" loading="lazy"><img src="assets/img/banana-fibre-loose.webp" alt="Loose banana fibre strands drying in the open" width="975" height="1300" loading="lazy"></figure>
+        <div class="exhibit"><figure class="arch"><img src="assets/img/banana-fibre.webp" alt="Hanks of natural banana fibre laid out on grass" width="975" height="1300" loading="lazy"><img src="assets/img/banana-fibre-loose.webp" alt="Loose banana fibre strands drying in the open" width="975" height="1300" loading="lazy"></figure><div class="plinth"><span class="plinth-num">02 / 03</span> <span class="plinth-name">Banana fibre yarn</span> <span class="plinth-arrows"><a href="#bamboo" data-fam="0" rel="prev" aria-label="Previous family: Bamboo">←</a><a href="#bark" data-fam="2" rel="next" aria-label="Next family: Banana bark and leaves">→</a></span></div></div>
       </article>
 
       <article class="fam" id="bark" data-i="2" aria-labelledby="h-bark">
@@ -116,10 +125,11 @@
             <li><button type="button" class="product" id="p-banana-bark" data-img="banana-leaves" data-family="Banana bark and leaves" data-note="No photograph of banana bark yet; the image shows banana leaves.">Banana bark</button></li>
             <li><button type="button" class="product" id="p-banana-leaves" data-img="banana-leaves" data-family="Banana bark and leaves" data-note="Packing, sizes and availability are confirmed by SB Trading with the quotation.">Banana leaves</button></li>
           </ul>
+          <button type="button" class="story" data-story="bark" aria-pressed="false" hidden><span class="story-icon" aria-hidden="true"></span><span class="story-label">Hear its story</span></button>
         </div>
-        <figure class="arch"><img src="assets/img/banana-leaves.webp" alt="Green banana leaves, folded and packed in clear bags" width="987" height="1300" loading="lazy"></figure>
+        <div class="exhibit"><figure class="arch"><img src="assets/img/banana-leaves.webp" alt="Green banana leaves, folded and packed in clear bags" width="987" height="1300" loading="lazy"></figure><div class="plinth"><span class="plinth-num">03 / 03</span> <span class="plinth-name">Banana bark and leaves</span> <span class="plinth-arrows"><a href="#fibre" data-fam="1" rel="prev" aria-label="Previous family: Banana fibre yarn">←</a><span class="plinth-end" aria-hidden="true">→</span></span></div></div>
       </article>
-      <p class="explore-note">Product names, grades and photographs are being confirmed by SB Trading.</p>
+      <p class="explore-note">Product names, grades and photographs are being confirmed by SB Trading. The room behind them is generated footage.</p>
     </div>
   </section>
 
@@ -144,6 +154,11 @@
   <!-- 05 Enquire: Rifat -->
   <section class="enquire" id="enquire" aria-labelledby="h-enquire">
     <div class="enq-head">
+      <figure class="presence">
+        <span class="presence-ring" aria-hidden="true"><i></i><i></i><i></i></span>
+        <img src="assets/img/rifat/rifat-cutout.webp" alt="Rifat, SB Trading's AI assistant, shown as an illustrated portrait" width="300" height="357" fetchpriority="low" decoding="async">
+        <figcaption><b>Rifat</b> <span class="ai-tag">AI</span></figcaption>
+      </figure>
       <h2 id="h-enquire">Ask <em>Rifat.</em></h2>
       <p class="lede">Rifat is SB Trading's AI assistant. Tell Rifat what you need: it answers questions about the range, prepares your enquiry and hands it to SB Trading's team on WhatsApp. Prices, stock and lead times come from the team, not from Rifat.</p>
     </div>
@@ -151,7 +166,7 @@
     <div class="rifat" id="rifat" data-mode="guide">
       <div class="rifat-chat">
         <div class="rifat-top">
-          <span class="orb" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="orb orb-face" aria-hidden="true"><img src="assets/img/rifat/rifat-avatar.webp" alt="" width="160" height="160" fetchpriority="low" decoding="async"><i></i><i></i><i></i></span>
           <p><b>Rifat</b><span class="rifat-mode" id="rifatMode">AI assistant · guided mode</span></p>
           <button class="rifat-restart" id="rifatRestart" type="button">Start again</button>
         </div>
@@ -214,8 +229,8 @@
 <nav class="chapters" aria-label="Chapters">
   <ol>
     <li><a href="#top" data-ch="0"><span class="tick" aria-hidden="true"></span>Arrive</a></li>
-    <li><a href="#film" data-ch="1" data-p="0.126"><span class="tick" aria-hidden="true"></span>Discover</a></li>
-    <li><a href="#film" data-ch="2" data-p="0.41"><span class="tick" aria-hidden="true"></span>Transition</a></li>
+    <li><a href="#film" data-ch="1" data-p="0.25"><span class="tick" aria-hidden="true"></span>Discover</a></li>
+    <li><a href="#film" data-ch="2" data-p="0.52"><span class="tick" aria-hidden="true"></span>Transition</a></li>
     <li><a href="#explore" data-ch="3"><span class="tick" aria-hidden="true"></span>Explore</a></li>
     <li><a href="#ordering" data-ch="4"><span class="tick" aria-hidden="true"></span>Enquire</a></li>
   </ol>
@@ -227,14 +242,32 @@
   <figure class="sheet-img"><img id="sheetImg" src="assets/img/bamboo-poles.webp" alt=""></figure>
   <div class="sheet-body">
     <h3 id="sheetTitle"></h3>
-    <p class="sheet-family" id="sheetFamily"></p>
-    <p>Specifications, sizes, grades and availability are confirmed by SB Trading's team with each quotation.</p>
+    <dl class="spec">
+      <div><dt>Family</dt><dd id="sheetFamily"></dd></div>
+      <div id="sheetGradeRow" hidden><dt>Grade</dt><dd id="sheetGrade"></dd></div>
+      <div><dt>Supplied from</dt><dd>Bangladesh</dd></div>
+      <div><dt>Specification</dt><dd class="tbc">Confirmed in your quotation</dd></div>
+      <div><dt>Minimum order</dt><dd class="tbc">Confirmed in your quotation</dd></div>
+    </dl>
     <p class="source" id="sheetNote"></p>
     <div class="sheet-actions">
-      <button class="btn" type="button" id="sheetAdd">Add to enquiry</button>
-      <button class="btn btn-ghost" type="button" id="sheetAsk"><span class="orb orb-xs" aria-hidden="true"><i></i><i></i><i></i></span>Ask Rifat about it</button>
+      <button class="btn" type="button" id="sheetQuote">Request a quote</button>
+      <button class="btn btn-ghost" type="button" id="sheetAdd">Add to enquiry</button>
     </div>
+    <button class="ask-link" type="button" id="sheetAsk"><span class="orb orb-xs" aria-hidden="true"><i></i><i></i><i></i></span>Ask Rifat about it</button>
     <p class="sheet-status" id="sheetStatus" role="status"></p>
+    <div class="quote" id="quotePane" hidden>
+      <button class="quote-back" type="button" id="quoteBack"><span aria-hidden="true">←</span> Back to the product</button>
+      <h4 class="quote-title">Request a quote</h4>
+      <div class="quote-done" id="quoteDone" hidden>
+        <p>Your enquiry is ready. Nothing has been sent yet: send it to SB Trading on WhatsApp, or review it with Rifat first.</p>
+        <div class="sheet-actions">
+          <a class="btn" id="quoteWa" href="#enquire" rel="noopener" target="_blank">Send on WhatsApp</a>
+          <button class="btn btn-ghost" type="button" id="quoteReview">Review your enquiry</button>
+        </div>
+      </div>
+    </div>
+    <p class="handoff">Rifat (AI) gathers your enquiry; you send it to SB Trading on WhatsApp, +880 1878-707910.</p>
   </div>
 </dialog>
 
@@ -242,7 +275,7 @@
 
 <footer class="foot">
   <p><b>SB Trading</b> · forestry and agricultural products. WhatsApp: <a href="https://wa.me/8801878707910" rel="noopener">+880 1878-707910</a>. Email and phone details appear here once SB Trading confirms them.</p>
-  <p>Client review draft, not a live commercial website. The scroll film combines generated footage with Pexels stock clips (bamboo canopy by Evgenij Mikhailov, banana leaves by Serg Alesenko; Pexels licence) and does not show SB Trading's own stock; product photographs are SB Trading's. <a href="v1/">Previous draft</a></p>
+  <p>Client review draft, not a live commercial website. The scroll film is generated footage (from the owner's reference clip) and does not show SB Trading's own stock; product photographs are SB Trading's. <a href="v1/">Previous draft</a></p>
 </footer>
 
 <script src="assets/vendor/motion.js" defer></script>

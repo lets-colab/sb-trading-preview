@@ -14,10 +14,17 @@ colors:
   fibre-2: "#e7d6b6"
   fibre-3: "#a8875a"
   dim: "#dbeaf6b8"
-  faint: "#dbeaf673"
+  faint: "#dbeaf699"
   line: "#d7be9333"
   line-2: "#dbeaf61f"
   glass: "#0c2440c7"
+  wall: "#eef0eb"
+  floor: "#dde1da"
+  paper: "#ffffffcc"
+  ink-dim: "#081c31b8"
+  ink-line: "#081c3124"
+  error: "#a8261c"
+  signal: "#5fd3e0"
 typography:
   display:
     fontFamily: "Gloock, Georgia, serif"
@@ -153,7 +160,7 @@ Citation convention: every root custom property appears with its leading double 
 
 **Creative North Star: "The Blue-Hour Showroom"**
 
-One continuous dusk-blue world, lit by a single warm natural-fibre accent. The page is a dark navy ground (ink-0) under a faint blue radial glow, with real material photography and a scroll-scrubbed film doing the colour work. Interface chrome is translucent ink glass with hairline fibre borders, so the material stays the brightest thing on screen. The North Star is taken from the build's own stylesheet header ("one continuous blue-hour world") and has not been separately confirmed by the owner.
+A dusk-blue world with one lit room, after the owner's showroom reference (97f87dc2): the film opens in a dark bamboo grove and walks into the light, ending in a lit gallery; About Us and Rifat are dusk, lit by a single warm natural-fibre accent; Explore is that bright gallery (wall, floor, paper, Deep Ink text, Brand Blue accents), with the film's last room softly out of focus behind each family, and is left into dusk again. The page is a dark navy ground (ink-0) under a faint blue radial glow, with real material photography and a scroll-scrubbed film doing the colour work. Interface chrome is translucent ink glass with hairline fibre borders, so the material stays the brightest thing on screen. The North Star is taken from the build's own stylesheet header ("one continuous blue-hour world") and has not been separately confirmed by the owner.
 
 Density moves from cinematic to quiet. The opening chapters are full-viewport pinned stages with very large Gloock headlines; once the visitor reaches ordering and Rifat, the layout tightens into contained panels, pill controls and plain grotesk text. Motion is scroll-bound and pointer-bound rather than decorative looping, and every motion layer has a static document equivalent.
 
@@ -188,6 +195,13 @@ The token block below is the source of truth and mirrors styles.css `:root` exac
 --line: #d7be9333;          /* fibre hairline: borders of pills, panels, sheet, ticket */
 --line-2: #dbeaf61f;        /* cool hairline: inner dividers, input borders, footer rule */
 --glass: #0c2440c7;         /* translucent ink panel: Rifat chat, plain form */
+--wall: #eef0eb;             /* showroom wall: Explore's lit gallery ground; header and chapter bar fade to it there */
+--floor: #dde1da;            /* showroom floor: the gallery's lower gradient, the arch's ground */
+--paper: #ffffffcc;          /* white surfaces on the showroom: product chips, plinth, labels, header pills over it */
+--ink-dim: #081c31b8;        /* secondary text on the showroom (Deep Ink at 72%; 6.3:1 on wall) */
+--ink-line: #081c3124;       /* hairline on the showroom: chips, plinth, arrows */
+--error: #a8261c;            /* field errors on light surfaces (the spec drawer's quote form); 6.5:1 on paper over wall */
+--signal: #5fd3e0;    /* thin overlay lines on the film (the specimen card), after the owner's beam reference; never text on light grounds */
 --display: "Gloock",Georgia,serif;                      /* display family: h1 to h3, card and step titles */
 --text: "Schibsted Grotesk",system-ui,sans-serif;       /* text family: body, UI, labels */
 --ease: cubic-bezier(.16,1,.3,1);       /* default easing: expo-out for state changes and entrances */
@@ -209,7 +223,7 @@ Token count: 28 (16 colour, 2 font family, 2 easing, 1 spacing, 4 radius, 3 z-in
 
 ### Neutral
 - **Night Ground** (ink-0): the page. Also the text colour on every fibre fill.
-- **Raised Ink** (ink-2): solid raised surfaces: product sheet, mobile nav dropdown, sound hint.
+- **Raised Ink** (ink-2): solid raised surfaces: mobile nav dropdown, sound hint (the spec drawer is Ink Glass).
 - **Ink Glass** (glass): translucent panels over the ground, always with blur and a fibre hairline.
 - **Cloud** (cloud): primary text and headings.
 - **Dim Mist** (dim): secondary reading text.
@@ -351,6 +365,18 @@ Rifat's signature: a warm radial sphere (fibre-2 to fibre-3 to dark umber) with 
 
 ### Product sheet
 Native `dialog`, ink-2, line border, r-lg, max 920px; image and body side by side (stacked at 700px and below). Backdrop `#051222b3` with 10px blur; with motion it rises 24px from 0.98 scale over 0.5s. Circular 44px close on ink-0. The body ends with a primary button that hands the product to Rifat.
+
+### Spec drawer
+The product sheet as it is used: a pane of white frosted glass, the showroom's paper (24px blur, 1.3 saturation; it only opens over the showroom), with the drawer's text tokens switched to ink and its primary buttons in Brand Blue with Cloud text (as the owner's showroom reference shows its quote panel) floating 12px clear of the viewport edges (8px on phones, where it rises from the bottom), r-lg, a white hairline and an inner top highlight; the backdrop is only `#081c3129` with 3px blur, so the product's own family stays readable on stage behind it (a shared product link brings that family on stage). The photograph sits inset 10px with the radius stepped down. Under the title, a spec list in two columns with mist hairlines: Family, Grade (graded yarns only), Supplied from, then Specification and Minimum order, which read "Confirmed in your quotation" in dim until SB Trading confirms real values; never invent figures. The product's note, the two actions, and a dim hand-off line: Rifat (AI) gathers the enquiry and the buyer sends it on WhatsApp. Actions: primary "Request a quote", ghost "Add to enquiry" (reads "Added ✓" once added, with a one-line status "Added. Your enquiry has N products."), and an underlined dim text button with Rifat's orb, "Ask Rifat about it". "Request a quote" puts the drawer in quote mode: the spec list, note, actions and hand-off line step aside, the photograph shrinks to 15svh, and Contact Us's own enquiry form moves into the drawer (single column) with the product chosen and focus in the first empty required field; "Back to the product" returns to the spec. After "Prepare enquiry", the drawer says nothing has been sent and offers primary "Send on WhatsApp" (the ticket's own link) and ghost "Review your enquiry". The form goes home to Contact Us when the drawer closes, so there is always one form and one enquiry (tray, Rifat's ticket and the form share it).
+
+### Showroom gallery
+The first part of Explore's scroll (and the whole rise into view) shows the showroom's establishing view: all three families side by side, each a small arch (the family's first photograph, clamp(150px, 15vw, 230px) wide; a third of the width on phones) on a paper plinth with its number and name (stacked on phones). Each is a plain link to its family: with motion it moves the stage there (instantly from the keyboard, with focus on the family's first product); without motion it is an anchor. As the visitor scrolls on, the gallery fades and scales up 8% while the first family appears, as if the camera moves in. Never shown with the families at the same time.
+
+### 3D specimen
+In Explore each family is a 3D object in WebGL (three.js), drawn where the family's photo arch stands (the arch stays in the page, invisible, for alt text, no WebGL and reduced motion). The object is a cut-out of SB Trading's own photograph made into geometry from its depth map (relief 0.75 units), with an alpha test at 0.42, in a glass case (2.5 × 3 × 1.6, 7% white, white edges at 60%) on a matte pedestal (#f2f3ef) with a warm glowing rim (#fff1d6), lit by a warm key (#fff0d8) from the upper left with soft shadows on desktop and a cool rim light (#dbeaf6), with gold motes (fibre-2) rising in the case. It turns with the family's scroll (±0.45 rad) and the pointer (±0.55 rad), eases (0.08 a frame) and then stops drawing; changing family, the old object sinks and shrinks as the new one rises. Label: "3D cut-outs of SB Trading's own photographs".
+
+### Exhibit plinth
+Under each family's arch in Explore: a glass pill (glass, 12px blur, line border with a brighter fibre lower edge, inner top highlight) holding the family's number in fibre caps ("02 / 03"), its name in Gloock 19px, and two 44px circular arrows to the previous and next family (fibre fill on hover; at the ends a faded, non-interactive arrow). The arrows are plain links to the family's anchor, so they work without JavaScript; with motion they move the pinned stage to that family. With motion the plinth rises in 0.35s after its arch opens. The arch shortens to min(64svh, 680px) to make room; on phones the exhibit (arch 30svh, then plinth) sits above the text. The number is on the plinth, never above a heading.
 
 ### Motion
 - **Easings:** ease (expo-out) for nearly everything; ease-io for the arch clip and scroll cue. Motion.dev reveals use the same curve as an array `[0.16, 1, 0.3, 1]`.

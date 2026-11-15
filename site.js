@@ -68,6 +68,7 @@ const sound = (() => {
     if (v && !hinted) { hinted = true; hint.textContent = 'Sound on: a generated score and cues, best on headphones'; setTimeout(() => { hint.textContent = ''; }, 3600); }
     if (!v) {
       if (engine) guard(() => engine.music(false));
+      document.dispatchEvent(new CustomEvent('sb:sound', { detail: false })); // the storyteller stops too
       root.dataset.score = 'off'; root.style.setProperty('--audio', '0');
       fx?.replaceChildren();
       setTimeout(() => { if (!on && actx.state === 'running') actx.suspend().catch(() => {}); }, 1700); // after the fade
@@ -92,16 +93,20 @@ const sound = (() => {
       if (on && engine) guard(() => engine.scene(scene));
     },
     motion(speed) { if (on && engine) guard(() => engine.motion(speed)); },
+    /** True while the visitor has Sound on. */
+    get playing() { return on; },
+    /** Lowers the score under the storyteller's voice, or brings it back. */
+    duck(v) { if (on && engine?.duck) guard(() => engine.duck(v)); },
   };
 })();
 
 // ------------------------------------------------------------------ film (stages 01–03)
-const FRAMES = 255;
+const FRAMES = 196; // tools/build-film.py (assets/film/film.json)
 const SET = innerWidth / innerHeight < 0.9 ? 'm' : 'd';
 const film = $('#film'), canvas = $('.film-canvas'), ctx = canvas.getContext('2d');
 const frames = new Array(FRAMES);
 let shown = -1, filmP = 0;
-const filmBeats = $$('.beat', film).map((el) => ({ el, at: el.dataset.at.split(',').map(Number) }));
+const filmBeats = $$('.beat, .spec-card', film).map((el) => ({ el, at: el.dataset.at.split(',').map(Number) }));
 
 function size() {
   const dpr = Math.min(devicePixelRatio || 1, 1.5);
@@ -143,19 +148,65 @@ async function loadFrames() {
     await idle();
   }
 }
-// The label names the source of the shot on screen (frame ranges in data-shots), so stock and generated footage are
+// The label names the source of the frame drawn on the canvas (frame ranges in data-shots; while frames load, or if one
+// fails, a neighbouring shot may be on screen, and the label follows it), so stock and generated footage are
 // never blurred together and nothing reads as SB Trading's own. Without motion the HTML's whole-film sentence stays.
 const filmLabel = $('.film-label', film);
 const filmShots = (filmLabel?.dataset.shots || '').split('|').filter(Boolean).map((s) => { const [r, src] = s.split(':'), [a, b] = r.split('-').map(Number); return { a, b, src }; });
 let filmShot = null;
-function labelShot(i) {
-  if (!filmLabel) return;
+function labelShot(i) { // i: the index of the loaded frame on the canvas (not the one the scroll asked for), -1 before any
+  if (!filmLabel || i < 0) return;
   const shot = filmShots.find((s) => i + 1 >= s.a && i + 1 <= s.b);
   if (!shot || shot === filmShot) return;
   filmShot = shot;
   filmLabel.textContent = `This shot: ${shot.src}, not SB Trading's own.`;
 }
-const spotlight = $('.spotlight', film);
+// The specimen card: the beam shot's own drawn card misspells its labels, so tools/build-film.py blurs it out of every
+// frame and records where it was (assets/film/film.json). On desktop the page's real card follows that track over the
+// loaded frame on the canvas; on phones (a centre crop) it sits above the chapter bar.
+const specCard = $('.spec-card', film);
+let cardTrack = null;
+fetch('assets/film/film.json').then((r) => r.json()).then((j) => { cardTrack = new Map(j.card.map(([i, ...b]) => [i, b])); }).catch(() => { /* the card stays in its CSS place */ });
+let cardFrame = -1;
+function placeCard(i) {
+  if (!specCard || !cardTrack || SET === 'm' || i === cardFrame) return;
+  const keys = [...cardTrack.keys()], k = Math.min(Math.max(i, keys[0]), keys.at(-1)), box = cardTrack.get(k);
+  if (!box) return;
+  cardFrame = i;
+  const s = Math.max(innerWidth / 1280, innerHeight / 720), ox = (innerWidth - 1280 * s) / 2, oy = (innerHeight - 720 * s) / 2;
+  const [x0, y0, x1] = box, cx = ox + ((x0 + x1) / 2) * 1280 * s, w = Math.max((x1 - x0) * 1280 * s, 360);
+  specCard.style.left = `${Math.round(cx - w / 2)}px`; specCard.style.width = `${Math.round(w)}px`;
+  specCard.style.top = `${Math.round(Math.min(oy + y0 * 720 * s, innerHeight - specCard.offsetHeight - 76))}px`;
+}
+// Hold to split: the beam shot's own prompt reads "hold or scroll to split". Pressing and holding on the film while the
+// specimen is in the beam plays the film forward to the split at a steady pace (0.16 of the film a second); letting go
+// stops it. A touch that starts scrolling is the browser's (pointercancel), so phones keep their normal swipe.
+let holdT = 0;
+const HOLD_FROM = 0.2, HOLD_TO = 0.6;
+film.addEventListener('pointerdown', (e) => {
+  if (reduced || e.button > 0 || e.target.closest('a, button')) return;
+  const q = progressOf(film);
+  if (q >= HOLD_FROM && q < HOLD_TO - 0.01) holdT = performance.now();
+});
+for (const ev of ['pointerup', 'pointercancel', 'blur']) addEventListener(ev, () => { holdT = 0; });
+function hold(now) {
+  if (!holdT) return;
+  const dt = Math.min(0.1, (now - holdT) / 1000); holdT = now;
+  const span = film.offsetHeight - innerHeight, end = film.offsetTop + span * HOLD_TO;
+  const y = Math.min(end, scrollY + span * 0.16 * dt);
+  if (y >= end - 1) holdT = 0;
+  scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true });
+}
+// Film sound design (assets/sound.js), fired when scrolling forward crosses each moment: the cut from the grove into the
+// hall, the beam, the bamboo splitting, the fibre vortex, the close shot and the dome opening (frame numbers from
+// assets/film/film.json: grove 0, beam 41, close 139, dome 161). A jump past several moments plays none of them.
+const FILM_CUES = [[35, 'whoosh'], [42, 'beam'], [78, 'split'], [114, 'fibre'], [138, 'close'], [158, 'dome']];
+let cueFrame = -1;
+function filmCues(i) {
+  if (cueFrame >= 0 && i > cueFrame && i - cueFrame < 16) for (const [f, name] of FILM_CUES) if (cueFrame < f && i >= f) sound.cue(name);
+  cueFrame = i;
+}
+let heroO = 1; // the opening title's opacity: the dust is brightest in the grove's light shafts while it shows
 function beats(p) {
   for (const { el, at: [a, b] } of filmBeats) {
     const fade = 0.035;
@@ -163,17 +214,92 @@ function beats(p) {
     el.style.opacity = o.toFixed(3);
     el.style.transform = `translateY(${((1 - o) * 28).toFixed(1)}px)`;
     el.style.visibility = o < 0.01 ? 'hidden' : 'visible';
-    if (a <= 0) { // the opening: the scroll ring fills as the film begins; the overhead light fades with the title
+    if (a <= 0) { // the opening: the scroll ring fills as the film begins
       el.style.setProperty('--hp', clamp(p / b).toFixed(3));
-      if (spotlight) spotlight.style.opacity = o.toFixed(3);
+      heroO = o;
     }
   }
 }
+
+// Dust: slow gold motes that rise through the film, bright in the grove's light shafts and faint over the footage. Seeded,
+// so every visit draws the same air; drawn only while the film is on screen, and not at all with reduced motion.
+const dust = (() => {
+  const cv = $('.dust', film), g = cv?.getContext('2d');
+  if (!g || reduced) return { size() {}, draw() {} };
+  let seed = 20261113;
+  const rnd = () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const motes = Array.from({ length: fine ? 70 : 40 }, () => ({ x: rnd(), y: rnd(), r: 0.6 + rnd() * rnd() * 2.2, up: 5 + rnd() * 14, sway: 6 + rnd() * 18, ph: rnd() * 6.28, a: 0.25 + rnd() * 0.6 }));
+  let w = 0, h = 0, dpr = 1, last = 0;
+  const lx = () => (innerWidth <= 760 ? 0.5 : 0.42); // where the grove's light shafts fall
+  return {
+    size() { dpr = Math.min(devicePixelRatio || 1, 1.5); w = innerWidth; h = innerHeight; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); },
+    draw(now) {
+      const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
+      const t = now / 1000, cx = lx(), halfBeam = innerWidth <= 760 ? 0.45 : 0.3;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+      g.globalCompositeOperation = 'lighter';
+      for (const m of motes) {
+        m.y -= (m.up * dt) / h; if (m.y < -0.02) { m.y = 1.02; m.x = rnd(); }
+        const x = m.x * w + Math.sin(t * 0.35 + m.ph) * m.sway, y = m.y * h;
+        const inBeam = Math.exp(-(((x / w - cx) / halfBeam) ** 2) * (1 + (1 - m.y))) * Math.max(heroO, 1 - clamp(filmP / 0.33)); // the shafts light the grove, the first third of the film
+        const a = m.a * (0.22 + 0.78 * inBeam) * (0.7 + 0.3 * Math.sin(t * 1.3 + m.ph * 3));
+        if (a < 0.02) continue;
+        const r = m.r * (1 + inBeam * 0.6);
+        g.fillStyle = `rgba(231,214,182,${a.toFixed(3)})`;
+        g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
+        if (r > 1.6) { g.fillStyle = `rgba(231,214,182,${(a * 0.18).toFixed(3)})`; g.beginPath(); g.arc(x, y, r * 3.2, 0, 6.2832); g.fill(); }
+      }
+    },
+  };
+})();
 
 // ------------------------------------------------------------------ explore (stage 04): one pinned stage, three families
 const explore = $('#explore');
 const fams = $$('.fam', explore), ambient = $$('.ambient img', explore);
 let famActive = -1;
+// The storyteller (after hatom.com): each family's short history, narrated (assets/voice/, ElevenLabs voice "Moksh"),
+// with its words as subtitles. "Hear its story" plays or stops it; with Sound on it also starts as the family comes on
+// stage, once per family. The score ducks under the voice. A family whose recording is not made yet shows no button.
+const STORIES = {
+  bamboo: { src: null, text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots. Dried and bundled, it leaves the grove as poles, splits and sections, ready to build with.' },
+  fibre: { src: null, text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
+  bark: { src: 'assets/voice/bark.mp3', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
+};
+const storyCap = $('.story-caption'), storyBtns = $$('.story'), told = new Set();
+let storyNow = null;
+storyBtns.forEach((b) => { b.hidden = !STORIES[b.dataset.story]?.src; });
+function stopStory() {
+  if (!storyNow) return;
+  const { audio, btn } = storyNow;
+  storyNow = null; window.__story = null;
+  audio.pause();
+  btn.setAttribute('aria-pressed', 'false'); btn.querySelector('.story-label').textContent = 'Hear its story';
+  if (storyCap) { storyCap.hidden = true; storyCap.textContent = ''; }
+  sound.duck(false);
+}
+function playStory(key) {
+  const s = STORIES[key], btn = $(`.story[data-story="${key}"]`);
+  if (!s?.src || !btn) return;
+  stopStory();
+  told.add(key);
+  const audio = new Audio(s.src), lines = s.text.match(/[^.;:]+[.;:]?/g).map((l) => l.trim()).filter(Boolean);
+  const total = lines.reduce((n, l) => n + l.length, 0), ends = [];
+  let acc = 0;
+  for (const l of lines) { acc += l.length; ends.push(acc / total); }
+  storyNow = { audio, btn, key }; window.__story = audio;
+  btn.setAttribute('aria-pressed', 'true'); btn.querySelector('.story-label').textContent = 'Stop the story';
+  if (storyCap) { storyCap.hidden = false; storyCap.textContent = lines[0]; }
+  audio.addEventListener('timeupdate', () => {
+    if (!storyCap || !audio.duration) return;
+    const f = audio.currentTime / audio.duration, k = Math.max(0, ends.findIndex((e) => f <= e));
+    if (storyCap.textContent !== lines[k]) storyCap.textContent = lines[k];
+  });
+  audio.addEventListener('ended', () => { if (storyNow?.audio === audio) stopStory(); });
+  sound.duck(true);
+  audio.play().catch(() => { if (storyNow?.audio === audio) stopStory(); });
+}
+document.addEventListener('sb:sound', (e) => { if (!e.detail) stopStory(); }); // Sound off silences the voice too
+storyBtns.forEach((b) => b.addEventListener('click', () => (storyNow?.key === b.dataset.story ? stopStory() : playStory(b.dataset.story))));
 function setFamily(i) {
   if (i === famActive) return;
   const forward = i > famActive;
@@ -184,25 +310,29 @@ function setFamily(i) {
     f.inert = k !== i;
   });
   ambient.forEach((img, k) => img.classList.toggle('on', k === i));
+  const key = fams[i].id;
+  if (storyNow && storyNow.key !== key) stopStory();
+  if (sound.playing && !told.has(key)) playStory(key);
   sound.cue(forward ? 'knock' : 'knock-soft', fams[i].querySelector('.arch'));
 }
 
-// Keyboard: only the visible family is focusable (the others are inert), so Tab past its last product moves the
-// stage to the next family and focuses its first product; Shift+Tab from a first product goes back.
-const famScrollY = (i) => explore.offsetTop + (explore.offsetHeight - innerHeight) * (i / fams.length + 0.12);
+// Keyboard: only the visible family is focusable (the others are inert), so Tab past its last stop (products, then the
+// plinth arrows) moves the stage to the next family and focuses its first product; Shift+Tab from a first product goes back.
+const famScrollY = (i, f = 0.12) => explore.offsetTop + (explore.offsetHeight - innerHeight) * (i / fams.length + f);
 explore.addEventListener('keydown', (e) => {
   if (e.key !== 'Tab' || reduced) return;
   const fam = e.target.closest('.fam');
   if (!fam) return;
-  const i = Number(fam.dataset.i), list = $$('.product', fam);
+  const stops = (f) => $$('.product, .story:not([hidden]), .plinth a', f); // each family's tab stops: its products, its story, then its plinth arrows
+  const i = Number(fam.dataset.i), list = stops(fam);
   const to = e.shiftKey ? (e.target === list[0] ? i - 1 : -1) : (e.target === list.at(-1) ? i + 1 : -1);
   if (to < 0 || to >= fams.length) return;
   e.preventDefault();
   const y = famScrollY(to);
-  scrollTo(0, y); // synchronous, so the loop reads the same family on its next frame
+  scrollTo({ top: y, behavior: 'instant' }); // synchronous, so the loop reads the same family on its next frame
   lenis?.scrollTo(y, { immediate: true, force: true });
   setFamily(to);
-  const next = $$('.product', fams[to]);
+  const next = stops(fams[to]);
   (e.shiftKey ? next.at(-1) : next[0]).focus({ preventScroll: true });
 });
 
@@ -210,7 +340,7 @@ explore.addEventListener('keydown', (e) => {
 // No WebGL2, reduced motion or a lost context: the plain <img> in the arch carries it.
 const studiesCanvas = $('.studies', explore), stage = $('.explore-stage', explore);
 let studies = null, settling = true, restDrawn = false, mountedFam = -1;
-function sizeStudies() { const a = studiesCanvas.parentElement.getBoundingClientRect(); studies?.setSize(a.width, a.height); }
+function sizeStudies() { const a = studiesCanvas.getBoundingClientRect(); studies?.setSize(a.width, a.height); }
 async function loadStudies() {
   try {
     if (reduced) throw new Error('reduced motion: no 3D');
@@ -219,10 +349,10 @@ async function loadStudies() {
     const dbg = probe.getExtension('WEBGL_debug_renderer_info');
     const soft = /swiftshader|llvmpipe|software/i.test(dbg ? String(probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '');
     probe.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
-    const { createPhotoDepth } = await import('./assets/photodepth.js');
-    studies = createPhotoDepth(studiesCanvas, { low: soft || innerWidth < 820 });
+    const { createSpecimens } = await import('./assets/vendor/specimens.js');
+    studies = createSpecimens(studiesCanvas, { low: soft || innerWidth < 820 });
     sizeStudies();
-    studiesCanvas.addEventListener('webglcontextlost', () => { studies = null; root.classList.add('no-3d'); });
+    studiesCanvas.addEventListener('webglcontextlost', () => { studies = null; root.classList.replace('has-3d', 'no-3d'); }); // the photographs come back
     root.classList.add('has-3d');
     restDrawn = false;
   } catch (e) {
@@ -243,26 +373,40 @@ function setChapter(c) {
 
 // ------------------------------------------------------------------ the loop
 function tick(now = performance.now()) {
+  hold(now);
   const p = progressOf(film);
-  filmP = reduced ? p : filmP + (p - filmP) * 0.16;
+  filmP = reduced || Math.abs(p - filmP) > 0.2 ? p : filmP + (p - filmP) * 0.16; // a jump (a link, Home/End) lands at once; scrolling glides
   if (Math.abs(p - filmP) < 1e-4) filmP = p;
   const i = Math.round(filmP * (FRAMES - 1));
   if (i !== shown) draw(i);
-  if (!reduced) { beats(filmP); labelShot(i); }
+  if (!reduced) {
+    beats(filmP); labelShot(drawnFrom); placeCard(drawnFrom); filmCues(i);
+    const fr0 = film.getBoundingClientRect();
+    if (fr0.bottom > 0 && fr0.top < innerHeight && !document.hidden) dust.draw(now);
+  }
 
   if (!reduced) {
-    const e = progressOf(explore), n = fams.length;
-    const idx = Math.min(n - 1, Math.floor(e * n));
+    const f = progressOf(explore), n = fams.length;
+    const idx = Math.min(n - 1, Math.floor(f * n));
     setFamily(idx);
-    const t = clamp(e * n - idx);
+    // an open drawer keeps its product's family on stage behind it, whatever moved the page (such as the browser's own
+    // late jump to a shared link's #anchor)
+    if (sheet.open && !sheetLeaving && sheetFam >= 0 && idx !== sheetFam) { const y = famScrollY(sheetFam); scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true }); }
+    const t = clamp(f * n - idx);
     fams[idx].style.setProperty('--t', t.toFixed(4));
     const active = now - lastInput < 1000;
     if (active) { pointer[0] += (target[0] - pointer[0]) * 0.08; pointer[1] += (target[1] - pointer[1]) * 0.08; }
     else { pointer[0] = target[0]; pointer[1] = target[1]; }
     const er = explore.getBoundingClientRect();
+    // the showroom dims to dusk as it leaves for About Us and Rifat (the film before it ends in the lit gallery)
+    const dark = clamp(1 - er.bottom / innerHeight);
+    stage.style.setProperty('--dark', dark.toFixed(3));
     const inView = er.top < innerHeight && er.bottom > 0;
     if (studies && inView && (active || settling || !restDrawn || studies.dirty)) { // dirty: a texture arrived or the canvas moved/resized
-      if (idx !== mountedFam) { mountedFam = idx; studies.mount(fams[idx].querySelector('.arch')); sizeStudies(); }
+      if (idx !== mountedFam) {
+        mountedFam = idx; studies.mount(fams[idx].querySelector('.exhibit')); sizeStudies();
+        const k = idx; studies.whenReady(k).then((ok) => { if (ok && mountedFam === k) studiesCanvas.dataset.specimen = String(k); });
+      }
       settling = studies.render({ fam: idx, t, pointer, now, settle: !active });
       restDrawn = !active && !settling;
     }
@@ -279,8 +423,12 @@ function tick(now = performance.now()) {
 
   // chapters: 01 Arrive, 02 Discover, 03 Transition (film), 04 Explore, 05 Enquire
   const mid = innerHeight / 2, fr = film.getBoundingClientRect(), er = explore.getBoundingClientRect();
+  // header and chapter bar turn to ink while the lit showroom is behind them
+  const lit = (er.bottom - er.top) > 0 && parseFloat(stage.style.getPropertyValue('--dark') || '0') < 0.5;
+  root.classList.toggle('light-top', lit && er.top <= 0 && er.bottom > 72);
+  root.classList.toggle('light-bottom', lit && er.top < innerHeight - 70 && er.bottom >= innerHeight);
   let c = 4;
-  if (fr.bottom > mid) c = p < 0.115 ? 0 : p < 0.4 ? 1 : 2;
+  if (fr.bottom > mid) c = p < 0.205 ? 0 : p < 0.5 ? 1 : 2; // the grove, the specimen in the beam, the materials
   else if (er.bottom > mid) c = 3;
   setChapter(c);
   sound.scene(c, Math.max(0, famActive));
@@ -294,9 +442,22 @@ function tick(now = performance.now()) {
   if (!reduced) requestAnimationFrame(tick);
 }
 
+// Rifat appears at the end of the journey: his ring sweeps in and he materialises as the Enquire section comes into
+// view (assets/img/rifat/, the owner's portrait of Rifat, always labelled AI). Without motion he is simply there.
+{
+  const presence = $('.enquire .presence');
+  if (presence) {
+    if (reduced || !('IntersectionObserver' in window)) presence.classList.add('here');
+    else {
+      const seen = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { seen.disconnect(); presence.classList.add('here'); sound.cue('reply', presence); } }, { threshold: 0.35 });
+      seen.observe(presence);
+    }
+  }
+}
+
 // ------------------------------------------------------------------ start
-size();
-addEventListener('resize', () => { size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
+size(); dust.size();
+addEventListener('resize', () => { size(); dust.size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
 addEventListener('scroll', () => { lastInput = performance.now(); }, { passive: true });
 if (fine && !reduced) addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; lastInput = performance.now(); }, { passive: true });
 // The 3D studies (shader compile, photographs, depth maps) load when Explore is within two screens, not at page load.
@@ -315,13 +476,19 @@ if (fine && !reduced) {
     requestAnimationFrame(raf);
   }).catch(() => { /* native scrolling stays */ });
 }
-// Family cards at the end of the film land on that family inside the pinned Explore stage.
-for (const a of $$('.fam-cards a')) {
+// Family cards at the end of the film and the plinth arrows land on that family inside the
+// pinned Explore stage. From the keyboard the jump is instant and focus goes to the family's first product, so it is
+// never left on a link that has just been hidden.
+for (const a of $$('.fam-cards a, .plinth a[data-fam]')) {
   a.addEventListener('click', (e) => {
     if (reduced) return; // without the pinned stage the plain anchor is right
     e.preventDefault();
-    const y = explore.offsetTop + (explore.offsetHeight - innerHeight) * (Number(a.dataset.fam) / 3 + 0.12);
-    if (lenis) lenis.scrollTo(y); else scrollTo({ top: y, behavior: 'smooth' });
+    const i = Number(a.dataset.fam), y = famScrollY(i);
+    if (e.detail === 0) {
+      scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true });
+      setFamily(i);
+      $('.product', fams[i])?.focus({ preventScroll: true });
+    } else if (lenis) lenis.scrollTo(y); else scrollTo({ top: y, behavior: 'smooth' });
     sound.cue('open', a);
   });
   a.addEventListener('pointerenter', () => sound.cue('hover', a));
@@ -364,13 +531,13 @@ function updateTray(enquiry) {
   if (list.length > trayN && !reduced) { tray.classList.remove('bump'); void tray.offsetWidth; tray.classList.add('bump'); }
   trayN = list.length;
 }
-const rifat = createRifat({ root: $('#rifat'), whatsapp: document.body.dataset.whatsapp || '', cue: sound.cue, reduced, onChange: updateTray });
+const rifat = createRifat({ root: $('#rifat'), whatsapp: document.body.dataset.whatsapp || '', endpoint: document.body.dataset.rifatEndpoint || 'api/rifat', cue: sound.cue, reduced, onChange: updateTray });
 tray.addEventListener('click', (e) => { e.preventDefault(); const t = $('#enquire'); if (lenis) lenis.scrollTo(t, { offset: -40 }); else t.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); });
 
 // ------------------------------------------------------------------ product sheet
 $$('.product').forEach((el) => el.addEventListener('pointerenter', () => sound.cue('hover', el)));
 const sheet = $('#productSheet');
-let sheetProduct = '';
+let sheetProduct = '', sheetFam = -1; // the open product, and its family's index
 // The drawer arrives on a gentle spring and leaves on a short ease-in (Motion); the native dialog closes only after the
 // exit has played, so Escape, the close button, the backdrop and "Ask Rifat" all leave the same way. Reduced motion,
 // or Motion missing: it opens and closes instantly. Desktop slides from the right, phones (bottom sheet) from below.
@@ -389,11 +556,13 @@ function openSheet() {
 function closeSheet() {
   if (sheetLeaving) return sheetLeaving;
   if (!sheet.open) return Promise.resolve();
-  if (reduced || !M) { sheet.close(); return Promise.resolve(); }
+  if (reduced || !M) { sheet.close(); quoteSendHome(); return Promise.resolve(); }
   sheet.dataset.closing = '';
   const off = sheetOff();
-  sheetLeaving = M.animate(sheet, { x: off.x, y: off.y, opacity: 0.5 }, { duration: 0.28, ease: [0.4, 0, 1, 1] }).finished
-    .catch(() => {}).then(() => { sheet.close(); delete sheet.dataset.closing; sheetLeaving = null; });
+  const exit = M.animate(sheet, { x: off.x, y: off.y, opacity: 0.5 }, { duration: 0.28, ease: [0.4, 0, 1, 1] }).finished.catch(() => {});
+  // a deadline, so the drawer still closes when the exit cannot play (a hidden tab, a starved software renderer)
+  const deadline = new Promise((r) => setTimeout(r, 600));
+  sheetLeaving = Promise.race([exit, deadline]).then(() => { sheet.close(); quoteSendHome(); delete sheet.dataset.closing; sheetLeaving = null; });
   return sheetLeaving;
 }
 sheet.addEventListener('cancel', (e) => { e.preventDefault(); closeSheet(); }); // Escape
@@ -402,15 +571,41 @@ $('.sheet-close', sheet).addEventListener('submit', (e) => { e.preventDefault();
 // title, so it can be shared; Back closes it, Forward reopens it, and loading the address opens it directly.
 const pageTitle = document.title;
 const productAt = () => (/^#p-[a-z0-9-]+$/.test(location.hash) ? document.getElementById(location.hash.slice(1)) : null);
+function setSheetActions(added) { $('#sheetAdd').textContent = added ? 'Added ✓' : 'Add to enquiry'; }
+
+// Request a quote: Contact Us's enquiry form moves into the drawer beside the product (one form, one enquiry), and
+// goes home when the drawer closes, open or closed as it was.
+const quotePane = $('#quotePane'), quoteDone = $('#quoteDone');
+let formWasOpen = false;
+function quoteOpen() {
+  const f = $('#enquiryForm');
+  if (f.parentElement !== quotePane) { formWasOpen = !f.hidden; quotePane.insertBefore(f, quoteDone); }
+  f.hidden = false; quoteDone.hidden = true;
+  $('#f-product').value = sheetProduct;
+  sheet.classList.add('quoting'); quotePane.hidden = false;
+  (['#f-name', '#f-email', '#f-country'].map((s) => $(s)).find((i) => !i.value) || $('#f-qty')).focus();
+  sound.cue('open', $('#sheetQuote'));
+}
+function quoteBack() { sheet.classList.remove('quoting'); quotePane.hidden = true; }
+function quoteSendHome() {
+  const f = $('#enquiryForm');
+  if (f.parentElement === quotePane) { $('.form-alt').append(f); f.hidden = !formWasOpen; }
+  quoteBack();
+}
 function showProduct(btn, { push = true } = {}) {
   sheetProduct = btn.textContent.trim();
+  sheetFam = fams.indexOf(btn.closest('.fam'));
   $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
   $('#sheetImg').alt = `${btn.dataset.family} photograph`;
   $('#sheetFamily').textContent = btn.dataset.family;
   $('#sheetTitle').textContent = sheetProduct;
   $('#sheetNote').textContent = btn.dataset.note;
+  const grade = /^Grade ([A-C])\b/.exec(sheetProduct);
+  $('#sheetGradeRow').hidden = !grade;
+  $('#sheetGrade').textContent = grade ? grade[1] : '';
   $('#sheetStatus').textContent = '';
-  $('#sheetAdd').textContent = 'Add to enquiry';
+  setSheetActions(false);
+  quoteSendHome();
   if (push && location.hash !== `#${btn.id}`) history.pushState({ product: btn.id }, '', `#${btn.id}`);
   document.title = `${sheetProduct} · SB Trading`;
   openSheet();
@@ -430,7 +625,12 @@ addEventListener('popstate', () => { const btn = productAt(); if (btn?.classList
   const btn = productAt();
   if (btn?.classList.contains('product')) {
     const fam = btn.closest('.fam'), n = fams.length, k = fams.indexOf(fam);
-    if (!reduced && k >= 0) scrollTo(0, explore.offsetTop + (explore.offsetHeight - innerHeight) * ((k + 0.35) / n)); else btn.scrollIntoView({ block: 'center' });
+    const toFamily = () => {
+      if (reduced || k < 0) { btn.scrollIntoView({ block: 'center' }); return; }
+      const y = famScrollY(k, 0.35 / n);
+      scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true });
+    };
+    toFamily(); // once the drawer is open, the loop keeps this family on stage behind it
     setTimeout(() => showProduct(btn, { push: false }), 60);
   }
 }
@@ -445,11 +645,19 @@ $('#sheetAsk').addEventListener('click', () => {
 });
 $('#sheetAdd').addEventListener('click', (e) => {
   const list = rifat.addProduct(sheetProduct);
-  $('#sheetStatus').textContent = `Added. Your enquiry: ${list}. Add more products, or finish with Rifat.`;
-  e.currentTarget.textContent = 'Added to enquiry ✓';
+  const n = list ? list.split(', ').length : 0;
+  $('#sheetStatus').textContent = `Added. Your enquiry has ${n} product${n === 1 ? '' : 's'}.`;
+  setSheetActions(true);
   sound.cue('tick', e.currentTarget);
 });
 sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });
+sheet.addEventListener('close', quoteSendHome);
+$('#sheetQuote').addEventListener('click', quoteOpen);
+$('#quoteBack').addEventListener('click', () => { quoteBack(); $('#sheetQuote').focus(); });
+$('#quoteReview').addEventListener('click', () => {
+  sheetKeepsScroll = true;
+  closeSheet().then(() => { const t = $('.ticket'); t.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' }); });
+});
 
 // ------------------------------------------------------------------ the plain form (an alternative to Rifat)
 const form = $('#enquiryForm'), toggle = $('#formToggle');
@@ -485,7 +693,15 @@ form.addEventListener('submit', (e) => {
   const enquiry = { product: d.product, country: d.country, name: d.name, email: d.email, company: d.company, notes: d.notes };
   if (d.quantity) { enquiry.quantity = Number(d.quantity); enquiry.unit = d.unit; }
   rifat.setEnquiry(enquiry);
-  $('#summary').textContent = 'Enquiry prepared. Review it under “Your enquiry” above, then send it on WhatsApp or copy it. Nothing has been sent yet.';
   sound.cue('send', form.querySelector('button[type=submit]'));
+  if (form.parentElement === quotePane) { // in the drawer: the hand-off stays beside the product
+    const wa = $('#waSend'), off = wa.getAttribute('aria-disabled') === 'true', send = $('#quoteWa');
+    send.href = off ? '#enquire' : wa.href;
+    send.toggleAttribute('aria-disabled', off);
+    form.hidden = true; quoteDone.hidden = false;
+    send.focus();
+    return;
+  }
+  $('#summary').textContent = 'Enquiry prepared. Review it under “Your enquiry” above, then send it on WhatsApp or copy it. Nothing has been sent yet.';
   $('.ticket').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
 });

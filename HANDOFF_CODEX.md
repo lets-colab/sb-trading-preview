@@ -6,7 +6,7 @@ Read this file, then `PRODUCT.md` (brand and product brief) and `README.md` (fil
 - **Preview:** `main` at merge `876d5df` (PR #15) is what Cloudflare Pages deploys to https://sb-trading.lastbenchbd.com, still behind the Cloudflare Access login. Nobody has confirmed the deployed page from inside this workflow (the login blocks it): NOT VERIFIED live.
 - **Merged since 10 Nov (PRs #10, #14, #15):** photographs in depth (`assets/photodepth.js`) replacing the procedural 3D; specimen-stage opening; film 460vh with a new ending; spec drawer (Motion spring in, eased exit) and enquiry tray; phone enquiry summary; opt-in generated score with note ripples and a live meter (`assets/sound.js`); caption contrast gate; Remotion film rebuilt from the site's design system (`video/`, `tests/film-sync.mjs`); `docs/SHOTLIST.md`.
 - **This branch (open PR, not merged):**
-  - the film label names each shot's own source (Pexels stock or generated);
+  - the film label names the footage as generated (the owner's showroom reference clip; no stock footage);
   - `tests/access.mjs`: reduced motion, keyboard path, axe-core WCAG A/AA scan (no serious or critical violations in five states, desktop and phone);
   - staged frame loading and lazy 3D setup (simulated mid-range phone: main-thread blocking about 970 ms -> about 100 ms; Lighthouse mobile performance 42 -> 57, accessibility 100, best practices 100; SEO 63 only because the draft is `noindex`);
   - the client brief's navigation (About Us, Products, Contact Us) with an About Us section built from facts already on the page;
@@ -18,7 +18,7 @@ Read this file, then `PRODUCT.md` (brand and product brief) and `README.md` (fil
 ## State in one paragraph
 A cinematic scroll story for SB Trading (bamboo, banana fibre yarn, banana bark and leaves; nine products), rebuilt on 10 Nov 2026 after the owner rejected the previous version. Static HTML/CSS/JS plus one Cloudflare Pages Function. Five stages from the owner's proposal deck (Arrive, Discover, Transition, Explore, Enquire) in one continuous blue-hour palette: a scroll-scrubbed film (bamboo canopy → bamboo to fibre → banana leaves → hand-weaving; generated footage plus credited Pexels stock), a pinned Explore stage with real photographs in tilting arched windows and real-time 3D material studies (three.js) breaking out of the frames, "How ordering works" with a drawn fibre line, and **Rifat**, the enquiry assistant, with "Your enquiry" and a WhatsApp hand-off. Opt-in tactile sound. A Remotion brand film project lives in `video/`. It is a client-review draft, not a live commercial site.
 
-- Live address: https://sb-trading.lastbenchbd.com (DNS on Cloudflare, behind a Cloudflare Access login, so only approved people can open it). The repo is built from `main` (`_headers` is a Cloudflare Pages file; `CNAME` is also present).
+- Live address (public, owner's decision 15 Nov 2026): https://lets-colab.github.io/sb-trading-preview/, served by GitHub Pages from `main` (`.nojekyll`: files are published as they are). GitHub Pages cannot run server code, so `/api/rifat` does not exist there and Rifat runs in guided mode (answering from `assets/rifat-knowledge.js`) until his AI endpoint moves to Supabase. The custom-domain file `CNAME` was removed, so github.io no longer forwards to sb-trading.lastbenchbd.com; that domain is still on Cloudflare Pages behind the Access login. `noindex` stays until a public launch is approved.
 - Branch for work: `claude/dreamy-turing-gwgukx`. After a PR merges, restart the branch from the latest `origin/main` before adding new commits.
 - Quality bar: Impeccable critique scored 22/40, then 28/40 ("Good", no P0 or P1), detector 0 findings. The six P2 findings from the second critique were fixed afterwards but not re-scored.
 
@@ -40,8 +40,9 @@ assets/rifat.js       Rifat on the page: AI mode (calls /api/rifat) or labelled 
 src/rifat-fn.js       Pages Function source (Anthropic TypeScript SDK) -> functions/api/rifat.js (generated, committed; edit the source)
 src/materials3d.js    3D studies (three.js r187)        -> assets/materials3d.js
 src/smooth.js         Lenis re-export                   -> assets/vendor/smooth.js
-assets/sound.js       tactile sound cues (lazy-loaded on the Sound press)
-assets/film/{d,m}/    255 WebP frames (desktop 1280x720, phone 405x720 crop): 1-30 Pexels bamboo canopy, 31-191 generated bamboo-to-fibre, 192-223 Pexels banana leaves, 224-255 generated bamboo -> fibre -> yarn ball + bark sheet (owner's Gemini clip 65bdd3ff, 3.4-6.0 s only: its HUD, fake 'spec drawer' with invented MOQ/grade and a wrong WhatsApp number are excluded). Do NOT use gemini_generated_video_9f29a4ec (owner withdrew it).
+assets/sound.js       opt-in sound (lazy-loaded on the Sound press): gamelan/angklung score, film sound design (FILM_CUES in site.js), tactile cues
+assets/img/cutout/    3D specimen cut-outs (tools/build-cutouts.py); src/specimens.js -> assets/vendor/specimens.js (three.js 0.186.0, MIT)
+assets/film/{d,m}/    196 WebP frames built by tools/build-film.py from the four reference clips (97f87dc2 grove, 6daa857f beam/split/vortex, 43a4edb4 yarn and bark, fa9b5fd6 dome); film.json holds shot starts and the specimen-card track. The drawn card (misspelt) is blurred out; the page lays the real card over it. Clips' drawn drawers/forms and AI presenter are not used. Do NOT use gemini_generated_video_9f29a4ec (owner withdrew it).
 assets/img/           five real product photographs + logo variants (see rule 5)
 assets/vendor/        Motion 12, Lenis, three.js licence, fonts (Gloock, Schibsted Grotesk; OFL)
 functions/api/rifat.js  GET -> { ai }, POST -> { reply, enquiry, ready }; 503 without ANTHROPIC_API_KEY
@@ -58,13 +59,13 @@ docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions
 ## Commands
 ```bash
 npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
-CHROMIUM_PATH=<chrome> npm test                          # 144 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone
+CHROMIUM_PATH=<chrome> npm test                          # 204 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone (incl. film label, dust, spec drawer)
 node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector: 10 findings, all documented intent
 cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
 ```
 
 ## How it works (essentials)
-- **Film (stages 01-03):** `#film` is 680vh with a sticky stage. `site.js` maps scroll progress to one of 279 frames, drawn on a canvas; captions are `.beat[data-at="a,b"]` progress ranges. Frames load coarse to fine. Labelled as generated.
+- **Film (stages 01-03):** `#film` is 640vh with a sticky stage. `site.js` maps scroll progress to one of 196 frames on a canvas (coarse to fine loading); a jump of more than a fifth of the film lands at once instead of gliding. Captions and the specimen card are `[data-at="a,b"]` progress ranges; the card follows `film.json`'s track on desktop. `FILM_CUES` fires the film sound design when scrolling crosses each moment. Labelled as generated.
 - **Explore (04):** `#explore` is 420vh with one sticky stage; progress thirds pick the family (`.fam.on`, inactive ones `inert`). CSS wipes and tilts the arched photo windows (`--t`, `--ry`, `--rx`); the blurred photo is the background.
 - **3D studies:** `loadStudies()` imports `assets/materials3d.js` after first paint (WebGL2 only; reduced motion, no WebGL or a lost context leave photographs only, class `no-3d`). `render()` runs only while the visitor scrolls or moves the pointer, while a family transition settles, and once more at rest; then nothing is drawn (the smoke test counts draw calls).
 - **Rifat (05):** `assets/rifat.js` probes `GET /api/rifat` when the section approaches. `{ ai: true }` -> AI mode (POST with the conversation and enquiry; the function calls `claude-opus-5-5` at effort `low` with server-side fallbacks, records fields through the `update_enquiry` tool and validates them). Anything else -> guided mode, labelled "AI not connected yet". Both fill "Your enquiry"; "Send on WhatsApp" opens `wa.me/<number>?text=<enquiry>` only when product, country, name and email are present and `data-whatsapp` is set; otherwise it explains and offers Copy.
@@ -131,7 +132,7 @@ No Access, DNS, credential, or production permission changes were made during th
 - If evidence is missing, mark the item `NOT PROVEN` and stop at the smallest reversible diagnostic check.
 
 ## Open items, in priority order
-1. **SB Trading's own footage and photographs:** run `docs/SHOTLIST.md` (two days: location at dusk, then studio). Every film shot is currently Pexels stock or generated and says so on screen. Stock sources (Pexels licence): videos 40042753 (bamboo), 37009850 (banana leaves).
+1. **SB Trading's own footage and photographs:** run `docs/SHOTLIST.md` (two days: location at dusk, then studio). Every film shot is currently generated footage (the owner's reference clip) and says so on screen; no stock footage is used.
 2. **Owner content:** email and phone (WhatsApp +880 1878-707910 is live); origin, minimum order, shipping terms, lead times, certifications; confirmed product names, grades and per-product photos (banana bark and woven mats have none; "Ski poles" is an unverified label). Approval of the derived light logo. About Us states only what the page already said; extend it only with facts SB Trading confirms.
 3. **Rifat AI key (owner decision on spend first):** add `ANTHROPIC_API_KEY` in Cloudflare (steps above), then test five real buyer conversations, including attempts to get prices or a confirmed order (Rifat must refuse and hand to the team). Add rate limiting per IP (Cloudflare WAF rule on `/api/rifat`) before any public launch.
 4. **Owner's ten-minute check on a real phone (nothing here is verified on a real device):**
