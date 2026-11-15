@@ -89,6 +89,32 @@ check(/guided mode/i.test(await p.textContent('#rifatMode')) && /lost my connect
 check(errors.length === 0, `no page errors${errors.length ? ' - ' + errors[0] : ''}`);
 check(external.length === 0, `the page makes no external requests${external.length ? ' - ' + external[0] : ''}`);
 
+check(first?.body.tools?.some((t) => t.name === 'search_knowledge'), 'Rifat is given the search_knowledge tool for questions');
+
+// ------------------------------------------------------------ knowledge base (bundled, plus an optional Supabase table)
+{
+  const ordering = await fn.knowledgeAnswer('How does ordering work?', {});
+  check(/three steps/i.test(ordering) && /quotation/i.test(ordering), 'the bundled knowledge answers how ordering works');
+  const price = await fn.knowledgeAnswer('What is the price per tonne?', {});
+  check(/team/i.test(price) && !/\$|usd|bdt|\d+\s*(per|\/)/i.test(price), 'a price question gets "the team confirms", never a figure');
+  const unknown = await fn.knowledgeAnswer('zebra xylophone', {});
+  check(/No entry matches/.test(unknown), 'an unknown question gets no invented answer');
+  let hits = 0;
+  const supa = http.createServer((q, r) => {
+    hits++;
+    const ok = q.url.startsWith('/rest/v1/rifat_knowledge') && q.headers.apikey === 'anon-test';
+    r.writeHead(ok ? 200 : 401, { 'content-type': 'application/json' });
+    r.end(ok ? JSON.stringify([{ id: 'fumigation', topic: 'Fumigation', keywords: 'fumigation pest treatment', text: 'Test row: fumigation details come from the team.' }]) : '[]');
+  });
+  await new Promise((ok) => supa.listen(0, '127.0.0.1', ok));
+  const env = { SUPABASE_URL: `http://127.0.0.1:${supa.address().port}`, SUPABASE_ANON_KEY: 'anon-test' };
+  const fromSupabase = await fn.knowledgeAnswer('Do you do fumigation treatment?', env);
+  check(/Test row: fumigation/.test(fromSupabase) && hits === 1, 'with SUPABASE_URL and SUPABASE_ANON_KEY, rows of the rifat_knowledge table are searched too');
+  supa.close();
+  const down = await fn.knowledgeAnswer('How does ordering work?', { SUPABASE_URL: 'http://127.0.0.1:9', SUPABASE_ANON_KEY: 'x' });
+  check(/three steps/i.test(down), 'when Supabase is unreachable the bundled knowledge still answers');
+}
+
 await browser.close(); site.close(); mock.close();
 console.log(failures ? `\n${failures} failing` : '\nall passing');
 process.exit(failures ? 1 : 0);

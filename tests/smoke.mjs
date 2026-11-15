@@ -248,6 +248,18 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
 
   // guided flow
   const say = async (t) => { await p.fill('#rifatInput', t); await p.press('#rifatInput', 'Enter'); await p.waitForTimeout(1500); };
+  { // Rifat appears at the end of the journey: his portrait in a cyan ring, always labelled AI, and his face in the chat bar
+    const pres = await p.evaluate(() => { const f = document.querySelector('.enquire .presence'), img = f?.querySelector('img'), r = img?.getBoundingClientRect();
+      return { here: f?.classList.contains('here'), loaded: !!img?.complete && img.naturalWidth > 0, w: Math.round(r?.width || 0), ai: f?.querySelector('.ai-tag')?.textContent.trim(), alt: img?.alt || '',
+        face: !!document.querySelector('.rifat-top .orb img')?.naturalWidth }; });
+    check(pres.here && pres.loaded && pres.w >= 140 && pres.ai === 'AI' && /AI assistant/.test(pres.alt) && pres.face, `${name}: Rifat appears in his ring, labelled AI, with his face in the chat bar (${JSON.stringify(pres)})`);
+  }
+  { // even without the AI, Rifat answers questions from its knowledge base (assets/rifat-knowledge.js), then carries on
+    const before = (await p.textContent('#rifatLog')).length;
+    await say('How does ordering work?');
+    const said = (await p.textContent('#rifatLog')).slice(before);
+    check(/three steps/i.test(said) && /quotation/i.test(said), `${name}: in guided mode Rifat answers "How does ordering work?" from its knowledge base (${said.slice(0, 90).replace(/\s+/g, ' ')})`);
+  }
   await say('5 tonnes'); await say('Japan'); await say('Test Buyer'); await say('not-an-email');
   check(/doesn.t look like an email/.test(await p.textContent('#rifatLog')), `${name}: Rifat rejects a malformed email`);
   await say('buyer@example.com'); await say('Skip'); await say('Nothing else');

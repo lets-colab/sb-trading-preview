@@ -440,6 +440,19 @@ function tick(now = performance.now()) {
   if (!reduced) requestAnimationFrame(tick);
 }
 
+// Rifat appears at the end of the journey: his ring sweeps in and he materialises as the Enquire section comes into
+// view (assets/img/rifat/, the owner's portrait of Rifat, always labelled AI). Without motion he is simply there.
+{
+  const presence = $('.enquire .presence');
+  if (presence) {
+    if (reduced || !('IntersectionObserver' in window)) presence.classList.add('here');
+    else {
+      const seen = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { seen.disconnect(); presence.classList.add('here'); sound.cue('reply', presence); } }, { threshold: 0.35 });
+      seen.observe(presence);
+    }
+  }
+}
+
 // ------------------------------------------------------------------ start
 size(); dust.size();
 addEventListener('resize', () => { size(); dust.size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
