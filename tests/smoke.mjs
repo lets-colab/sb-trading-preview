@@ -189,6 +189,17 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
     const home = await q.evaluate(() => ({ parent: document.getElementById('enquiryForm').parentElement.className, open: document.getElementById('productSheet').open }));
     check(home.parent === 'form-alt' && !home.open, `${name}: closing the drawer returns the form to Contact Us (${JSON.stringify(home)})`);
+    { // the drawer still closes when its exit animation cannot run (a starved software renderer on CI, #18, or a hidden tab):
+      // here every animation is paused the moment Escape is pressed, and the dialog must close on its own within a second
+      await q.evaluate(() => document.getElementById('p-banana-leaves').click());
+      await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+      await q.waitForTimeout(900);
+      await q.keyboard.press('Escape');
+      await q.evaluate(() => document.getAnimations().forEach((a) => a.pause()));
+      await q.waitForTimeout(1000);
+      const stuck = await q.evaluate(() => ({ open: document.getElementById('productSheet').open, parent: document.getElementById('enquiryForm').parentElement.className }));
+      check(!stuck.open && stuck.parent === 'form-alt', `${name}: the drawer closes within a second even when its exit animation cannot run (${JSON.stringify(stuck)})`);
+    }
     await q.close();
   }
   { // Explore is a bright showroom (owner's reference 97f87dc2): light walls, ink text, an ink header over it. The film

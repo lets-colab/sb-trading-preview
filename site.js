@@ -559,8 +559,10 @@ function closeSheet() {
   if (reduced || !M) { sheet.close(); quoteSendHome(); return Promise.resolve(); }
   sheet.dataset.closing = '';
   const off = sheetOff();
-  sheetLeaving = M.animate(sheet, { x: off.x, y: off.y, opacity: 0.5 }, { duration: 0.28, ease: [0.4, 0, 1, 1] }).finished
-    .catch(() => {}).then(() => { sheet.close(); quoteSendHome(); delete sheet.dataset.closing; sheetLeaving = null; });
+  const exit = M.animate(sheet, { x: off.x, y: off.y, opacity: 0.5 }, { duration: 0.28, ease: [0.4, 0, 1, 1] }).finished.catch(() => {});
+  // a deadline, so the drawer still closes when the exit cannot play (a hidden tab, a starved software renderer)
+  const deadline = new Promise((r) => setTimeout(r, 600));
+  sheetLeaving = Promise.race([exit, deadline]).then(() => { sheet.close(); quoteSendHome(); delete sheet.dataset.closing; sheetLeaving = null; });
   return sheetLeaving;
 }
 sheet.addEventListener('cancel', (e) => { e.preventDefault(); closeSheet(); }); // Escape
