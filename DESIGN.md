@@ -24,6 +24,7 @@ colors:
   ink-dim: "#081c31b8"
   ink-line: "#081c3124"
   error: "#a8261c"
+  signal: "#5fd3e0"
 typography:
   display:
     fontFamily: "Gloock, Georgia, serif"
@@ -159,7 +160,7 @@ Citation convention: every root custom property appears with its leading double 
 
 **Creative North Star: "The Blue-Hour Showroom"**
 
-A dusk-blue world with one lit room, after the owner's showroom reference (97f87dc2): the film opens in a dark bamboo grove and walks into the light, ending in a lit gallery; About Us and Rifat are dusk, lit by a single warm natural-fibre accent; Explore is that bright gallery (wall, floor, paper, Deep Ink text, Brand Blue accents), with the film's last room softly out of focus behind each family, and is left into dusk again. The page is a dark navy ground (ink-0) under a faint blue radial glow, with real material photography and a real-time 3D film (the scroll is its camera) doing the colour work. Interface chrome is translucent ink glass with hairline fibre borders, so the material stays the brightest thing on screen. The North Star is taken from the build's own stylesheet header ("one continuous blue-hour world") and has not been separately confirmed by the owner.
+A dusk-blue world with one lit room, after the owner's showroom reference (97f87dc2): the film opens in a dark bamboo grove and walks into the light, ending in a lit gallery; About Us and Rifat are dusk, lit by a single warm natural-fibre accent; Explore is that bright gallery (wall, floor, paper, Deep Ink text, Brand Blue accents), with the film's last room softly out of focus behind each family, and is left into dusk again. The page is a dark navy ground (ink-0) under a faint blue radial glow, with real material photography and a scroll-scrubbed film doing the colour work. Interface chrome is translucent ink glass with hairline fibre borders, so the material stays the brightest thing on screen. The North Star is taken from the build's own stylesheet header ("one continuous blue-hour world") and has not been separately confirmed by the owner.
 
 Density moves from cinematic to quiet. The opening chapters are full-viewport pinned stages with very large Gloock headlines; once the visitor reaches ordering and Rifat, the layout tightens into contained panels, pill controls and plain grotesk text. Motion is scroll-bound and pointer-bound rather than decorative looping, and every motion layer has a static document equivalent.
 
@@ -200,6 +201,7 @@ The token block below is the source of truth and mirrors styles.css `:root` exac
 --ink-dim: #081c31b8;        /* secondary text on the showroom (Deep Ink at 72%; 6.3:1 on wall) */
 --ink-line: #081c3124;       /* hairline on the showroom: chips, plinth, arrows */
 --error: #a8261c;            /* field errors on light surfaces (the spec drawer's quote form); 6.5:1 on paper over wall */
+--signal: #5fd3e0;    /* thin overlay lines on the film (the specimen card), after the owner's beam reference; never text on light grounds */
 --display: "Gloock",Georgia,serif;                      /* display family: h1 to h3, card and step titles */
 --text: "Schibsted Grotesk",system-ui,sans-serif;       /* text family: body, UI, labels */
 --ease: cubic-bezier(.16,1,.3,1);       /* default easing: expo-out for state changes and entrances */
@@ -279,7 +281,7 @@ All h1 to h3 use `text-wrap: balance`; paragraphs use `text-wrap: pretty`; `font
 
 A single scroll story in five chapters (Arrive, Discover, Transition, Explore, Enquire). Every section and both fixed bars are inset by the gutter token; html sets `scroll-padding-top: 88px` for the fixed header.
 
-- **Film (chapters 1 to 3):** a sticky 100svh stage over a tall section. It is a real-time three.js world (`src/world.js`) and scroll progress drives its camera along a spline: the dark grove (0 to 0.3), out into the lit showroom (0.26 to 0.44), the bamboo pole splitting (0.45 to 0.58), banana fibre peeling and winding into yarn (0.58 to 0.86), bark and leaves (0.74 to 0.84), the gallery of three cases (to 1). Beat captions sit bottom-left at `bottom: clamp(96px, 16vh, 170px)`, max-width 1000px, each on its own scrim. Once the journey is in the lit showroom (`film-lit`, progress above 0.4) captions, header and chapter bar turn to Deep Ink on a wall-coloured scrim, as in Explore. `tests/contrast.mjs` holds every caption at 4.5:1 or better against the brightest part of the film behind it.
+- **Film (chapters 1 to 3):** a 460vh section with a sticky 100svh stage. Scroll position is the playhead of a canvas frame sequence; beat captions sit bottom-left at `bottom: clamp(96px, 16vh, 170px)`, max-width 1000px, over a left-and-bottom ink shade. The end beat carries its own linear ink scrim (it sits over the brightest frames); `tests/contrast.mjs` holds every caption at 4.5:1 or better against the brightest footage behind it.
 - **Explore:** a 420vh section with one sticky 100svh stage holding three stacked families. Each family is a two-column grid (1.05fr text / 0.95fr arch, gap clamp(24px, 5vw, 80px)). At 820px and below the arch moves above the text at 38svh.
 - **Ordering:** max-width 1360px, three equal columns joined by a drawn fibre line; one column with a left rule at 820px and below.
 - **Enquire:** max-width 1120px; chat and ticket in a 1.5fr / 1fr grid, single column at 900px and below. Plain form rows are two columns, one at 640px and below.
@@ -340,7 +342,7 @@ The explore image frame (see Shapes). Two stacked photographs per family cross-f
 Inactive families are `inert` and hidden after 1.1s. Ambient blurred copies of the active photo fade in behind (1.2s).
 
 ### Beat captions
-Film captions whose opacity and lift (up to 28px) are written per frame from scroll progress with a 0.035 fade window; invisible beats get `visibility: hidden`. Without the motion class they render as a static stack under the poster (a still of the 3D grove, `assets/img/journey-poster.webp`, rendered by `tools/build-poster.mjs`).
+Film captions whose opacity and lift (up to 28px) are written per frame from scroll progress with a 0.035 fade window; invisible beats get `visibility: hidden`. Without the motion class they render as a static stack under a poster frame.
 
 ### Chapter bar
 Fixed bottom bar on an upward ink gradient. Links are labels in faint with a 14px tick; hover and `.on` turn cloud, and `.on` extends the tick to 28px in fibre (0.5s) and sets `aria-current="step"`. A 2px fibre bar scales with page progress. At 720px and below only the active label shows text. Hidden with no JS.
@@ -380,7 +382,7 @@ Under each family's arch in Explore: a glass pill (glass, 12px blur, line border
 - **Easings:** ease (expo-out) for nearly everything; ease-io for the arch clip and scroll cue. Motion.dev reveals use the same curve as an array `[0.16, 1, 0.3, 1]`.
 - **Durations in use:** 0.25s chips; 0.3s buttons and product chips; 0.4s chapter colour, bar fade, arrow disc; 0.45s message entry; 0.5s card lift, ticks, nodes, sheet entry; the product drawer moves with Motion: in on a spring (visual duration 0.5s, bounce 0.12), out on a 0.28s ease-in before the dialog closes (from the right on desktop, from below on phones; instant with reduced motion); 0.6s text fades and Motion reveals (stagger 0.08s); 0.7s Rifat reveal (stagger 0.1s); 0.8s text rise and card photo zoom; 0.9s ticket fill; 1.1s arch clip; 1.2s arch transform and ambient fade; loops at 1s (typing), 1.1s (sound bars), 1.6s (busy orb), 2.2s (scroll cue), 9 to 15s (orb).
 - **Scroll smoothing:** film progress lerps at 0.16 per frame, pointer tilt at 0.08.
-- **Reduced motion:** site.js does not add the `motion` class; the film becomes the poster with stacked captions and the 3D world is not downloaded, explore unpins into three full-height sections with one photo each, ambient layers, 3D studies and reveals are skipped, smooth scrolling is off and Rifat's pauses drop to zero. CSS also stops all looping animations and button/chip transitions.
+- **Reduced motion:** site.js does not add the `motion` class; the film becomes a poster with stacked captions, explore unpins into three full-height sections with one photo each, ambient layers, 3D studies and reveals are skipped, smooth scrolling is off and Rifat's pauses drop to zero. CSS also stops all looping animations and button/chip transitions.
 - **No JS:** the page reads as a document; header toggles, chapter bar and Rifat are hidden by `noscript`, the nav shows inline, and the plain form is the enquiry route.
 
 ## Do's and Don'ts
@@ -392,7 +394,7 @@ Under each family's arch in Explore: a glass pill (glass, 12px blur, line border
 - **Do** float panels as ink glass with blur and a line hairline; reserve fibre glow for hover and active states.
 - **Do** gate every scroll, pointer or looping effect behind the motion class and give it a static equivalent.
 - **Do** use dim or cloud for any text a buyer must read below 18px.
-- **Do** label illustrated, generated or unconfirmed media and product facts in place, as the film ("a 3D illustration") and study labels do.
+- **Do** label generated, stock or unconfirmed media and product facts in place, as the film and study labels do.
 
 ### Don't:
 - **Don't** set readable small text in faint; it measures 3.90:1 on the ground.

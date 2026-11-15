@@ -1,8 +1,9 @@
 // SB Trading sound: a generated score plus small tactile cues, all synthesised in the browser, no audio files.
 // Loaded only after the visitor presses Sound (the AudioContext is created inside that click).
-// The score (see "score" below) is a slow ambient piece in D major: a warm pad whose chord follows the chapter, soft
-// bamboo-mallet notes placed around the listener with HRTF, and moving air that rises with scroll speed. It sits under
-// the cues (tests/score.mjs measures it offline) and reports each note's position so the page can show it as light.
+// The score (see "score" below) is a Southeast Asian bamboo-and-bronze groove (gamelan and angklung) whose ensemble
+// follows the chapter, with air that rises with scroll speed. It sits under the cues (tests/score.mjs measures it
+// offline) and reports each gong and saron note's position so the page can show it as light. The film's sound design
+// (whoosh, beam, split, fibre, close, dome) is fired by the page at the matching frames.
 //   knock / knock-soft  a hollow bamboo knock (modal synthesis) when a material family opens
 //   hover               a short fibre brush when the pointer meets a product
 //   open                a deeper knock with a breath of air when a product sheet opens
@@ -95,151 +96,148 @@ export function createSoundEngine(ctx, { seed } = {}) {
   };
 
   // ------------------------------------------------------------------ score
-  // Seeded randomness, so the offline test hears the same piece every run.
+  // A Southeast Asian bamboo-and-bronze groove, after the gamelan and angklung of Indonesia and the tribal bamboo music
+  // of the region: a gong ageng closes every 16-beat cycle, kempul and kenong mark its quarters, two saron play a
+  // catchy balungan melody in slendro (five near-equal steps, 240 cents), bonang pairs interlock in fast kotekan
+  // (polos left, sangsih right), kendang drums drive it, angklung shakes bamboo tremolo on the accents and a suling
+  // (bamboo flute) answers. The chapter sets how much of the ensemble plays: sparse in the grove, the whole groove when
+  // the materials burst open. Seeded, so the offline test hears the same piece every run.
   let s = (seed ?? Math.random() * 2 ** 32) >>> 0;
   const rnd = () => { s = (s + 0x6d2b79f5) >>> 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  const hz = (m) => 440 * 2 ** ((m - 69) / 12);
   const realtime = !(typeof OfflineAudioContext !== 'undefined' && ctx instanceof OfflineAudioContext);
+  const ROOT_HZ = 146.83;                                         // D3
+  const sl = (deg, oct = 0) => ROOT_HZ * 2 ** (oct + (deg * 240) / 1200); // slendro degree -> Hz
+  const BEAT = 60 / 100, STEP = BEAT / 4;                         // 100 bpm, sixteenth-note steps
 
-  // Chords, all in D major so every change is consonant. pad: sustained voices; bells: the mallet notes' pool.
-  const CHORDS = {
-    0: { name: 'Dmaj9', pad: [50, 57, 64, 66, 73], bells: [74, 76, 78, 81, 85, 86] },   // Arrive: open, warm
-    1: { name: 'Bm11', pad: [47, 54, 62, 64, 69], bells: [71, 74, 76, 78, 81, 83] },    // Discover: inward
-    2: { name: 'Gmaj9#11', pad: [43, 50, 57, 61, 66], bells: [69, 71, 73, 74, 78, 81] }, // Transition: lift
-    e0: { name: 'Dadd9', pad: [50, 57, 62, 64, 69], bells: [74, 76, 78, 81, 83, 86] },   // Explore: bamboo
-    e1: { name: 'Em9', pad: [52, 59, 62, 66, 67], bells: [71, 74, 76, 78, 79, 83] },     // Explore: banana fibre
-    e2: { name: 'A6/9', pad: [45, 52, 61, 66, 71], bells: [69, 71, 73, 76, 78, 81] },    // Explore: banana leaves
-    4: { name: 'Dsus2', pad: [50, 57, 62, 64, 71], bells: [74, 76, 81, 83, 86] },        // Enquire: settle
+  // Each chapter: which voices play (0..1 level) and the eight-beat balungan (slendro degrees 0-4, -1 rest).
+  const SCENES = {
+    0: { name: 'grove', gong: 1, saron: 0.35, bonang: 0, kendang: 0, angklung: 0.7, suling: 1, bal: [2, -1, 3, -1, 2, -1, 0, -1] },
+    1: { name: 'beam', gong: 1, saron: 0.8, bonang: 0.35, kendang: 0.6, angklung: 0.5, suling: 0.6, bal: [3, 2, 3, 4, 2, 1, 2, 0] },
+    2: { name: 'materials', gong: 1, saron: 1, bonang: 1, kendang: 1, angklung: 0.8, suling: 0.8, bal: [2, 3, 4, 3, 1, 2, 3, 0] },
+    e0: { name: 'bamboo', gong: 1, saron: 0.8, bonang: 0.6, kendang: 0.7, angklung: 1, suling: 0.4, bal: [0, 2, 3, 2, 4, 3, 2, 0] },
+    e1: { name: 'banana fibre', gong: 1, saron: 0.8, bonang: 0.8, kendang: 0.6, angklung: 0.5, suling: 0.8, bal: [3, 4, 3, 2, 1, 2, 1, 0] },
+    e2: { name: 'banana leaves', gong: 1, saron: 0.7, bonang: 0.5, kendang: 0.5, angklung: 0.8, suling: 0.6, bal: [1, 2, 4, 2, 3, 1, 2, 0] },
+    4: { name: 'enquire', gong: 1, saron: 0.5, bonang: 0, kendang: 0.25, angklung: 0.4, suling: 0.7, bal: [2, -1, 1, -1, 3, -1, 0, -1] },
   };
+  // Kendang: d = dhung (low, open), t = tak (dry slap), k = ket (light), . = rest; one bar of 16 steps.
+  const KENDANG = 'd..t.dk.d.tkd.t.';
+  // Suling: an eight-beat phrase every other cycle, [beat, degree, octave, length in beats].
+  const SULING = [[0, 3, 1, 1.5], [1.5, 4, 1, 0.5], [2, 3, 1, 1], [3, 2, 1, 2], [5, 1, 1, 0.5], [5.5, 2, 1, 0.5], [6, 0, 1, 2]];
 
-  // A long, dark, decorrelated hall (separate from the cues' small room), so the score has space and width.
+  // A long, dark, decorrelated hall, so the score has space and width.
   const hall = ctx.createConvolver();
-  { const len = Math.round(ctx.sampleRate * 3.2), ir = ctx.createBuffer(2, len, ctx.sampleRate);
+  { const len = Math.round(ctx.sampleRate * 2.8), ir = ctx.createBuffer(2, len, ctx.sampleRate);
     for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); let lp = 0;
-      for (let i = 0; i < len; i++) { lp += (rnd() * 2 - 1 - lp) * 0.18; d[i] = lp * Math.pow(1 - i / len, 2.6); } }
+      for (let i = 0; i < len; i++) { lp += (rnd() * 2 - 1 - lp) * 0.22; d[i] = lp * Math.pow(1 - i / len, 2.8); } }
     hall.buffer = ir; }
   const musicBus = ctx.createGain(); musicBus.gain.value = 0;
   const analyser = ctx.createAnalyser(); analyser.fftSize = 1024;
   musicBus.connect(analyser).connect(master);
-  const hallIn = ctx.createGain(), hallOut = ctx.createGain(); hallOut.gain.value = 0.55;
+  const hallIn = ctx.createGain(), hallOut = ctx.createGain(); hallOut.gain.value = 0.5;
   hallIn.connect(hall).connect(hallOut).connect(musicBus);
-
-  // Pad: two detuned triangles per chord tone, each tone at its own place in the stereo field, breathing slowly.
-  const padFilter = ctx.createBiquadFilter(); padFilter.type = 'lowpass'; padFilter.frequency.value = 1100; padFilter.Q.value = 0.4;
-  const padLfo = ctx.createOscillator(), padLfoAmt = ctx.createGain();
-  padLfo.frequency.value = 0.045; padLfoAmt.gain.value = 320; padLfo.connect(padLfoAmt).connect(padFilter.frequency);
-  const padOut = ctx.createGain(); padOut.gain.value = 1;
-  padFilter.connect(padOut); padOut.connect(musicBus);
-  const padSend = ctx.createGain(); padSend.gain.value = 0.35; padOut.connect(padSend).connect(hallIn);
-
-  function padChord(chord, t) {
-    const group = ctx.createGain();
-    group.gain.setValueAtTime(0, t); group.gain.linearRampToValueAtTime(1, t + 3.5);
-    group.connect(padFilter);
-    const oscs = [];
-    chord.pad.forEach((m, k) => {
-      const voice = ctx.createGain(), base = 0.016 * (k === 0 ? 1.3 : 1);
-      voice.gain.value = base;
-      const pan = ctx.createStereoPanner(); pan.pan.value = [-0.15, 0.55, -0.6, 0.35, -0.3, 0.7][k % 6];
-      voice.connect(pan).connect(group);
-      for (const cents of [-6, 7]) {
-        const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = hz(m); o.detune.value = cents;
-        o.connect(voice); o.start(t); oscs.push(o);
-      }
-      const breath = ctx.createOscillator(), depth = ctx.createGain();
-      breath.frequency.value = 0.06 + k * 0.017; depth.gain.value = base * 0.35;
-      breath.connect(depth).connect(voice.gain); breath.start(t); oscs.push(breath);
-    });
-    const sub = ctx.createOscillator(), subG = ctx.createGain();       // a soft sine an octave under the root, for warmth
-    sub.frequency.value = hz(chord.pad[0] - 12); subG.gain.value = 0.03;
-    sub.connect(subG).connect(group); sub.start(t); oscs.push(sub);
-    return { group, oscs };
+  const voiceBus = {};
+  for (const [k, pan, send] of [['gong', 0, 0.6], ['saronL', -0.35, 0.35], ['saronR', 0.35, 0.35], ['polos', -0.6, 0.3], ['sangsih', 0.6, 0.3], ['kendang', 0.1, 0.12], ['angklung', -0.2, 0.4], ['suling', 0.25, 0.55]]) {
+    const p = ctx.createStereoPanner(); p.pan.value = pan;
+    const g = ctx.createGain(), r = ctx.createGain(); r.gain.value = send;
+    p.connect(g).connect(musicBus); p.connect(r).connect(hallIn);
+    voiceBus[k] = p;
   }
 
-  // Air: filtered noise circling the listener (HRTF), louder and brighter while the visitor scrolls fast.
-  const airSrc = ctx.createBufferSource(); airSrc.buffer = noise; airSrc.loop = true;
-  const airBand = ctx.createBiquadFilter(); airBand.type = 'bandpass'; airBand.frequency.value = 650; airBand.Q.value = 0.7;
-  const airGain = ctx.createGain(); airGain.gain.value = 0.02;
-  const airPan = place(ctx.createPanner(), 0, 0, -2);
-  airSrc.connect(airBand).connect(airGain).connect(airPan).connect(musicBus);
-  let orbiters = null;
-  if (airPan.positionX) {                              // the circle: a sine on x, a cosine on z, one turn per 40 s
-    const orbit = (real, imag, param) => { const o = ctx.createOscillator(), g = ctx.createGain();
-      o.setPeriodicWave(ctx.createPeriodicWave(new Float32Array(real), new Float32Array(imag))); o.frequency.value = 0.025;
-      g.gain.value = 2.4; o.connect(g).connect(param); return o; };
-    airPan.positionX.value = 0; airPan.positionZ.value = 0;
-    orbiters = [orbit([0, 0], [0, 1], airPan.positionX), orbit([0, 1], [0, 0], airPan.positionZ)];
-  }
-
-  function place(p, x, y, z) {
-    p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 1; p.rolloffFactor = 0.5;
-    if (p.positionX) { p.positionX.value = x; p.positionY.value = y; p.positionZ.value = z; } else p.setPosition(x, y, z);
-    return p;
-  }
-
-  // Bamboo mallet: a marimba-like bar (fundamental, the 3.9x and 10x modes) with a felt-soft attack.
-  function mallet(out, f, amp, t) {
-    for (const [r, a, d] of [[1, 1, 2.4], [3.93, 0.22, 0.42], [10.1, 0.05, 0.1]]) {
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.frequency.value = f * r;
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp * a, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-      o.connect(g).connect(out); o.start(t); o.stop(t + d + 0.05);
+  // Bronze: inharmonic partials; each bar is a pair tuned a few hertz apart, so it shimmers (the gamelan "ombak").
+  function bronze(out, f, amp, t, { decay = 1.6, modes = [[1, 1], [2.76, 0.32], [5.4, 0.12]], beat = 5 } = {}) {
+    for (const [r, a] of modes) for (const d of [0, beat]) {
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = f * r + d;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp * a * 0.5, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + decay / Math.sqrt(r));
+      o.connect(g).connect(out); o.start(t); o.stop(t + decay / Math.sqrt(r) + 0.05);
     }
-    burst(out, { dur: 0.02, freq: 1200, q: 0.7, amp: amp * 0.25, t, type: 'lowpass', attack: 0.004 });
+    burst(out, { dur: 0.015, freq: 3200, q: 0.9, amp: amp * 0.3, t });
+  }
+  function gong(f, amp, t, decay = 6) {                       // big gong: slow swell, low beating, long ring
+    const out = voiceBus.gong;
+    for (const [r, a] of [[1, 1], [1.5, 0.25], [2.02, 0.35], [2.98, 0.12]]) for (const d of [0, 0.7]) {
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.value = f * r + d;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp * a * 0.5, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + decay / r);
+      o.connect(g).connect(out); o.start(t); o.stop(t + decay / r + 0.05);
+    }
+  }
+  function drum(kind, amp, t) {                               // kendang: a pitched skin, or a dry slap
+    const out = voiceBus.kendang;
+    if (kind === 'd') {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(78, t + 0.18);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+      o.connect(g).connect(out); o.start(t); o.stop(t + 0.35);
+      burst(out, { dur: 0.03, freq: 900, q: 0.8, amp: amp * 0.35, t, type: 'lowpass' });
+    } else burst(out, { dur: kind === 't' ? 0.07 : 0.04, freq: kind === 't' ? 1900 : 3200, q: 1.6, amp: amp * (kind === 't' ? 0.9 : 0.45), t });
+  }
+  function angklung(f, amp, t, len) {                         // bamboo tubes shaken: a fast tremolo of hollow knocks
+    for (let k = 0, n = Math.floor(len / 0.06); k < n; k++) knock(voiceBus.angklung, f * (k % 2 ? 2 : 1), amp * (0.6 + 0.4 * Math.sin((k / n) * Math.PI)), t + k * 0.06);
+  }
+  function suling(f, amp, t, len) {                           // bamboo flute: a sine with breath and late vibrato
+    const out = voiceBus.suling, o = ctx.createOscillator(), g = ctx.createGain(), vib = ctx.createOscillator(), vd = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = f; vib.frequency.value = 5.2; vd.gain.setValueAtTime(0, t); vd.gain.linearRampToValueAtTime(f * 0.012, t + len * 0.8);
+    vib.connect(vd).connect(o.frequency);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp, t + 0.08); g.gain.setValueAtTime(amp, t + len * 0.85); g.gain.linearRampToValueAtTime(0, t + len);
+    o.connect(g).connect(out); o.start(t); vib.start(t); o.stop(t + len + 0.05); vib.stop(t + len + 0.05);
+    burst(out, { dur: Math.min(0.25, len), freq: 1800, to: 2600, q: 1.2, amp: amp * 0.18, t, attack: 0.04 });
   }
 
-  let musicOn = false, started = false, current = null, padNow = null, nextNote = 0, lastBell = -1;
-  const timeline = [];                                  // [{ t, key }] so notes scheduled ahead use the right chord
+  let musicOn = false, started = false, current = null, step = 0, nextStep = 0;
+  const timeline = [];
   const listeners = [];
-  const chordAt = (t) => { let k = timeline[0]?.key ?? 0; for (const e of timeline) if (e.t <= t) k = e.key; return CHORDS[k]; };
+  const sceneAt = (t) => { let k = timeline[0]?.key ?? 0; for (const e of timeline) if (e.t <= t) k = e.key; return SCENES[k]; };
+  const report = (t, x, y, v, sc) => { const n = { at: t, x, y, v, chord: sc.name }; for (const fn of listeners) fn(n); };
 
-  function note(t, chord, v) {
-    let k; do k = Math.floor(rnd() * chord.bells.length); while (k === lastBell && chord.bells.length > 1);
-    lastBell = k;
-    const az = (rnd() * 2 - 1) * 1.15, dist = 1.4 + rnd() * 1.6, el = rnd() * 0.6 - 0.1; // azimuth in radians
-    const p = place(ctx.createPanner(), Math.sin(az) * dist, el, -Math.cos(az) * dist);
-    const send = ctx.createGain(); send.gain.value = 0.7;
-    p.connect(musicBus); p.connect(send).connect(hallIn);
-    mallet(p, hz(chord.bells[k]), 0.07 * v, t);
-    const n = { at: t, x: Math.min(1, Math.max(0, 0.5 + az / 2.6)), y: Math.min(1, Math.max(0, 0.42 - el * 0.5)), v, chord: chord.name };
-    for (const f of listeners) f(n);
+  function playStep(t) {
+    const sc = sceneAt(t), inBar = step % 16, beat = Math.floor(step / 4), inCycle = beat % 16, onBeat = inBar % 4 === 0;
+    if (step % 64 === 0 && sc.gong) { gong(ROOT_HZ / 2, 0.16 * sc.gong, t); report(t, 0.5, 0.62, 1, sc); }
+    if (onBeat && (inCycle === 4 || inCycle === 12) && sc.gong) gong(sl(3, -1), 0.06 * sc.gong, t, 2.8);           // kempul
+    if (onBeat && inCycle === 8 && sc.gong) bronze(voiceBus.gong, sl(1), 0.08 * sc.gong, t, { decay: 2.4, beat: 3 }); // kenong
+    if (onBeat && sc.saron) {
+      const deg = sc.bal[beat % 8];
+      if (deg >= 0) {
+        bronze(voiceBus.saronL, sl(deg, 1), 0.07 * sc.saron, t); bronze(voiceBus.saronR, sl(deg, 1), 0.045 * sc.saron, t + 0.012);
+        report(t, 0.3 + deg * 0.1, 0.38 + rnd() * 0.1, sc.saron, sc);
+      }
+    }
+    if (sc.bonang) {                                       // kotekan: polos on 1 and 3 of each four, sangsih fills between
+      const next = sc.bal[(beat + 1) % 8] >= 0 ? sc.bal[(beat + 1) % 8] : 2, k = inBar % 4;
+      const polos = [next, next + 1, next, next + 1][k] % 5, sangsih = [next + 2, next + 1, next + 2, next][k] % 5;
+      if (k % 2 === 0) bronze(voiceBus.polos, sl(polos, 2), 0.028 * sc.bonang, t, { decay: 0.5, beat: 4 });
+      else bronze(voiceBus.sangsih, sl(sangsih, 2), 0.026 * sc.bonang, t, { decay: 0.5, beat: 4 });
+    }
+    if (sc.kendang) { const c = KENDANG[inBar]; if (c !== '.') drum(c, 0.16 * sc.kendang * (inBar === 0 ? 1.2 : 1), t); }
+    if (sc.angklung && onBeat && (inCycle === 3 || inCycle === 7 || inCycle === 11 || inCycle === 15)) angklung(sl(sc.bal[beat % 8] >= 0 ? sc.bal[beat % 8] : 2, 1), 0.05 * sc.angklung, t, BEAT * 0.9);
+    if (sc.suling && step % 128 === 32) for (const [b, d, o, l] of SULING) suling(sl(d, o), 0.03 * sc.suling, t + b * BEAT, l * BEAT * 0.95);
   }
 
-  // Schedules mallet notes up to time `until`: unhurried, sometimes a short figure of two or three notes.
   function schedule(until) {
     if (!musicOn) return;
-    nextNote = Math.max(nextNote, ctx.currentTime + 0.05);
-    while (nextNote < until) {
-      const chord = chordAt(nextNote), figure = rnd() < 0.3 ? 2 + Math.floor(rnd() * 2) : 1;
-      for (let i = 0; i < figure; i++) note(nextNote + i * 0.24, chord, 0.6 + rnd() * 0.4 - i * 0.12);
-      nextNote += 1.4 + rnd() * 2.4;
-    }
+    nextStep = Math.max(nextStep, ctx.currentTime + 0.05);
+    while (nextStep < until) { playStep(nextStep); step++; nextStep += STEP; }
   }
 
   function scene({ chapter = 0, family = 0 } = {}, at) {
-    const key = chapter === 3 ? `e${Math.max(0, Math.min(2, family))}` : CHORDS[chapter] ? chapter : 0;
+    const key = chapter === 3 ? `e${Math.max(0, Math.min(2, family))}` : SCENES[chapter] ? chapter : 0;
     if (key === current) return;
     current = key;
-    const t = at ?? ctx.currentTime;
-    timeline.push({ t, key });
-    if (!started) return;                               // the pad is built when the music first starts
-    const next = padChord(CHORDS[key], t + 0.05), old = padNow;
-    padNow = next;
-    if (old) {
-      old.group.gain.cancelScheduledValues(t); old.group.gain.setValueAtTime(old.group.gain.value, t);
-      old.group.gain.linearRampToValueAtTime(0, t + 4);
-      old.oscs.forEach((o) => o.stop(t + 4.2));
-    }
+    timeline.push({ t: at ?? ctx.currentTime, key });
   }
 
-  function music(on, at, fade = on ? 4 : 1.5) {               // fade: seconds to full level, or to silence
+  // Air: filtered noise that rises with scroll speed.
+  const airSrc = ctx.createBufferSource(); airSrc.buffer = noise; airSrc.loop = true;
+  const airBand = ctx.createBiquadFilter(); airBand.type = 'bandpass'; airBand.frequency.value = 650; airBand.Q.value = 0.7;
+  const airGain = ctx.createGain(); airGain.gain.value = 0.012;
+  airSrc.connect(airBand).connect(airGain).connect(hallIn);
+
+  function music(on, at, fade = on ? 3 : 1.5) {               // fade: seconds to full level, or to silence
     const t = at ?? ctx.currentTime;
     if (on && !started) {
       started = true;
       if (current === null) scene({ chapter: 0 }, t);
-      padNow = padChord(chordAt(t), t);
-      padLfo.start(t); airSrc.start(t); orbiters?.forEach((o) => o.start(t));
-      nextNote = t + 1.2;
+      airSrc.start(t); nextStep = t + 0.3; step = 0;
     }
     musicOn = on;
     musicBus.gain.cancelScheduledValues(t);
@@ -247,7 +245,41 @@ export function createSoundEngine(ctx, { seed } = {}) {
     musicBus.gain.linearRampToValueAtTime(on ? 1 : 0, t + fade);
   }
 
-  if (realtime) setInterval(() => { if (musicOn && ctx.state === 'running') schedule(ctx.currentTime + 1.5); }, 400);
+  if (realtime) setInterval(() => { if (musicOn && ctx.state === 'running') schedule(ctx.currentTime + 0.6); }, 150);
+
+  // Film sound design, fired by the page as the scroll crosses each moment of the film (site.js FILM_CUES).
+  Object.assign(cues, {
+    whoosh(x, t) { const out = bus(x, 0.5); burst(out, { dur: 1.1, freq: 300, to: 4200, q: 0.9, amp: 0.22, t, attack: 0.5 }); },
+    beam(x, t) {                                             // the beam lights: a deep boom and a rising cold shimmer
+      const out = bus(0.5, 0.6), o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(38, t + 1.4);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+      o.connect(g).connect(out); o.start(t); o.stop(t + 1.9);
+      for (let k = 0; k < 6; k++) partial(out, 1318.5 * 2 ** (k * 0.2), 0.025, 1.6, t + 0.15 + k * 0.08);
+    },
+    split(x, t) {                                            // bamboo cracking open, then the gold inside rings
+      const out = bus(0.5, 0.45);
+      burst(out, { dur: 0.09, freq: 2600, to: 900, q: 0.7, amp: 0.55, t });
+      for (let k = 1; k < 5; k++) burst(out, { dur: 0.05, freq: 1800 + k * 300, q: 2, amp: 0.25 / k, t: t + k * 0.035 });
+      knock(out, 180, 0.5, t); knock(out, 120, 0.4, t + 0.03);
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(55, t); o.frequency.exponentialRampToValueAtTime(32, t + 0.9);
+      g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2); o.connect(g).connect(out); o.start(t); o.stop(t + 1.25);
+      for (let k = 0; k < 4; k++) partial(out, 880 * [1, 1.26, 1.5, 2][k], 0.04, 1.4, t + 0.25 + k * 0.06);
+    },
+    fibre(x, t) {                                            // the strands swirl: a swept, circling rush with sparks
+      const out = bus(0.5, 0.5);
+      burst(out, { dur: 1.8, freq: 400, to: 5200, q: 3, amp: 0.2, t, attack: 0.6 });
+      burst(out, { dur: 1.6, freq: 5200, to: 700, q: 3, amp: 0.12, t: t + 0.4, attack: 0.5 });
+      for (let k = 0; k < 10; k++) partial(bus(rnd(), 0.4), 2200 + rnd() * 2600, 0.018, 0.25, t + 0.3 + rnd() * 1.3);
+    },
+    close(x, t) { const out = bus(0.4, 0.5); burst(out, { dur: 0.8, freq: 1200, to: 300, q: 0.8, amp: 0.12, t, type: 'lowpass', attack: 0.2 }); },
+    dome(x, t) {                                             // the dome opens to daylight: a bright glassy bloom
+      const out = bus(0.5, 0.7);
+      burst(out, { dur: 1.4, freq: 600, to: 6000, q: 0.6, amp: 0.16, t, type: 'highpass', attack: 0.7 });
+      [0, 2, 3, 4, 1].forEach((d, k) => partial(out, sl(d, 3), 0.04, 2.2, t + 0.5 + k * 0.09));
+      gong(ROOT_HZ / 2, 0.14, t + 0.5, 5);
+    },
+  });
 
   const scratch = new Float32Array(analyser.fftSize);
   let air = 0;
@@ -256,7 +288,7 @@ export function createSoundEngine(ctx, { seed } = {}) {
     music,
     scene,
     schedule,
-    /** Registers fn({ at, x, y, v, chord }) for every scheduled mallet note; x, y in 0..1 across the view. */
+    /** Registers fn({ at, x, y, v, chord }) for every gong and saron note; x, y in 0..1 across the view; chord names the scene. */
     onNote(fn) { listeners.push(fn); },
     /** Scroll speed 0..1: the air grows louder and brighter with it. */
     motion(speed) {
@@ -264,7 +296,7 @@ export function createSoundEngine(ctx, { seed } = {}) {
       if (Math.abs(v - air) < 0.03) return;
       air = v;
       const t = ctx.currentTime;
-      airGain.gain.setTargetAtTime(0.02 + v * 0.07, t, 0.25);
+      airGain.gain.setTargetAtTime(0.012 + v * 0.05, t, 0.25);
       airBand.frequency.setTargetAtTime(650 + v * 1900, t, 0.25);
     },
     /** The score's level now, 0..1 (RMS mapped from -50..-20 dBFS), for the page's light. */

@@ -23,7 +23,7 @@ const ORIGIN = `http://127.0.0.1:${server.address().port}`;
 
 // kind: media (pictures and film), text, control (buttons, links, inputs), chrome (header, bars, labels), panel
 const PARTS = [
-  ['.world', 'Film: real-time 3D journey (three.js), full bleed', 'media'],
+  ['.film-canvas', 'Film: scroll-scrubbed footage, full bleed', 'media'],
   ['.dust', 'Gold dust (drawn over the film)', 'none'],
   ['.top', 'Header', 'chrome', ''],
   ['.brand', 'SB mark', 'control', 'SB'],
@@ -38,7 +38,7 @@ const PARTS = [
   ['.scroll-ring', 'Scroll ring: fills as the film begins', 'control'],
   ['#film .beat:not(.beat-hero) h2', 'Caption', 'text'],
   ['.fam-cards', 'Family cards ×3: Bamboo · Banana fibre yarn · Bark and leaves', 'control'],
-  ['.film-label', 'Label: a 3D illustration, not SB Trading’s own', 'chrome'],
+  ['.film-label', 'Source label (names each shot)', 'chrome'],
   ['.fam.on .fam-text h3', 'Family name', 'text'],
   ['.fam.on .fam-lede', 'Family lede', 'text'],
   ['.fam.on .products', 'Product chips (open the spec drawer)', 'control'],
@@ -74,9 +74,9 @@ const FRAMES = [
   { id: 'arrive', chapter: '01 Arrive', title: 'The grove', go: filmAt(0), wait: 2500,
     note: 'The film opens in darkness, as the owner’s showroom video does: first light between bamboo, gold dust in the light shafts. The title, the three facts and the two actions sit on the left (lower on phones). Scrolling is the camera walking forward through the grove.' },
   { id: 'discover', chapter: '02 Discover', title: 'Into the light', go: filmAt(0.27), wait: 2500,
-    note: 'The camera walks out of the grove into a bright round showroom under a skylight: the fog lifts from forest dark to warm white, and the header, captions and chapter bar turn to ink. One short caption at a time on its own soft scrim.' },
-  { id: 'transition', chapter: '03 Transition', title: 'The materials, then the gallery', go: filmAt(0.95), wait: 2500,
-    note: 'In the showroom a bamboo pole splits open on its pedestal; a banana stem’s fibres peel off, twist and wind into a yarn ball; banana bark and leaves turn in gold and blue light threads. The journey ends at three lit glass cases. Caption Bamboo, yarn and bark. with three family cards that go straight to each family in Explore.' },
+    note: 'The grove opens onto a bright showroom; then the material up close: wet bamboo, fibres lifting, the golden twist. One short caption at a time, each on its own soft scrim so the footage keeps its light; the source label names the footage as generated.' },
+  { id: 'transition', chapter: '03 Transition', title: 'The gallery', go: filmAt(0.95), wait: 2500,
+    note: 'The film ends in the reference’s gallery of three lit, numbered cases. Caption Bamboo, yarn and bark. with three family cards that go straight to each family in the showroom.' },
   { id: 'explore', chapter: '04 Explore', title: 'A family on stage', go: exploreAt(0.15), wait: 2500,
     note: 'A bright showroom straight after the film’s gallery: warm white walls, ink text, brand-blue accents; it dims to dusk as it leaves. One pinned stage, three families in turn. Text and product chips on the left; on the right, an arch window with the family’s photograph drawn in depth (it tilts with the pointer). Under the arch, a plinth carries the family’s number (01 / 03), its name and arrows to the families either side. On phones the arch and plinth sit above the text.' },
   { id: 'drawer', chapter: '04 Explore', title: 'The spec drawer', go: exploreAt(0.15), wait: 2000, click: '.fam.on .product', after: 1500,
