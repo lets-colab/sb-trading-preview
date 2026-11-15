@@ -327,6 +327,7 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
       const res = await fetch(endpoint, { signal: ctrl.signal }); clearTimeout(t);
       const data = res.ok && /json/.test(res.headers.get('content-type') || '') ? await res.json() : null;
       setMode(data?.ai ? 'ai' : 'guide');
+      if (data?.ai && data.provider === 'gemini') modeLabel.textContent = 'AI assistant · online · Google Gemini (free tier): Google may use messages to improve its models, so share only business details';
     } catch (e) { setMode('guide'); } // no function on this host (local preview): guided mode
     await greet();
   }

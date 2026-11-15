@@ -529,7 +529,7 @@ function updateTray(enquiry) {
   if (list.length > trayN && !reduced) { tray.classList.remove('bump'); void tray.offsetWidth; tray.classList.add('bump'); }
   trayN = list.length;
 }
-const rifat = createRifat({ root: $('#rifat'), whatsapp: document.body.dataset.whatsapp || '', cue: sound.cue, reduced, onChange: updateTray });
+const rifat = createRifat({ root: $('#rifat'), whatsapp: document.body.dataset.whatsapp || '', endpoint: document.body.dataset.rifatEndpoint || 'api/rifat', cue: sound.cue, reduced, onChange: updateTray });
 tray.addEventListener('click', (e) => { e.preventDefault(); const t = $('#enquire'); if (lenis) lenis.scrollTo(t, { offset: -40 }); else t.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); });
 
 // ------------------------------------------------------------------ product sheet

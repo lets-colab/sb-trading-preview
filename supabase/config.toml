@@ -1,0 +1,4 @@
+# Supabase project settings used by `supabase functions deploy`. Rifat is called by the public site without a Supabase
+# login, so JWT verification is off for it; CORS (ALLOWED_ORIGINS) limits which websites may call it.
+[functions.rifat]
+verify_jwt = false
