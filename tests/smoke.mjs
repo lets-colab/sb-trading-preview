@@ -60,7 +60,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   { // the label follows the frame actually on the canvas: with frames 1-30 failing to load, frame 30 is drawn from the
     // nearest loaded frame and the label still names that frame's source (Codex finding on #16)
     const q = await ctx.newPage();
-    await q.route(/\/assets\/film\/[dm]\/0(0[1-9]|[12][0-9]|30)\.webp$/, (r) => r.abort());
+    await q.route(/\/assets\/film\/[dm]\/0(0[1-9]|[12][0-9]|30)\.webp(\?|$)/, (r) => r.abort());
     await q.goto(ORIGIN + '/'); await q.waitForTimeout(2500);
     await q.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * (29 / 195)); });
     await q.waitForFunction(() => /generated footage, not/i.test(document.querySelector('.film-label').textContent), null, { timeout: 15000 }).catch(() => {});
@@ -68,34 +68,69 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     check(/generated footage, not SB Trading's own/.test(t) && !/Pexels/.test(t), `${name}: the label follows the frame drawn, not the frame asked for (${t})`);
     await q.close();
   }
-  { // the specimen card drawn into the beam shot is blurred out of the footage; a real card with SB Trading's facts and
-    // working buttons sits where it was (desktop: it follows the drawn card's track; phone: pinned near the bottom)
-    const cardAt = async (q) => {
-      await p.evaluate((x) => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * x); }, q);
-      await p.waitForTimeout(1600);
-      return p.evaluate(() => { const c = document.querySelector('.spec-card'), r = c.getBoundingClientRect(), cs = getComputedStyle(c);
-        return { shown: cs.visibility === 'visible' && Number(cs.opacity) > 0.9, top: r.top / innerHeight, left: r.left / innerWidth, right: r.right / innerWidth, bottom: r.bottom / innerHeight,
-          text: c.innerText.replace(/\s+/g, ' ').trim(), links: [...c.querySelectorAll('a')].map((a) => a.getAttribute('href')) }; });
-    };
-    const a = await cardAt(0.3), b = await cardAt(0.65);
-    const placed = touch ? a.bottom <= 0.98 && a.top > 0.45 : a.left > 0.2 && a.right < 0.85 && a.top > 0.5 && a.bottom <= 1.001;
-    check(a.shown && placed && /Origin Bangladesh/i.test(a.text) && /Families 03/i.test(a.text) && /Products 09/i.test(a.text) && !/Banglies|Dadoin/i.test(a.text) && a.links.join() === '#explore,#enquire',
-      `${name}: in the beam a real specimen card (Bangladesh, 03 families, 09 products, Explore, Ask Rifat) covers the drawn one (${JSON.stringify(a)})`);
-    check(!b.shown, `${name}: the card leaves once the specimen splits open (${JSON.stringify({ shown: b.shown })})`);
-  }
-  { // the footage says "hold or scroll to split": in the beam, pressing and holding on the film plays it forward to the split
-    await p.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * 0.3); });
-    await p.waitForTimeout(1200);
-    const prog = () => p.evaluate(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return -r.top / (r.height - innerHeight); });
-    const before = await prog();
-    const box = await p.evaluate(() => { const r = document.querySelector('.film-stage').getBoundingClientRect(); return { x: r.width * 0.5, y: r.height * 0.3 }; });
-    if (touch) { await p.touchscreen.tap(box.x, box.y); } // a phone has no mouse; holding there is a long touch, tested by hand
-    else { await p.mouse.move(box.x, box.y); await p.mouse.down(); await p.waitForTimeout(3000); await p.mouse.up(); }
-    await p.waitForTimeout(400);
-    const after = await prog();
-    if (!touch) check(before < 0.35 && after > 0.55 && after < 0.65, `${name}: holding on the beam plays the film forward to the split (${before.toFixed(2)} -> ${after.toFixed(2)})`);
-    const hint = await p.evaluate(() => document.querySelector('.spec-hint').textContent.trim());
-    check(/hold or scroll/i.test(hint), `${name}: the card says how to split it (${hint})`);
+  { // the film is a journey after hatom.com: a gate drawn in fine lines, then a clean picture where only rings on the
+    // materials, one subtitle line and small edge labels sit over the footage. Its own page, so Sound starts off below.
+    const q = await ctx.newPage();
+    await q.goto(ORIGIN + '/'); await q.waitForTimeout(3800);
+    const prog = () => q.evaluate(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return +(-r.top / (r.height - innerHeight)).toFixed(3); });
+    const gate = await q.evaluate(() => {
+      const g = document.querySelector('.gate'), lines = [...g.querySelectorAll('.gate-art .ln')];
+      const drawn = lines.filter((l) => parseFloat(getComputedStyle(l).strokeDashoffset) < 0.02).length;
+      const visible = (el) => { if (!el) return false; const r = el.getBoundingClientRect(), cs = getComputedStyle(el); return r.width > 2 && r.height > 2 && cs.visibility !== 'hidden' && Number(cs.opacity) > 0.05; };
+      return { title: g.querySelector('h1').textContent.trim(), enter: visible(g.querySelector('.gate-enter')) && g.querySelector('.gate-enter').textContent.trim(), lines: lines.length, drawn,
+        foot: /headphones/i.test(g.querySelector('.gate-foot').textContent), card: !!document.querySelector('.spec-card'),
+        captions: [...document.querySelectorAll('#film .beat[data-ch]')].filter(visible).length, cards: visible(document.querySelector('#film .fam-cards')),
+        inFilm: document.documentElement.classList.contains('in-film'), bar: Number(getComputedStyle(document.querySelector('.chapters')).opacity), ask: Number(getComputedStyle(document.querySelector('.top > .btn-small')).opacity) };
+    });
+    check(gate.title === 'Materials in Motion.' && gate.enter === 'Click to enter' && gate.lines > 40 && gate.drawn === gate.lines && gate.foot,
+      `${name}: the film opens on a gate drawn in fine lines, with its title and "Click to enter" (${JSON.stringify({ title: gate.title, enter: gate.enter, lines: gate.lines, drawn: gate.drawn })})`);
+    check(!gate.card && gate.captions === 0 && !gate.cards && gate.inFilm && gate.bar === 0 && gate.ask === 0,
+      `${name}: nothing is laid over the picture: no card, no captions, no family cards, and the chapter bar and Ask Rifat step aside (${JSON.stringify(gate)})`);
+    // "Click to enter" is the gesture that turns Sound on; the camera flies to the first chapter as the narrator speaks
+    await q.click('.gate-enter');
+    await q.waitForFunction(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return Math.abs(-r.top / (r.height - innerHeight) - 0.16) < 0.004; }, null, { timeout: 8000 }).catch(() => {});
+    await q.waitForFunction(() => document.querySelector('.hud-name').textContent !== '', null, { timeout: 5000 }).catch(() => {}); // the film eases in after the scroll
+    const grove = await q.evaluate(() => ({ ac: window.__ac, sound: document.getElementById('soundToggle').getAttribute('aria-pressed'), sub: document.querySelector('.subtitle').textContent.trim(), on: document.querySelector('.subtitle').classList.contains('on'),
+      voice: window.__story?.src.includes('/assets/voice/ch-grove.mp3') && !window.__story.paused, idx: document.querySelector('.hud-name').textContent }));
+    check(grove.ac === 1 && grove.sound === 'true' && (await prog()) > 0.155 && grove.on && /^It starts as a living plant\. From Bangladesh/.test(grove.sub) && grove.voice && grove.idx === 'The grove',
+      `${name}: "Click to enter" turns Sound on and flies to the grove as the narrator speaks it, with its subtitle (${JSON.stringify(grove)})`);
+    // "Click to continue" flies to the next chapter
+    await q.click('.hud-next');
+    await q.waitForFunction(() => document.querySelector('.hud-name').textContent === 'The specimen' && /^Origin: Bangladesh/.test(document.querySelector('.subtitle').textContent), null, { timeout: 8000 }).catch(() => {});
+    await q.waitForTimeout(2600);
+    const spec = await q.evaluate(() => { const s = document.querySelector('.spot.on'); return { p: 0, idx: document.querySelector('.hud-n').textContent, sub: document.querySelector('.subtitle').textContent.trim(), plate: s?.classList.contains('cover') && s.textContent.trim() }; });
+    spec.p = await prog();
+    check(Math.abs(spec.p - 0.33) < 0.004 && spec.idx === '02' && /^Origin: Bangladesh\. Three families, nine products\./.test(spec.sub) && /Click to open/.test(spec.plate || ''),
+      `${name}: "Click to continue" flies to the specimen, whose plate over the footage's own prompt says "Click to open" (${JSON.stringify(spec)})`);
+    // the specimen's plate opens it: the camera flies to the materials and their rings appear
+    await q.click('.spot.on.cover');
+    await q.waitForFunction(() => document.querySelector('.hud-name').textContent === 'Opened', null, { timeout: 8000 }).catch(() => {});
+    await q.waitForTimeout(2600);
+    const split = await q.evaluate(() => ({ rings: [...document.querySelectorAll('.spot.on .spot-name')].map((e) => e.textContent), tabbable: [...document.querySelectorAll('.spot.on')].every((s) => s.tabIndex === 0) && [...document.querySelectorAll('.spot:not(.on)')].every((s) => s.tabIndex === -1) }));
+    const want = touch ? ['Bamboo', 'Banana fibre'] : ['Bamboo', 'Banana fibre', 'Bark and leaves'];
+    check(Math.abs((await prog()) - 0.555) < 0.004 && want.every((w) => split.rings.includes(w)) && split.tabbable,
+      `${name}: the specimen opens onto the materials, each with its ring, reachable by keyboard only while shown (${JSON.stringify(split)})`);
+    // a ring tells that material's story, with its words as the subtitle; pressing again stops it
+    await q.click('.spot.on[data-key="bamboo"]');
+    await q.waitForTimeout(1200);
+    const told = await q.evaluate(() => ({ pressed: document.querySelector('.spot.on[data-key="bamboo"]').getAttribute('aria-pressed'), sub: document.querySelector('.subtitle').textContent.trim(), voice: window.__story?.src.includes('/assets/voice/bamboo.mp3') && !window.__story.paused }));
+    await q.click('.spot.on[data-key="bamboo"]'); await q.waitForTimeout(400);
+    const hushed = await q.evaluate(() => ({ pressed: document.querySelector('.spot.on[data-key="bamboo"]').getAttribute('aria-pressed'), playing: !!window.__story && !window.__story.paused, on: document.querySelector('.subtitle').classList.contains('on') }));
+    check(told.pressed === 'true' && /^In Bangladesh, bamboo has held up homes/.test(told.sub) && told.voice && hushed.pressed === 'false' && !hushed.playing && !hushed.on,
+      `${name}: the bamboo ring tells bamboo's story with subtitles, and stops on a second press (${JSON.stringify({ told, hushed })})`);
+    // a click anywhere on the picture moves on
+    const stage = await q.evaluate(() => { const r = document.querySelector('.film-stage').getBoundingClientRect(); return { x: r.width * 0.5, y: r.height * 0.2 }; });
+    if (touch) await q.touchscreen.tap(stage.x, stage.y); else await q.mouse.click(stage.x, stage.y);
+    await q.waitForFunction(() => document.querySelector('.hud-name').textContent === 'Banana fibre', null, { timeout: 8000 }).catch(() => {});
+    await q.waitForTimeout(2600);
+    check(Math.abs((await prog()) - 0.66) < 0.004, `${name}: a click on the picture flies to the next chapter (${await prog()})`);
+    // after the last chapter, "Continue to the materials" leaves the film for Explore, and stays there
+    for (const ch of ['Bark and leaves', 'Together']) { await q.click('.hud-next'); await q.waitForFunction((c) => document.querySelector('.hud-name').textContent === c, ch, { timeout: 8000 }).catch(() => {}); await q.waitForTimeout(2600); }
+    const last = await q.evaluate(() => document.querySelector('.hud-next').textContent.trim());
+    await q.click('.hud-next'); await q.waitForTimeout(5000);
+    const out = await q.evaluate(() => ({ explore: Math.round(document.getElementById('explore').getBoundingClientRect().top), inFilm: document.documentElement.classList.contains('in-film') }));
+    check(last === 'Continue to the materials' && Math.abs(out.explore) < 40 && !out.inFilm, `${name}: past the last chapter, "Continue to the materials" lands in Explore and stays there (${JSON.stringify({ last, ...out })})`);
+    await q.close();
   }
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };

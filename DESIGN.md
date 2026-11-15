@@ -201,7 +201,7 @@ The token block below is the source of truth and mirrors styles.css `:root` exac
 --ink-dim: #081c31b8;        /* secondary text on the showroom (Deep Ink at 72%; 6.3:1 on wall) */
 --ink-line: #081c3124;       /* hairline on the showroom: chips, plinth, arrows */
 --error: #a8261c;            /* field errors on light surfaces (the spec drawer's quote form); 6.5:1 on paper over wall */
---signal: #5fd3e0;    /* thin overlay lines on the film (the specimen card), after the owner's beam reference; never text on light grounds */
+--signal: #5fd3e0;    /* thin overlay lines on the film (the gate's reticle, the rings, "Hear its story"), after the owner's beam reference; never text on light grounds */
 --display: "Gloock",Georgia,serif;                      /* display family: h1 to h3, card and step titles */
 --text: "Schibsted Grotesk",system-ui,sans-serif;       /* text family: body, UI, labels */
 --ease: cubic-bezier(.16,1,.3,1);       /* default easing: expo-out for state changes and entrances */
@@ -281,7 +281,7 @@ All h1 to h3 use `text-wrap: balance`; paragraphs use `text-wrap: pretty`; `font
 
 A single scroll story in five chapters (Arrive, Discover, Transition, Explore, Enquire). Every section and both fixed bars are inset by the gutter token; html sets `scroll-padding-top: 88px` for the fixed header.
 
-- **Film (chapters 1 to 3):** a 460vh section with a sticky 100svh stage. Scroll position is the playhead of a canvas frame sequence; beat captions sit bottom-left at `bottom: clamp(96px, 16vh, 170px)`, max-width 1000px, over a left-and-bottom ink shade. The end beat carries its own linear ink scrim (it sits over the brightest frames); `tests/contrast.mjs` holds every caption at 4.5:1 or better against the brightest footage behind it.
+- **Film (chapters 1 to 3):** a 640vh section with a sticky 100svh stage. Scroll position is the playhead of a canvas frame sequence. With motion nothing sits over the picture but the wireframe (after hatom.com): a gate drawn in fine lines (1.1px strokes, Cloud at 40%, Signal for the reticle), rings with leader lines and dark glass labels on the materials, one subtitle line (clamp(17px, 1.45vw, 21px), centred, 88px from the bottom over its own radial scrim) and 11px uppercase edge labels (chapter index, "Click to continue", the source label). `tests/contrast.mjs` holds every one of those lines at 4.5:1 or better against the brightest footage behind it.
 - **Explore:** a 420vh section with one sticky 100svh stage holding three stacked families. Each family is a two-column grid (1.05fr text / 0.95fr arch, gap clamp(24px, 5vw, 80px)). At 820px and below the arch moves above the text at 38svh.
 - **Ordering:** max-width 1360px, three equal columns joined by a drawn fibre line; one column with a left rule at 820px and below.
 - **Enquire:** max-width 1120px; chat and ticket in a 1.5fr / 1fr grid, single column at 900px and below. Plain form rows are two columns, one at 640px and below.
@@ -342,7 +342,7 @@ The explore image frame (see Shapes). Two stacked photographs per family cross-f
 Inactive families are `inert` and hidden after 1.1s. Ambient blurred copies of the active photo fade in behind (1.2s).
 
 ### Beat captions
-Film captions whose opacity and lift (up to 28px) are written per frame from scroll progress with a 0.035 fade window; invisible beats get `visibility: hidden`. Without the motion class they render as a static stack under a poster frame.
+Without the motion class the film's chapters render as a static stack of captions (headline, then the narrator's words in Mist) under a poster frame. With motion they are read by screen readers and spoken by the narrator; only the gate fades with scroll progress (0.035 fade window, lift up to 28px).
 
 ### Chapter bar
 Fixed bottom bar on an upward ink gradient. Links are labels in faint with a 14px tick; hover and `.on` turn cloud, and `.on` extends the tick to 28px in fibre (0.5s) and sets `aria-current="step"`. A 2px fibre bar scales with page progress. At 720px and below only the active label shows text. Hidden with no JS.
