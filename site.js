@@ -559,13 +559,13 @@ function openSheet() {
 function closeSheet() {
   if (sheetLeaving) return sheetLeaving;
   if (!sheet.open) return Promise.resolve();
-  if (reduced || !M) { sheet.close(); quoteSendHome(); return Promise.resolve(); }
+  if (reduced || !M) { sheet.close(); leaveAddress(); quoteSendHome(); return Promise.resolve(); }
   sheet.dataset.closing = '';
   const off = sheetOff();
   const exit = M.animate(sheet, { x: off.x, y: off.y, opacity: 0.5 }, { duration: 0.28, ease: [0.4, 0, 1, 1] }).finished.catch(() => {});
   // a deadline, so the drawer still closes when the exit cannot play (a hidden tab, a starved software renderer)
   const deadline = new Promise((r) => setTimeout(r, 600));
-  sheetLeaving = Promise.race([exit, deadline]).then(() => { sheet.close(); quoteSendHome(); delete sheet.dataset.closing; sheetLeaving = null; });
+  sheetLeaving = Promise.race([exit, deadline]).then(() => { sheet.close(); leaveAddress(); quoteSendHome(); delete sheet.dataset.closing; sheetLeaving = null; });
   return sheetLeaving;
 }
 sheet.addEventListener('cancel', (e) => { e.preventDefault(); closeSheet(); }); // Escape
@@ -596,6 +596,8 @@ function quoteSendHome() {
   quoteBack();
 }
 function showProduct(btn, { push = true } = {}) {
+  const busy = sheetLeaving || steppingBack; // the last drawer is still sliding out, or its address is being left (stepBack)
+  if (busy) { busy.then(() => showProduct(btn, { push })); return; }
   sheetProduct = btn.textContent.trim();
   sheetFam = fams.indexOf(btn.closest('.fam'));
   $('#sheetImg').src = btn.dataset.img;
@@ -611,6 +613,7 @@ function showProduct(btn, { push = true } = {}) {
   quoteSendHome();
   if (push && location.hash !== `#${btn.id}`) history.pushState({ product: btn.id }, '', `#${btn.id}`);
   document.title = `${sheetProduct} · SB Trading`;
+  addressLeft = false;
   openSheet();
 }
 for (const btn of $$('.product')) btn.addEventListener('click', () => { showProduct(btn); sound.cue('open', btn); });
@@ -618,12 +621,30 @@ for (const btn of $$('.product')) btn.addEventListener('click', () => { showProd
 // several products does not fill the Back history; "Ask Rifat" has started scrolling to Enquire, and a shared link has
 // no entry of its own, so those rewrite the address in place instead (stepping back would restore the old scroll).
 let sheetKeepsScroll = false;
-sheet.addEventListener('close', () => {
+// The browser lands that step back a moment later (popstate). A product opened before it lands waits for it: otherwise
+// the late step would land on the old product's address and show that product again, or reopen one after a close.
+let steppingBack = null, steppedBack = null;
+function landed() { if (steppedBack) { const done = steppedBack; steppingBack = steppedBack = null; done(); } }
+function stepBack() {
+  steppingBack = new Promise((r) => { steppedBack = r; });
+  setTimeout(landed, 1000); // a step that never lands does not hold the drawer
+  history.back();
+}
+// Leaving the address happens once per open product, at the moment the page closes the drawer (closeSheet). The dialog's
+// own close event comes a moment later: it leaves the address only after a close the browser made itself, and is stale
+// (ignored) when a product has been opened in between.
+let addressLeft = true;
+function leaveAddress() {
+  if (addressLeft) return;
+  addressLeft = true;
   document.title = pageTitle;
-  if (productAt()) { if (history.state?.product && !sheetKeepsScroll) history.back(); else history.replaceState(null, '', location.pathname + location.search); }
+  if (productAt()) { if (history.state?.product && !sheetKeepsScroll) stepBack(); else history.replaceState(null, '', location.pathname + location.search); }
   sheetKeepsScroll = false;
-});
-addEventListener('popstate', () => { const btn = productAt(); if (btn?.classList.contains('product')) showProduct(btn, { push: false }); else closeSheet(); });
+}
+sheet.addEventListener('close', () => { if (!sheet.open) leaveAddress(); });
+addEventListener('popstate', () => {
+  if (steppedBack) { landed(); return; } // our own step back over a closed product's address
+  const btn = productAt(); if (btn?.classList.contains('product')) showProduct(btn, { push: false }); else closeSheet(); });
 { // a shared product link: bring its family on stage, then open it
   const btn = productAt();
   if (btn?.classList.contains('product')) {
@@ -654,7 +675,7 @@ $('#sheetAdd').addEventListener('click', (e) => {
   sound.cue('tick', e.currentTarget);
 });
 sheet.addEventListener('click', (e) => { if (e.target === sheet) closeSheet(); });
-sheet.addEventListener('close', quoteSendHome);
+sheet.addEventListener('close', () => { if (!sheet.open) quoteSendHome(); });
 $('#sheetQuote').addEventListener('click', quoteOpen);
 $('#quoteBack').addEventListener('click', () => { quoteBack(); $('#sheetQuote').focus(); });
 $('#quoteReview').addEventListener('click', () => {

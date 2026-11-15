@@ -157,6 +157,37 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const grew = (await p.evaluate(() => history.length)) - before;
     check(grew <= 1, `${name}: opening and closing three products does not fill the Back history (${grew} extra entries)`);
   }
+  { // closing a product steps back over its address, and the browser lands that step a moment later: a product opened
+    // at once must still be the one shown, and closing it must leave the drawer closed (the late step used to land on the
+    // old product's address and reopen it; on CI, closing then reopened an earlier product)
+    const q = await ctx.newPage(); await q.goto(ORIGIN + '/'); await q.waitForTimeout(1500);
+    const sheetOpen = () => q.evaluate(() => document.getElementById('productSheet').open);
+    await q.evaluate(() => document.getElementById('p-bamboo-poles').click());
+    await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+    await q.waitForTimeout(700); await q.keyboard.press('Escape');
+    await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+    await q.evaluate(() => document.getElementById('p-banana-leaves').click());
+    await q.waitForTimeout(1500);
+    const shown = await q.evaluate(() => ({ open: document.getElementById('productSheet').open, title: document.getElementById('sheetTitle').textContent, hash: location.hash }));
+    await q.keyboard.press('Escape');
+    await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+    await q.waitForTimeout(1500);
+    const after = { open: await sheetOpen(), hash: await q.evaluate(() => location.hash) };
+    check(shown.open && shown.title === 'Banana leaves' && shown.hash === '#p-banana-leaves' && !after.open && after.hash === '',
+      `${name}: a product opened just after closing another is the one shown, and closing it leaves the drawer closed (${JSON.stringify({ shown, after })})`);
+    // the same while the first drawer is still sliding out
+    await q.evaluate(() => document.getElementById('p-bamboo-poles').click());
+    await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
+    await q.waitForTimeout(700); await q.keyboard.press('Escape'); await q.waitForTimeout(60);
+    await q.evaluate(() => document.getElementById('p-banana-leaves').click());
+    await q.waitForTimeout(1500);
+    const mid = await q.evaluate(() => ({ open: document.getElementById('productSheet').open, title: document.getElementById('sheetTitle').textContent, hash: location.hash }));
+    await q.keyboard.press('Escape'); await q.waitForTimeout(1500);
+    const midAfter = { open: await sheetOpen(), hash: await q.evaluate(() => location.hash) };
+    check(mid.open && mid.title === 'Banana leaves' && mid.hash === '#p-banana-leaves' && !midAfter.open && midAfter.hash === '',
+      `${name}: a product opened while another is still sliding out is the one shown, at its own address (${JSON.stringify({ mid, midAfter })})`);
+    await q.close();
+  }
   { // a shared product link opens that product directly
     const q = await ctx.newPage(); await q.goto(ORIGIN + '/#p-grade-a-banana-silk');
     const direct = await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 12000 }).then(() => true, () => false);
