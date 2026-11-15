@@ -112,6 +112,14 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const noAudio = await p.evaluate(() => document.querySelector('#bamboo .story')?.hidden !== false);
     check(btn === 'Hear its story' && playing.pressed === 'true' && playing.shown && /banana plant/i.test(playing.cap) && playing.audio && stopped.pressed === 'false' && !stopped.shown && noAudio,
       `${name}: "Hear its story" narrates banana bark and leaves with subtitles, and stops on a second press (${JSON.stringify({ btn, playing, stopped, noAudio })})`);
+    { // switching Sound off also silences a story that Sound started (Codex finding on #18)
+      await p.click('#soundToggle'); await p.waitForTimeout(800);
+      await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(800);
+      const on = await p.evaluate(() => !!window.__story && !window.__story.paused);
+      await p.click('#soundToggle'); await p.waitForTimeout(500);
+      const off = await p.evaluate(() => ({ playing: !!window.__story && !window.__story.paused, pressed: document.querySelector('#bark .story').getAttribute('aria-pressed') }));
+      check(on && !off.playing && off.pressed === 'false', `${name}: switching Sound off stops the storyteller too (${JSON.stringify({ on, off })})`);
+    }
     await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   }
   // product sheet -> Rifat
@@ -288,9 +296,16 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       await p.mouse.move(700, 400); await p.mouse.move(760, 430); await p.waitForTimeout(1200);
       const st = await p.evaluate(() => ({ arch: getComputedStyle(document.querySelector('#bamboo .arch')).opacity, inExhibit: !!document.querySelector('#bamboo .exhibit .studies'), ready: document.querySelector('.studies').dataset.specimen }));
       const box = await p.evaluate(() => { const r = document.querySelector('#bamboo .exhibit').getBoundingClientRect(); return { x: Math.max(0, r.left), y: Math.max(0, r.top), width: Math.min(r.width, innerWidth - r.left), height: Math.min(r.height, innerHeight - r.top) }; });
-      const withObj = (await p.screenshot({ clip: box })).toString('base64');
+      // On a software renderer the GPU process can be saturated; if this capture times out, say what the page was doing
+      // (frame rate, long tasks, 3D state, renderer) before failing, so a CI-only stall leaves evidence (#18).
+      const shot = (o) => p.screenshot(o).catch(async (err) => {
+        const diag = await Promise.race([p.evaluate(() => new Promise((r) => { let n = 0; const t = performance.now(); const f = () => { n++; if (performance.now() - t < 2000) requestAnimationFrame(f); else r({ fps: n / 2, cls: document.documentElement.className, state: document.querySelector('.studies')?.dataset.renderState, renderer: (() => { const g = document.createElement('canvas').getContext('webgl2'), d = g?.getExtension('WEBGL_debug_renderer_info'); return d ? String(g.getParameter(d.UNMASKED_RENDERER_WEBGL)) : 'none'; })() }); }; requestAnimationFrame(f); })), new Promise((r) => setTimeout(() => r('page did not answer within 20 s'), 20000))]);
+        console.log('DIAG screenshot timeout:', JSON.stringify(diag));
+        throw err;
+      });
+      const withObj = (await shot({ clip: box })).toString('base64');
       await p.evaluate(() => { document.querySelector('.studies').style.visibility = 'hidden'; });
-      const without = (await p.screenshot({ clip: box })).toString('base64');
+      const without = (await shot({ clip: box })).toString('base64');
       await p.evaluate(() => { document.querySelector('.studies').style.visibility = ''; });
       const drawn = await p.evaluate(async ([a, b]) => {
         const px = async (s) => { const im = new Image(); im.src = 'data:image/png;base64,' + s; await im.decode(); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0); return g.getImageData(0, 0, c.width, c.height).data; };
@@ -299,6 +314,21 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
         return +(n / (d1.length / 4)).toFixed(3);
       }, [withObj, without]);
       check(st.arch === '0' && st.inExhibit && st.ready === '0' && drawn > 0.08, `${name}: the family on stage is a 3D cut-out drawn in WebGL in place of the photo (${JSON.stringify(st)}, ${Math.round(drawn * 100)}% of the exhibit drawn)`);
+    }
+    { // a lost WebGL context (GPU reset, too many contexts) must give the products back their photographs (Codex finding on
+      // #18); on its own page, so the 3D in the main page stays alive for the checks that follow
+      const q = await ctx.newPage();
+      await q.goto(ORIGIN + '/'); await q.waitForTimeout(1500);
+      await q.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.15); });
+      await q.waitForFunction(() => document.documentElement.classList.contains('has-3d'), null, { timeout: 20000 }).catch(() => {});
+      await q.waitForTimeout(1000);
+      const lost = await q.evaluate(async () => {
+        document.querySelector('.studies').getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+        await new Promise((r) => setTimeout(r, 400));
+        return { has3d: document.documentElement.classList.contains('has-3d'), no3d: document.documentElement.classList.contains('no-3d'), arch: getComputedStyle(document.querySelector('#bamboo .arch')).opacity };
+      });
+      check(!lost.has3d && lost.no3d && lost.arch === '1', `${name}: when the WebGL context is lost, the product photographs come back (${JSON.stringify(lost)})`);
+      await q.close();
     }
     // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
     // wait until the Bamboo family is the live one (an inert family cannot take focus), then focus its last product

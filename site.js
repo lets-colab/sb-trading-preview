@@ -68,6 +68,7 @@ const sound = (() => {
     if (v && !hinted) { hinted = true; hint.textContent = 'Sound on: a generated score and cues, best on headphones'; setTimeout(() => { hint.textContent = ''; }, 3600); }
     if (!v) {
       if (engine) guard(() => engine.music(false));
+      document.dispatchEvent(new CustomEvent('sb:sound', { detail: false })); // the storyteller stops too
       root.dataset.score = 'off'; root.style.setProperty('--audio', '0');
       fx?.replaceChildren();
       setTimeout(() => { if (!on && actx.state === 'running') actx.suspend().catch(() => {}); }, 1700); // after the fade
@@ -297,6 +298,7 @@ function playStory(key) {
   sound.duck(true);
   audio.play().catch(() => { if (storyNow?.audio === audio) stopStory(); });
 }
+document.addEventListener('sb:sound', (e) => { if (!e.detail) stopStory(); }); // Sound off silences the voice too
 storyBtns.forEach((b) => b.addEventListener('click', () => (storyNow?.key === b.dataset.story ? stopStory() : playStory(b.dataset.story))));
 function setFamily(i) {
   if (i === famActive) return;
@@ -350,7 +352,7 @@ async function loadStudies() {
     const { createSpecimens } = await import('./assets/vendor/specimens.js');
     studies = createSpecimens(studiesCanvas, { low: soft || innerWidth < 820 });
     sizeStudies();
-    studiesCanvas.addEventListener('webglcontextlost', () => { studies = null; root.classList.add('no-3d'); });
+    studiesCanvas.addEventListener('webglcontextlost', () => { studies = null; root.classList.replace('has-3d', 'no-3d'); }); // the photographs come back
     root.classList.add('has-3d');
     restDrawn = false;
   } catch (e) {
