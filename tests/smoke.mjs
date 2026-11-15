@@ -86,6 +86,20 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
 
+  { // the storyteller: a family with a recorded narration offers "Hear its story"; pressing it plays the narration and
+    // shows its words as subtitles; pressing again stops it. Families without a recording show no button.
+    const famY = (i) => p.evaluate((k) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * (k / 3 + 0.12)); }, i);
+    await famY(2); await p.waitForTimeout(1800);
+    const btn = await p.evaluate(() => { const b = document.querySelector('#bark .story'); return b && !b.hidden ? b.textContent.trim() : null; });
+    await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(1500);
+    const playing = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), cap: document.querySelector('.story-caption').textContent.trim(), shown: !document.querySelector('.story-caption').hidden, audio: !!window.__story && !window.__story.paused }));
+    await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(400);
+    const stopped = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), shown: !document.querySelector('.story-caption').hidden }));
+    const noAudio = await p.evaluate(() => document.querySelector('#bamboo .story')?.hidden !== false);
+    check(btn === 'Hear its story' && playing.pressed === 'true' && playing.shown && /banana plant/i.test(playing.cap) && playing.audio && stopped.pressed === 'false' && !stopped.shown && noAudio,
+      `${name}: "Hear its story" narrates banana bark and leaves with subtitles, and stops on a second press (${JSON.stringify({ btn, playing, stopped, noAudio })})`);
+    await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
+  }
   // product sheet -> Rifat
   await toExplore(0.15);
   // every product has its own link: opening one sets the address and the page title; Back closes it, Forward reopens it

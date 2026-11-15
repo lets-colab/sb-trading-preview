@@ -92,6 +92,10 @@ const sound = (() => {
       if (on && engine) guard(() => engine.scene(scene));
     },
     motion(speed) { if (on && engine) guard(() => engine.motion(speed)); },
+    /** True while the visitor has Sound on. */
+    get playing() { return on; },
+    /** Lowers the score under the storyteller's voice, or brings it back. */
+    duck(v) { if (on && engine?.duck) guard(() => engine.duck(v)); },
   };
 })();
 
@@ -233,6 +237,48 @@ const dust = (() => {
 const explore = $('#explore');
 const fams = $$('.fam', explore), ambient = $$('.ambient img', explore);
 let famActive = -1;
+// The storyteller (after hatom.com): each family's short history, narrated (assets/voice/, ElevenLabs voice "Moksh"),
+// with its words as subtitles. "Hear its story" plays or stops it; with Sound on it also starts as the family comes on
+// stage, once per family. The score ducks under the voice. A family whose recording is not made yet shows no button.
+const STORIES = {
+  bamboo: { src: null, text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots. Dried and bundled, it leaves the grove as poles, splits and sections, ready to build with.' },
+  fibre: { src: null, text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
+  bark: { src: 'assets/voice/bark.mp3', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
+};
+const storyCap = $('.story-caption'), storyBtns = $$('.story'), told = new Set();
+let storyNow = null;
+storyBtns.forEach((b) => { b.hidden = !STORIES[b.dataset.story]?.src; });
+function stopStory() {
+  if (!storyNow) return;
+  const { audio, btn } = storyNow;
+  storyNow = null; window.__story = null;
+  audio.pause();
+  btn.setAttribute('aria-pressed', 'false'); btn.querySelector('.story-label').textContent = 'Hear its story';
+  if (storyCap) { storyCap.hidden = true; storyCap.textContent = ''; }
+  sound.duck(false);
+}
+function playStory(key) {
+  const s = STORIES[key], btn = $(`.story[data-story="${key}"]`);
+  if (!s?.src || !btn) return;
+  stopStory();
+  told.add(key);
+  const audio = new Audio(s.src), lines = s.text.match(/[^.;:]+[.;:]?/g).map((l) => l.trim()).filter(Boolean);
+  const total = lines.reduce((n, l) => n + l.length, 0), ends = [];
+  let acc = 0;
+  for (const l of lines) { acc += l.length; ends.push(acc / total); }
+  storyNow = { audio, btn, key }; window.__story = audio;
+  btn.setAttribute('aria-pressed', 'true'); btn.querySelector('.story-label').textContent = 'Stop the story';
+  if (storyCap) { storyCap.hidden = false; storyCap.textContent = lines[0]; }
+  audio.addEventListener('timeupdate', () => {
+    if (!storyCap || !audio.duration) return;
+    const f = audio.currentTime / audio.duration, k = Math.max(0, ends.findIndex((e) => f <= e));
+    if (storyCap.textContent !== lines[k]) storyCap.textContent = lines[k];
+  });
+  audio.addEventListener('ended', () => { if (storyNow?.audio === audio) stopStory(); });
+  sound.duck(true);
+  audio.play().catch(() => { if (storyNow?.audio === audio) stopStory(); });
+}
+storyBtns.forEach((b) => b.addEventListener('click', () => (storyNow?.key === b.dataset.story ? stopStory() : playStory(b.dataset.story))));
 function setFamily(i) {
   if (i === famActive) return;
   const forward = i > famActive;
@@ -243,6 +289,9 @@ function setFamily(i) {
     f.inert = k !== i;
   });
   ambient.forEach((img, k) => img.classList.toggle('on', k === i));
+  const key = fams[i].id;
+  if (storyNow && storyNow.key !== key) stopStory();
+  if (sound.playing && !told.has(key)) playStory(key);
   sound.cue(forward ? 'knock' : 'knock-soft', fams[i].querySelector('.arch'));
 }
 
@@ -253,7 +302,7 @@ explore.addEventListener('keydown', (e) => {
   if (e.key !== 'Tab' || reduced) return;
   const fam = e.target.closest('.fam');
   if (!fam) return;
-  const stops = (f) => $$('.product, .plinth a', f); // each family's tab stops: its products, then its plinth arrows
+  const stops = (f) => $$('.product, .story:not([hidden]), .plinth a', f); // each family's tab stops: its products, its story, then its plinth arrows
   const i = Number(fam.dataset.i), list = stops(fam);
   const to = e.shiftKey ? (e.target === list[0] ? i - 1 : -1) : (e.target === list.at(-1) ? i + 1 : -1);
   if (to < 0 || to >= fams.length) return;

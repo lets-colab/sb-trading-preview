@@ -323,6 +323,8 @@ export function createSoundEngine(ctx, { seed } = {}) {
     schedule,
     /** Registers fn({ at, x, y, v, chord }) for every gong and saron note; x, y in 0..1 across the view; chord names the scene. */
     onNote(fn) { listeners.push(fn); },
+    /** Lowers the score to a bed under the storyteller's voice (true), or brings it back (false). */
+    duck(v) { if (!musicOn) return; musicBus.gain.setTargetAtTime(v ? 0.28 : 1, ctx.currentTime, 0.35); },
     /** Scroll speed 0..1: the air grows louder and brighter with it. */
     motion(speed) {
       const v = Math.min(1, Math.max(0, speed));
