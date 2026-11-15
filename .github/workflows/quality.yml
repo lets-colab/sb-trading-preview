@@ -23,6 +23,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # GitHub Pages serves the committed files, so the committed version tags must be current (the build would renew them)
+      - name: Version tags are current
+        run: node tools/stamp.mjs --check
       - run: npm run build
+      - name: Committed bundles and tags match a fresh build
+        run: git diff --exit-code
       - run: npx playwright install --with-deps chromium
       - run: npm test

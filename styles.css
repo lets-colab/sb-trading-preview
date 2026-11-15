@@ -1,7 +1,7 @@
 /* SB Trading · Materials in Motion. Self-hosted fonts (OFL): Gloock (display), Schibsted Grotesk (text). No external requests.
    One continuous blue-hour world from the SB Trading proposal palette: Brand Blue, Deep Ink, Cloud, Mist, Natural Fibre. */
-@font-face{font-family:"Gloock";src:url(assets/vendor/fonts/gloock-latin-400-normal.woff2) format("woff2");font-display:swap}
-@font-face{font-family:"Schibsted Grotesk";src:url(assets/vendor/fonts/schibsted-grotesk-latin-wght-normal.woff2) format("woff2");font-weight:400 900;font-display:swap}
+@font-face{font-family:"Gloock";src:url(assets/vendor/fonts/gloock-latin-400-normal.woff2?v=9389ada8) format("woff2");font-display:swap}
+@font-face{font-family:"Schibsted Grotesk";src:url(assets/vendor/fonts/schibsted-grotesk-latin-wght-normal.woff2?v=4c8b93f4) format("woff2");font-weight:400 900;font-display:swap}
 
 :root{
   --blue:#004a98; --blue-glow:#1d64b3; --ink-0:#051222; --ink:#081c31; --ink-2:#102a43; --ink-3:#173a5c;
@@ -491,10 +491,10 @@ html.at-end .tray{opacity:0;pointer-events:none;transform:translateY(12px)}
 .explore .ambient img.on{opacity:0}
 /* the showroom stays inside the film's last room (the reference's gallery of lit cases), softly out of focus behind the
    family; a light wash keeps the text side readable */
-.explore .ambient::before{content:"";position:absolute;inset:-3%;background:url(assets/film/d/190.webp) center/cover;filter:blur(5px) saturate(.95)}
+.explore .ambient::before{content:"";position:absolute;inset:-3%;background:url(assets/film/d/190.webp?v=c9d6c2ba) center/cover;filter:blur(5px) saturate(.95)}
 .explore .ambient::after{background:linear-gradient(90deg,#eef0ebf5 0%,#eef0ebd9 40%,#eef0eb40 78%,#eef0eb26 100%)}
 @media (max-width:820px){
-  .explore .ambient::before{background-image:url(assets/film/m/190.webp)}
+  .explore .ambient::before{background-image:url(assets/film/m/190.webp?v=c9d6c2ba)}
   .explore .ambient::after{background:linear-gradient(0deg,#eef0ebf5 0%,#eef0ebe6 52%,#eef0eb66 100%)}
 }
 .dawn{position:absolute;inset:0;z-index:6;pointer-events:none;background:var(--ink-0);opacity:var(--dark,0)}

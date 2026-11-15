@@ -3,8 +3,11 @@
 // Explore stage (three families in arched windows, stage 04), the ordering fibre line, the chapter bar, and the
 // opt-in sound. Motion (motion.dev, MIT) runs reveals; Lenis (MIT) smooths wheel scrolling. Rifat (stage 05) lives
 // in assets/rifat.js. All content is in the HTML: without JavaScript, or with reduced motion, it reads as a document.
-import { createRifat } from './assets/rifat.js';
+import { createRifat } from './assets/rifat.js?v=205e2f23';
 
+// Every file is loaded at a versioned address (?v= and a hash of its contents, kept current by tools/stamp.mjs), so a
+// returning visitor's cache can never pair this page with an old file. The film's frames share one tag for the folder.
+const FILM = 'assets/film/?v=c9d6c2ba', filmFile = (p) => FILM.replace('?', `${p}?`);
 const root = document.documentElement;
 root.classList.add('js');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -56,7 +59,7 @@ const sound = (() => {
       const C = window.AudioContext || window.webkitAudioContext;
       if (!C) return;
       actx = new C({ latencyHint: 'interactive' });
-      import('./assets/sound.js').then((m) => {
+      import('./assets/sound.js?v=64c4a1d1').then((m) => {
         engine = m.createSoundEngine(actx);
         engine.onNote(ripple);
         guard(() => engine.cue('toggle', 0.5));
@@ -139,7 +142,7 @@ async function loadFrames() {
     const worker = async () => {
       while (next < order.length) {
         const i = order[next++], img = new Image();
-        img.src = `assets/film/${SET}/${String(i + 1).padStart(3, '0')}.webp`;
+        img.src = filmFile(`${SET}/${String(i + 1).padStart(3, '0')}.webp`);
         try { await img.decode(); frames[i] = img; if (drawnFrom < 0 || Math.abs(i - wanted) < Math.abs(drawnFrom - wanted)) shown = -1; }
         catch (e) { /* a missing frame is covered by its neighbours */ }
       }
@@ -166,7 +169,7 @@ function labelShot(i) { // i: the index of the loaded frame on the canvas (not t
 // loaded frame on the canvas; on phones (a centre crop) it sits above the chapter bar.
 const specCard = $('.spec-card', film);
 let cardTrack = null;
-fetch('assets/film/film.json').then((r) => r.json()).then((j) => { cardTrack = new Map(j.card.map(([i, ...b]) => [i, b])); }).catch(() => { /* the card stays in its CSS place */ });
+fetch(filmFile('film.json')).then((r) => r.json()).then((j) => { cardTrack = new Map(j.card.map(([i, ...b]) => [i, b])); }).catch(() => { /* the card stays in its CSS place */ });
 let cardFrame = -1;
 function placeCard(i) {
   if (!specCard || !cardTrack || SET === 'm' || i === cardFrame) return;
@@ -263,7 +266,7 @@ let famActive = -1;
 const STORIES = {
   bamboo: { src: null, text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots. Dried and bundled, it leaves the grove as poles, splits and sections, ready to build with.' },
   fibre: { src: null, text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
-  bark: { src: 'assets/voice/bark.mp3', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
+  bark: { src: 'assets/voice/bark.mp3?v=08edcb15', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
 };
 const storyCap = $('.story-caption'), storyBtns = $$('.story'), told = new Set();
 let storyNow = null;
@@ -349,7 +352,7 @@ async function loadStudies() {
     const dbg = probe.getExtension('WEBGL_debug_renderer_info');
     const soft = /swiftshader|llvmpipe|software/i.test(dbg ? String(probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '');
     probe.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
-    const { createSpecimens } = await import('./assets/vendor/specimens.js');
+    const { createSpecimens } = await import('./assets/vendor/specimens.js?v=3798b600');
     studies = createSpecimens(studiesCanvas, { low: soft || innerWidth < 820 });
     sizeStudies();
     studiesCanvas.addEventListener('webglcontextlost', () => { studies = null; root.classList.replace('has-3d', 'no-3d'); }); // the photographs come back
@@ -470,7 +473,7 @@ if (reduced) addEventListener('scroll', () => requestAnimationFrame(tick), { pas
 requestAnimationFrame(tick);
 let lenis = null;
 if (fine && !reduced) {
-  import('./assets/vendor/smooth.js').then(({ default: Lenis }) => {
+  import('./assets/vendor/smooth.js?v=36d1e113').then(({ default: Lenis }) => {
     lenis = new Lenis({ lerp: 0.1, anchors: true });
     const raf = (t) => { lenis.raf(t); requestAnimationFrame(raf); };
     requestAnimationFrame(raf);
@@ -595,7 +598,7 @@ function quoteSendHome() {
 function showProduct(btn, { push = true } = {}) {
   sheetProduct = btn.textContent.trim();
   sheetFam = fams.indexOf(btn.closest('.fam'));
-  $('#sheetImg').src = `assets/img/${btn.dataset.img}.webp`;
+  $('#sheetImg').src = btn.dataset.img;
   $('#sheetImg').alt = `${btn.dataset.family} photograph`;
   $('#sheetFamily').textContent = btn.dataset.family;
   $('#sheetTitle').textContent = sheetProduct;

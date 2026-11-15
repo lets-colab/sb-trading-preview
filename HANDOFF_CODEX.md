@@ -52,6 +52,7 @@ v1/                   the first single-file draft, kept unchanged
 PRODUCT.md            Impeccable brief (register: brand)
 DESIGN.md             design system v1.0.0 recorded from the code (tokens, components, states, motion); .impeccable/design.json sidecar
 tests/tokens.mjs      design-to-code gate: styles.css :root must match DESIGN.md token block exactly (runs first in npm test)
+tests/cache.mjs       version tags: every tag current, a change renews every importer, every file fetched on a desktop and phone journey is at its tagged address
 docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions, untested with buyers)
 .graphifyignore       keeps film frames, photos, vendor and generated bundles out of /graphify (graphify-out/ is gitignored)
 ```
@@ -59,7 +60,8 @@ docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions
 ## Commands
 ```bash
 npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
-CHROMIUM_PATH=<chrome> npm test                          # 204 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone (incl. film label, dust, spec drawer)
+CHROMIUM_PATH=<chrome> npm test                          # 214 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), version tags, smoke on desktop + phone (incl. film label, dust, spec drawer)
+node tools/stamp.mjs                                      # after changing any file the page loads: renews its ?v= version tag (npm run build runs it; npm test fails while a tag is stale)
 node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector: 10 findings, all documented intent
 cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
 ```
