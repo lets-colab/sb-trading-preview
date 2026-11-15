@@ -310,7 +310,10 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
 
   // guided flow
   const say = async (t) => { await p.fill('#rifatInput', t); await p.press('#rifatInput', 'Enter'); await p.waitForTimeout(1500); };
-  { // Rifat appears at the end of the journey: his portrait in a cyan ring, always labelled AI, and his face in the chat bar
+  { // Rifat appears at the end of the journey: his portrait in a cyan ring, always labelled AI, and his face in the chat bar.
+    // His ring lights once the page has scrolled him into view; "Ask Rifat" focuses the input at about the same moment
+    // (a near-tie measured at ~1 s on a phone, scroll still moving), so wait for the arrival rather than read mid-scroll
+    await p.waitForFunction(() => document.querySelector('.enquire .presence')?.classList.contains('here'), null, { timeout: 8000 }).catch(() => {});
     const pres = await p.evaluate(() => { const f = document.querySelector('.enquire .presence'), img = f?.querySelector('img'), r = img?.getBoundingClientRect();
       return { here: f?.classList.contains('here'), loaded: !!img?.complete && img.naturalWidth > 0, w: Math.round(r?.width || 0), ai: f?.querySelector('.ai-tag')?.textContent.trim(), alt: img?.alt || '',
         face: !!document.querySelector('.rifat-top .orb img')?.naturalWidth }; });
