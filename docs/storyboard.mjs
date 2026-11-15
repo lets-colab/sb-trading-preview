@@ -21,21 +21,20 @@ const exploreAt = (q) => `(() => { const e = document.getElementById('explore');
 const SCENES = [
   { title: 'Arrive: darkness', feel: 'Mystery. Nothing but dark, then the first light between bamboo.',
     ref: ['A', 0.6], go: filmAt(0.02),
-    site: 'The film opens on the same dark grove. Over it: Materials in Motion., the three facts (3 families, 9 products, Bangladesh), Explore the materials and Ask Rifat. Gold dust drifts in the light shafts.' },
+    site: 'A real-time 3D bamboo grove (three.js, drawn in the browser): light shafts from the upper left, gold dust drifting in them. Over it: Materials in Motion., the three facts (3 families, 9 products, Bangladesh), Explore the materials and Ask Rifat.' },
   { title: 'Into the light', feel: 'Release. The grove opens onto a bright showroom.',
-    ref: ['A', 1.8], go: filmAt(0.27),
-    site: 'Scrolling walks forward through the grove toward the light; caption: Out of the grove, into the light.',
-    left: 'The clip’s close-up of the showroom (2.0–2.9 s) is cut: its plinth cards misspell the company name.' },
-  { title: 'The material, close', feel: 'Intimacy. Wet bamboo, fibres lifting in warm light.',
-    ref: ['A', 3.6], go: filmAt(0.44),
-    site: 'The same macro shot; caption: Bamboo, up close. (never claiming bamboo becomes SB’s yarn, which is banana fibre).',
-    left: 'Glass cards with invented text drift at the frame edges; the shot is zoomed slightly and its edges softened so none is legible.' },
+    ref: ['A', 1.8], go: filmAt(0.38),
+    site: 'Scrolling walks the camera out of the grove into a round white showroom under a skylight; the fog lifts from forest dark to warm white and the header and chapter bar turn to ink. Caption: Out of the grove, into the light.' },
+  { title: 'The material, close', feel: 'Intimacy. The material opened up in warm light.',
+    ref: ['A', 3.6], go: filmAt(0.54),
+    site: 'A bamboo pole on a lit pedestal splits into two halves, showing its pale inner wall; caption: Bamboo, split open.',
+    left: 'The reference’s macro shot implies bamboo becomes the yarn. SB Trading’s yarn is banana fibre, so the site shows them as separate materials.' },
   { title: 'Fibre in motion', feel: 'Flow. Golden fibres twisting through the air.',
-    ref: ['A', 5.2], go: filmAt(0.68),
-    site: 'The same twist; caption: Natural fibre, close up.' },
+    ref: ['A', 5.2], go: filmAt(0.76),
+    site: 'Fibres peel from a banana stem, twist through the air and wind into a yarn ball; banana bark and leaves turn beside it in gold and blue light threads. Caption: Banana fibre, spun into yarn.' },
   { title: 'The gallery', feel: 'Clarity. Three lit cases, numbered: 01 Bamboo, 02 Banana fibre yarn, 03 Banana bark.',
-    ref: ['A', 6.6], go: filmAt(0.94),
-    site: 'The film ends in the same gallery. Caption Bamboo, yarn and bark. with the three family cards, each going straight to that family.' },
+    ref: ['A', 6.6], go: filmAt(0.97),
+    site: 'The journey ends at three glass cases on lit pedestals: a strapped bamboo bundle, a yarn ball, bark and a leaf. Caption Bamboo, yarn and bark. with the three family cards, each going straight to that family.' },
   { title: 'One family, on its plinth', feel: 'Focus. The camera moves in on one case.',
     ref: ['A', 7.6], go: exploreAt(0.15),
     site: 'Explore is the bright showroom: the family as a 3D cut-out of SB’s own photograph in a glass case on a lit pedestal (three.js), turning with scroll and pointer, on its plinth (01 / 03 Bamboo, arrows to the next); its products as chips beside it.' },
@@ -122,7 +121,7 @@ figcaption{margin-top:6px;font-size:13px;color:var(--dim)}
 @media (max-width:700px){.pair{grid-template-columns:1fr}}
 </style></head><body><main>
 <h1>SB Trading: storyboard</h1>
-<p class="intro">The owner's two reference videos beside the built website (${new Date().toISOString().slice(0, 10)}), scene by scene: the feeling each moment carries, what the site shows and does there, and what was left out of the reference on purpose. Scenes 1 to 5 are the scroll film (built from the showroom video by tools/build-film.py); scenes 6 to 9 are the interactive showroom, drawer and quote. Layout wireframes: wireframes.html.</p>
+<p class="intro">The owner's two reference videos beside the built website (${new Date().toISOString().slice(0, 10)}), scene by scene: the feeling each moment carries, what the site shows and does there, and what was left out of the reference on purpose. Scenes 1 to 5 are the scroll film, a real-time 3D journey drawn in the browser (src/world.js) after the showroom video; scenes 6 to 9 are the interactive showroom, drawer and quote. Layout wireframes: wireframes.html.</p>
 ${cards}
 </main></body></html>
 `);

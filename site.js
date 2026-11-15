@@ -1,5 +1,5 @@
 // SB Trading · Materials in Motion (client review draft).
-// One loop reads the scroll position and drives: the film (WebP frames on a canvas, stages 01–03), the pinned
+// One loop reads the scroll position and drives: the film (a real-time 3D journey, stages 01–03), the pinned
 // Explore stage (three families in arched windows, stage 04), the ordering fibre line, the chapter bar, and the
 // opt-in sound. Motion (motion.dev, MIT) runs reveals; Lenis (MIT) smooths wheel scrolling. Rifat (stage 05) lives
 // in assets/rifat.js. All content is in the HTML: without JavaScript, or with reduced motion, it reads as a document.
@@ -95,66 +95,36 @@ const sound = (() => {
   };
 })();
 
-// ------------------------------------------------------------------ film (stages 01–03)
-const FRAMES = 142; // tools/build-film.py
-const SET = innerWidth / innerHeight < 0.9 ? 'm' : 'd';
-const film = $('#film'), canvas = $('.film-canvas'), ctx = canvas.getContext('2d');
-const frames = new Array(FRAMES);
-let shown = -1, filmP = 0;
+// ------------------------------------------------------------------ film (stages 01–03): the 3D journey
+// A real-time three.js world (src/world.js -> assets/vendor/world.js) that the scroll moves the camera through: the dark
+// bamboo grove, out into a lit showroom, a bamboo pole splitting open, banana fibre winding into yarn, bark and leaves, and
+// the gallery of three cases. It draws only while the film is on screen. Until it is ready, and with reduced motion, no
+// WebGL or a lost context, the poster (a still of the same world) stands in and the captions carry the story.
+const film = $('#film'), worldCanvas = $('.world', film), filmLabel = $('.film-label', film);
+let filmP = 0, journey = null;
 const filmBeats = $$('.beat', film).map((el) => ({ el, at: el.dataset.at.split(',').map(Number) }));
-
-function size() {
-  const dpr = Math.min(devicePixelRatio || 1, 1.5);
-  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
-  shown = -1;
+function probeGL() { // { soft }: a software renderer (or a small screen) gets the lighter scene; throws without WebGL2
+  const probe = document.createElement('canvas').getContext('webgl2');
+  if (!probe) throw new Error('no WebGL2');
+  const dbg = probe.getExtension('WEBGL_debug_renderer_info');
+  const soft = /swiftshader|llvmpipe|software/i.test(dbg ? String(probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '');
+  probe.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
+  return { soft };
 }
-function nearest(i) {
-  for (let d = 0; d < FRAMES; d++) { if (frames[i - d]) return frames[i - d]; if (frames[i + d]) return frames[i + d]; }
-  return null;
-}
-let wanted = 0, drawnFrom = -1; // the frame the scroll asks for, and the loaded frame actually on the canvas
-function draw(i) {
-  wanted = i;
-  const img = nearest(i);
-  if (!img) return;
-  const cw = canvas.width, ch = canvas.height, s = Math.max(cw / img.width, ch / img.height);
-  ctx.drawImage(img, (cw - img.width * s) / 2, (ch - img.height * s) / 2, img.width * s, img.height * s);
-  shown = i; drawnFrom = frames.indexOf(img);
-}
-// Coarse to fine: every 8th frame first, so the whole film scrubs early; the finer passes wait for an idle moment, so
-// 255 downloads and decodes do not compete with the first paint on a phone. A newly decoded frame triggers a redraw
-// only when it is closer to the frame the scroll asks for than the one on the canvas.
-const idle = () => new Promise((r) => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 1500 }) : setTimeout(r, 200)));
-async function loadFrames() {
-  const seen = new Set();
-  for (const step of [8, 4, 2, 1]) {
-    const order = [];
-    for (let i = 0; i < FRAMES; i += step) if (!seen.has(i)) { seen.add(i); order.push(i); }
-    let next = 0;
-    const worker = async () => {
-      while (next < order.length) {
-        const i = order[next++], img = new Image();
-        img.src = `assets/film/${SET}/${String(i + 1).padStart(3, '0')}.webp`;
-        try { await img.decode(); frames[i] = img; if (drawnFrom < 0 || Math.abs(i - wanted) < Math.abs(drawnFrom - wanted)) shown = -1; }
-        catch (e) { /* a missing frame is covered by its neighbours */ }
-      }
-    };
-    await Promise.all(Array.from({ length: step === 8 ? 6 : 3 }, worker));
-    await idle();
+function sizeWorld() { journey?.setSize(innerWidth, innerHeight); }
+async function loadJourney() {
+  try {
+    if (reduced) throw new Error('reduced motion: the poster');
+    const { soft } = probeGL();
+    const { createJourney } = await import('./assets/vendor/world.js');
+    journey = createJourney(worldCanvas, { low: soft || innerWidth < 820 });
+    sizeWorld();
+    worldCanvas.addEventListener('webglcontextlost', () => { journey = null; root.classList.replace('has-journey', 'no-journey'); });
+    root.classList.add('has-journey');
+    if (filmLabel) filmLabel.textContent = "Film: a 3D illustration drawn in real time, not SB Trading's own stock.";
+  } catch (e) {
+    root.classList.add('no-journey');
   }
-}
-// The label names the source of the frame drawn on the canvas (frame ranges in data-shots; while frames load, or if one
-// fails, a neighbouring shot may be on screen, and the label follows it), so stock and generated footage are
-// never blurred together and nothing reads as SB Trading's own. Without motion the HTML's whole-film sentence stays.
-const filmLabel = $('.film-label', film);
-const filmShots = (filmLabel?.dataset.shots || '').split('|').filter(Boolean).map((s) => { const [r, src] = s.split(':'), [a, b] = r.split('-').map(Number); return { a, b, src }; });
-let filmShot = null;
-function labelShot(i) { // i: the index of the loaded frame on the canvas (not the one the scroll asked for), -1 before any
-  if (!filmLabel || i < 0) return;
-  const shot = filmShots.find((s) => i + 1 >= s.a && i + 1 <= s.b);
-  if (!shot || shot === filmShot) return;
-  filmShot = shot;
-  filmLabel.textContent = `This shot: ${shot.src}, not SB Trading's own.`;
 }
 let heroO = 1; // the opening title's opacity: the dust is brightest in the grove's light shafts while it shows
 function beats(p) {
@@ -248,11 +218,7 @@ function sizeStudies() { const a = studiesCanvas.getBoundingClientRect(); studie
 async function loadStudies() {
   try {
     if (reduced) throw new Error('reduced motion: no 3D');
-    const probe = document.createElement('canvas').getContext('webgl2');
-    if (!probe) throw new Error('no WebGL2');
-    const dbg = probe.getExtension('WEBGL_debug_renderer_info');
-    const soft = /swiftshader|llvmpipe|software/i.test(dbg ? String(probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '');
-    probe.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
+    const { soft } = probeGL();
     const { createSpecimens } = await import('./assets/vendor/specimens.js');
     studies = createSpecimens(studiesCanvas, { low: soft || innerWidth < 820 });
     sizeStudies();
@@ -280,12 +246,14 @@ function tick(now = performance.now()) {
   const p = progressOf(film);
   filmP = reduced ? p : filmP + (p - filmP) * 0.16;
   if (Math.abs(p - filmP) < 1e-4) filmP = p;
-  const i = Math.round(filmP * (FRAMES - 1));
-  if (i !== shown) draw(i);
   if (!reduced) {
-    beats(filmP); labelShot(drawnFrom);
+    beats(filmP);
+    root.classList.toggle('film-lit', !!journey && filmP > 0.4); // the journey has come out of the grove into the lit showroom
     const fr0 = film.getBoundingClientRect();
-    if (fr0.bottom > 0 && fr0.top < innerHeight && !document.hidden) dust.draw(now);
+    if (fr0.bottom > 0 && fr0.top < innerHeight && !document.hidden) {
+      dust.draw(now);
+      if (journey) { journey.render({ p: filmP, pointer, now }); worldCanvas.dataset.p = filmP.toFixed(3); }
+    }
   }
 
   if (!reduced) {
@@ -328,8 +296,9 @@ function tick(now = performance.now()) {
   const mid = innerHeight / 2, fr = film.getBoundingClientRect(), er = explore.getBoundingClientRect();
   // header and chapter bar turn to ink while the lit showroom is behind them
   const lit = (er.bottom - er.top) > 0 && parseFloat(stage.style.getPropertyValue('--dark') || '0') < 0.5;
-  root.classList.toggle('light-top', lit && er.top <= 0 && er.bottom > 72);
-  root.classList.toggle('light-bottom', lit && er.top < innerHeight - 70 && er.bottom >= innerHeight);
+  const filmLit = root.classList.contains('film-lit');
+  root.classList.toggle('light-top', (lit && er.top <= 0 && er.bottom > 72) || (filmLit && fr.top <= 0 && fr.bottom > 72));
+  root.classList.toggle('light-bottom', (lit && er.top < innerHeight - 70 && er.bottom >= innerHeight) || (filmLit && fr.bottom >= innerHeight));
   let c = 4;
   if (fr.bottom > mid) c = p < 0.13 ? 0 : p < 0.34 ? 1 : 2;
   else if (er.bottom > mid) c = 3;
@@ -346,8 +315,8 @@ function tick(now = performance.now()) {
 }
 
 // ------------------------------------------------------------------ start
-size(); dust.size();
-addEventListener('resize', () => { size(); dust.size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
+dust.size();
+addEventListener('resize', () => { sizeWorld(); dust.size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
 addEventListener('scroll', () => { lastInput = performance.now(); }, { passive: true });
 if (fine && !reduced) addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; lastInput = performance.now(); }, { passive: true });
 // The 3D studies (shader compile, photographs, depth maps) load when Explore is within two screens, not at page load.
@@ -355,7 +324,7 @@ if ('IntersectionObserver' in window) {
   const near = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { near.disconnect(); loadStudies(); } }, { rootMargin: '200% 0px' });
   near.observe(explore);
 } else loadStudies();
-if (reduced) tick(); else loadFrames(); // with reduced motion the film is a poster: no frames are fetched
+if (reduced) tick(); else loadJourney(); // with reduced motion the film is a poster: the 3D world is not fetched
 if (reduced) addEventListener('scroll', () => requestAnimationFrame(tick), { passive: true });
 requestAnimationFrame(tick);
 let lenis = null;

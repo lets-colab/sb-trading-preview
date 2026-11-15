@@ -36,7 +36,7 @@ for (const [name, vp, mobile] of [['desktop', { width: 1440, height: 900 }, fals
     const txt = await p.evaluate((c) => { const m = c.match(/\d+(\.\d+)?/g).map(Number); const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * lin(m[0]) + 0.7152 * lin(m[1]) + 0.0722 * lin(m[2]); }, box.color);
     const cr = (Math.max(txt, lum.p95) + 0.05) / (Math.min(txt, lum.p95) + 0.05);
     const ok = cr >= 4.5; if (!ok) failures++;
-    console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}: caption "${bt.text}" reads at ${cr.toFixed(1)}:1 over the brightest footage behind it (needs 4.5:1)`);
+    console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}: caption "${bt.text}" reads at ${cr.toFixed(1)}:1 over the brightest part of the film behind it (needs 4.5:1)`);
   }
   await ctx.close();
 }

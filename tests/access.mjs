@@ -30,7 +30,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 let failures = 0;
 const check = (ok, msg) => { console.log(ok ? 'ok  ' : 'FAIL', msg); if (!ok) failures++; };
 const open = async (opts) => { const ctx = await browser.newContext(opts); const p = await ctx.newPage(); p.__film = 0;
-  p.on('request', (r) => { if (/\/assets\/film\/[dm]\/\d+\.webp/.test(r.url()) && !/\/044\.webp/.test(r.url())) p.__film++; });
+  p.on('request', (r) => { if (/\/assets\/vendor\/world\.js|\/assets\/film\//.test(r.url())) p.__film++; });
   await p.goto(ORIGIN + '/'); await p.waitForTimeout(2500); return [ctx, p]; };
 
 // ---------------------------------------------------------------- 1. reduced motion
@@ -39,15 +39,16 @@ const open = async (opts) => { const ctx = await browser.newContext(opts); const
   const s = await p.evaluate(() => ({
     motion: document.documentElement.classList.contains('motion'),
     poster: getComputedStyle(document.querySelector('.film-poster')).display !== 'none',
-    canvas: getComputedStyle(document.querySelector('.film-canvas')).display,
+    canvas: getComputedStyle(document.querySelector('.world')).display,
+    poster3d: /journey-poster\.webp$/.test(document.querySelector('.film-poster').currentSrc),
     beats: [...document.querySelectorAll('#film .beat')].every((b) => getComputedStyle(b).visibility === 'visible' && parseFloat(getComputedStyle(b).opacity) === 1),
     label: document.querySelector('.film-label').textContent.trim(),
     explore: getComputedStyle(document.getElementById('explore')).position,
   }));
   check(!s.motion, 'reduced motion: the page does not turn its motion layer on');
-  check(p.__film === 0, `reduced motion: the film is a poster, so no film frames are downloaded (${p.__film} frame requests)`);
-  check(s.poster && s.canvas === 'none' && s.beats, 'reduced motion: the film is a still poster with every caption visible');
-  check(/^Film: generated footage, not SB Trading's own/.test(s.label), `reduced motion: the film label keeps its whole-film sentence (${s.label})`);
+  check(p.__film === 0, `reduced motion: the film is a poster, so the 3D world is not downloaded (${p.__film} requests)`);
+  check(s.poster && s.poster3d && s.canvas === 'none' && s.beats, 'reduced motion: the film is a still of the 3D world with every caption visible');
+  check(/^Film: a 3D illustration, not SB Trading's own stock\.$/.test(s.label), `reduced motion: the film label names the still a 3D illustration (${s.label})`);
   await p.evaluate(() => document.querySelector('#bamboo .product').scrollIntoView({ block: 'center' }));
   await p.click('#bamboo .product >> nth=0');
   const opened = await p.evaluate(() => { const d = document.getElementById('productSheet'); return d.open && getComputedStyle(d).transform === 'none' && d.getAnimations().length === 0; });

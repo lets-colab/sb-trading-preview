@@ -42,7 +42,7 @@ src/materials3d.js    3D studies (three.js r187)        -> assets/materials3d.js
 src/smooth.js         Lenis re-export                   -> assets/vendor/smooth.js
 assets/sound.js       tactile sound cues (lazy-loaded on the Sound press)
 assets/img/cutout/    3D specimen cut-outs (tools/build-cutouts.py); src/specimens.js -> assets/vendor/specimens.js (three.js 0.186.0, MIT)
-assets/film/{d,m}/    142 WebP frames (desktop 1280x720, phone 405x720 crop) built by tools/build-film.py from the owner's showroom reference clip 97f87dc2 (generated): grove 0-1.95 s, fibre close-ups 3.0-5.95 s (zoomed, edges softened: drifting cards with invented text), gallery 6.0-7.4 s. Excluded: 2.0-2.95 s (plinth cards misspell the company name) and 8.3 s on (drawn-in fake quote form). docs/storyboard.html: reference vs site, scene by scene. Do NOT use gemini_generated_video_9f29a4ec (owner withdrew it).
+src/world.js          the film: a real-time 3D journey (three.js 0.187.0, bundled to assets/vendor/world.js): grove -> lit showroom -> bamboo splits -> banana fibre winds into yarn -> bark and leaves -> gallery. Labelled a 3D illustration. tools/build-poster.mjs renders assets/img/journey-poster.webp (reduced motion / no WebGL) and assets/img/showroom-backdrop.webp (Explore's backdrop). The 142 video frames and tools/build-film.py were removed on 15 Nov. docs/storyboard.html: reference vs site, scene by scene. Do NOT use gemini_generated_video_9f29a4ec (owner withdrew it).
 assets/img/           five real product photographs + logo variants (see rule 5)
 assets/vendor/        Motion 12, Lenis, three.js licence, fonts (Gloock, Schibsted Grotesk; OFL)
 functions/api/rifat.js  GET -> { ai }, POST -> { reply, enquiry, ready }; 503 without ANTHROPIC_API_KEY
@@ -53,19 +53,19 @@ PRODUCT.md            Impeccable brief (register: brand)
 DESIGN.md             design system v1.0.0 recorded from the code (tokens, components, states, motion); .impeccable/design.json sidecar
 tests/tokens.mjs      design-to-code gate: styles.css :root must match DESIGN.md token block exactly (runs first in npm test)
 docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions, untested with buyers)
-.graphifyignore       keeps film frames, photos, vendor and generated bundles out of /graphify (graphify-out/ is gitignored)
+.graphifyignore       keeps photos, vendor and generated bundles out of /graphify (graphify-out/ is gitignored)
 ```
 
 ## Commands
 ```bash
 npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
-CHROMIUM_PATH=<chrome> npm test                          # 167 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone (incl. film label, dust, spec drawer)
+CHROMIUM_PATH=<chrome> npm test                          # 171 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone (incl. the 3D journey, film label, dust, spec drawer)
 node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector: 10 findings, all documented intent
 cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
 ```
 
 ## How it works (essentials)
-- **Film (stages 01-03):** `#film` is 680vh with a sticky stage. `site.js` maps scroll progress to one of 279 frames, drawn on a canvas; captions are `.beat[data-at="a,b"]` progress ranges. Frames load coarse to fine. Labelled as generated.
+- **Film (stages 01-03):** `#film` has a sticky stage. `site.js` loads `assets/vendor/world.js` after first paint (the poster shows until it is ready) and calls `journey.render({ p, pointer, now })` every frame while the film is on screen; `p` is the eased scroll progress, mirrored on `.world[data-p]` for tests. Camera keys, act timings and objects live in `src/world.js` (`KEYS`). Captions are `.beat[data-at="a,b"]` progress ranges; above p 0.4 the `film-lit` class turns them, the header and the chapter bar to ink. Labelled a 3D illustration.
 - **Explore (04):** `#explore` is 420vh with one sticky stage; progress thirds pick the family (`.fam.on`, inactive ones `inert`). CSS wipes and tilts the arched photo windows (`--t`, `--ry`, `--rx`); the blurred photo is the background.
 - **3D studies:** `loadStudies()` imports `assets/materials3d.js` after first paint (WebGL2 only; reduced motion, no WebGL or a lost context leave photographs only, class `no-3d`). `render()` runs only while the visitor scrolls or moves the pointer, while a family transition settles, and once more at rest; then nothing is drawn (the smoke test counts draw calls).
 - **Rifat (05):** `assets/rifat.js` probes `GET /api/rifat` when the section approaches. `{ ai: true }` -> AI mode (POST with the conversation and enquiry; the function calls `claude-opus-5-5` at effort `low` with server-side fallbacks, records fields through the `update_enquiry` tool and validates them). Anything else -> guided mode, labelled "AI not connected yet". Both fill "Your enquiry"; "Send on WhatsApp" opens `wa.me/<number>?text=<enquiry>` only when product, country, name and email are present and `data-whatsapp` is set; otherwise it explains and offers Copy.
@@ -132,11 +132,11 @@ No Access, DNS, credential, or production permission changes were made during th
 - If evidence is missing, mark the item `NOT PROVEN` and stop at the smallest reversible diagnostic check.
 
 ## Open items, in priority order
-1. **SB Trading's own footage and photographs:** run `docs/SHOTLIST.md` (two days: location at dusk, then studio). Every film shot is currently generated footage (the owner's reference clip) and says so on screen; no stock footage is used.
+1. **SB Trading's own footage and photographs:** run `docs/SHOTLIST.md` (two days: location at dusk, then studio). The film is a 3D illustration drawn by code and says so on screen; no footage is used. SB Trading's own footage could later be woven in as textures or a final shot.
 2. **Owner content:** email and phone (WhatsApp +880 1878-707910 is live); origin, minimum order, shipping terms, lead times, certifications; confirmed product names, grades and per-product photos (banana bark and woven mats have none; "Ski poles" is an unverified label). Approval of the derived light logo. About Us states only what the page already said; extend it only with facts SB Trading confirms.
 3. **Rifat AI key (owner decision on spend first):** add `ANTHROPIC_API_KEY` in Cloudflare (steps above), then test five real buyer conversations, including attempts to get prices or a confirmed order (Rifat must refuse and hand to the team). Add rate limiting per IP (Cloudflare WAF rule on `/api/rifat`) before any public launch.
 4. **Owner's ten-minute check on a real phone (nothing here is verified on a real device):**
-   - the film scrubs smoothly with the thumb and each caption is readable;
+   - the 3D film moves smoothly with the thumb on a mid-range phone and each caption is readable;
    - Explore: the three arches respond and a product opens from the bottom and closes cleanly;
    - open a product, copy the address from the browser, send it to yourself on WhatsApp and open it: the same product must open;
    - press Sound with headphones: the music is pleasant and never louder than the cues; press again and it stops;

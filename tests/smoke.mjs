@@ -42,32 +42,38 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   p.on('request', (r) => { const u = r.url(); if (!u.startsWith(ORIGIN) && !u.startsWith('data:') && !u.startsWith('blob:')) external.push(u); });
   await p.goto(ORIGIN + '/'); await p.waitForTimeout(3000);
   check((await p.evaluate(() => window.__ac)) === 0, `${name}: no AudioContext before the Sound press`);
-  // the film names the source of the shot on screen (stock or generated), and never claims it as SB Trading's own
-  const labelAt = async (x, want) => {
-    await p.evaluate((q) => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * q); }, x);
-    await p.waitForFunction((src) => new RegExp(src, 'i').test(document.querySelector('.film-label').textContent), want.source, { timeout: 15000 }).catch(() => {}); // the film eases to the scroll position
-    return p.evaluate(() => document.querySelector('.film-label').textContent.trim());
+  // the film is a real-time 3D journey (src/world.js), not footage: a WebGL canvas, labelled as an illustration
+  await p.waitForFunction(() => document.documentElement.classList.contains('has-journey'), null, { timeout: 20000 }).catch(() => {});
+  const journey = await p.evaluate(() => ({
+    on: document.documentElement.classList.contains('has-journey'),
+    world: getComputedStyle(document.querySelector('.world')).display,
+    label: document.querySelector('.film-label').textContent.trim(),
+  }));
+  check(journey.on && journey.world !== 'none', `${name}: the film is the 3D journey drawn in WebGL (has-journey ${journey.on}, canvas ${journey.world})`);
+  check(/^Film: a 3D illustration drawn in real time, not SB Trading's own stock\.$/.test(journey.label), `${name}: the film label calls it a 3D illustration (${journey.label})`);
+  check(!external.length && (await p.evaluate(() => performance.getEntriesByType('resource').filter((r) => /\/assets\/film\//.test(r.name)).length)) === 0, `${name}: no video frames are downloaded for the film`);
+  // each act of the journey is drawn: the scroll moves the camera and the picture changes from act to act
+  const actAt = async (q) => {
+    await p.evaluate((x) => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * x); }, q);
+    await p.waitForFunction((x) => Math.abs(Number(document.querySelector('.world').dataset.p) - x) < 0.01, q, { timeout: 15000 }).catch(() => {});
+    await p.waitForTimeout(300);
+    const shot = (await p.screenshot({ type: 'jpeg', quality: 60 })).toString('base64');
+    return p.evaluate(async (src) => { // a coarse luminance grid of what is on screen: 8x5 cells
+      const img = new Image(); img.src = `data:image/jpeg;base64,${src}`; await img.decode();
+      const t = document.createElement('canvas'); t.width = 8; t.height = 5;
+      const g = t.getContext('2d'); g.drawImage(img, 0, 0, 8, 5); const d = g.getImageData(0, 0, 8, 5).data, out = [];
+      for (let i = 0; i < d.length; i += 4) out.push(Math.round(0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]));
+      return out;
+    }, shot);
   };
-  // the film is the owner's reference journey (tools/build-film.py): generated footage throughout, labelled as such
-  const topLabel = await labelAt(0.02, /generated footage/);
-  check(/^This shot: generated footage, not SB Trading's own\.$/.test(topLabel), `${name}: from the first frame (the bamboo grove) the label names generated footage (${topLabel})`);
+  const acts = [];
+  for (const q of [0.03, 0.5, 0.72, 0.97]) acts.push(await actAt(q));
+  const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length, diff = (a, b) => mean(a.map((v, k) => Math.abs(v - b[k])));
+  check(mean(acts[0]) < 70 && mean(acts[1]) > 120, `${name}: the journey opens in the dark grove and comes out into the lit showroom (mean light ${acts.map((a) => Math.round(mean(a))).join(' → ')})`);
+  check(acts.slice(1).every((a, k) => diff(a, acts[k]) > 6), `${name}: every act draws a different picture (${acts.slice(1).map((a, k) => diff(a, acts[k]).toFixed(1)).join(', ')})`);
+  await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(1200);
   const dustLit = await p.evaluate(() => { const c = document.querySelector('.dust'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 8) n++; return n; });
   check(dustLit > 20, `${name}: dust motes are drawn over the opening (${dustLit} lit pixels)`);
-  const shots = [[0.25, /generated footage/i], [0.5, /generated footage/i], [0.95, /generated footage/i]];
-  const seen = [];
-  for (const [x, want] of shots) { const t = await labelAt(x, want); seen.push(`${x}: ${t}`); if (!want.test(t) || !/not SB Trading's own/.test(t) || /Pexels|stock/i.test(t)) seen.push('MISMATCH'); }
-  check(!seen.includes('MISMATCH'), `${name}: through the whole film the label names generated footage and never stock (${seen.filter((s) => s !== 'MISMATCH').join(' | ')})`);
-  { // the label follows the frame actually on the canvas: with frames 1-30 failing to load, frame 30 is drawn from the
-    // nearest loaded frame and the label still names that frame's source (Codex finding on #16)
-    const q = await ctx.newPage();
-    await q.route(/\/assets\/film\/[dm]\/0(0[1-9]|[12][0-9]|30)\.webp$/, (r) => r.abort());
-    await q.goto(ORIGIN + '/'); await q.waitForTimeout(2500);
-    await q.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * (29 / 141)); });
-    await q.waitForFunction(() => /generated footage, not/i.test(document.querySelector('.film-label').textContent), null, { timeout: 15000 }).catch(() => {});
-    const t = await q.evaluate(() => document.querySelector('.film-label').textContent.trim());
-    check(/generated footage, not SB Trading's own/.test(t) && !/Pexels/.test(t), `${name}: the label follows the frame drawn, not the frame asked for (${t})`);
-    await q.close();
-  }
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
 
