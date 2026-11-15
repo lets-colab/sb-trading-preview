@@ -330,6 +330,23 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       check(!lost.has3d && lost.no3d && lost.arch === '1', `${name}: when the WebGL context is lost, the product photographs come back (${JSON.stringify(lost)})`);
       await q.close();
     }
+    { // on a slow machine (CI's software renderer ran this page at 1 frame a second, #18) the 3D must still come to rest
+      // soon after the visitor stops: easing is measured in time, not frames. Frame-based easing needed ~50 frames, which
+      // at 1 fps kept the page drawing for close to a minute. Here frames are fed 1 s apart, as on that machine.
+      const q = await ctx.newPage();
+      await q.goto(ORIGIN + '/'); await q.waitForTimeout(800);
+      const frames = await q.evaluate(async () => {
+        const { createSpecimens } = await import('/assets/vendor/specimens.js');
+        const c = document.createElement('canvas'); c.width = 400; c.height = 500;
+        const sp = createSpecimens(c, { low: true }); sp.setSize(400, 500); await sp.whenReady(0);
+        let now = 1000; sp.render({ fam: 0, t: 0.5, pointer: [0, 0], now, settle: true });
+        for (let i = 0; i < 6; i++) sp.render({ fam: 0, t: 0.95, pointer: [0.5, 0.4], now: (now += 16) }); // the visitor turns it
+        let n = 0; while (n < 120 && sp.render({ fam: 0, t: 0.95, pointer: [0, 0], now: (now += 1000), settle: true })) n++;
+        return n + 1;
+      });
+      check(frames <= 3, `${name}: at 1 frame a second, the 3D comes to rest within 3 frames of the last input (${frames} frames)`);
+      await q.close();
+    }
     // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
     // wait until the Bamboo family is the live one (an inert family cannot take focus), then focus its last product
     await toExplore(0.15); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});

@@ -59,7 +59,7 @@ docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions
 ## Commands
 ```bash
 npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
-CHROMIUM_PATH=<chrome> npm test                          # 201 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone (incl. film label, dust, spec drawer)
+CHROMIUM_PATH=<chrome> npm test                          # 202 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone (incl. film label, dust, spec drawer)
 node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector: 10 findings, all documented intent
 cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
 ```

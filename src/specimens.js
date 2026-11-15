@@ -102,7 +102,7 @@ export function createSpecimens(canvas, { low = false, base = 'assets/img/' } = 
     }).catch(() => false);
   }
 
-  let mounted = null, active = -1;
+  let mounted = null, active = -1, last = 0;
   const cur = { ry: 0, rx: 0 };
   api.mount = (el) => { if (el && canvas.parentElement !== el) { el.appendChild(canvas); mounted = el; api.dirty = true; } };
   api.setSize = (w, h) => {
@@ -118,13 +118,18 @@ export function createSpecimens(canvas, { low = false, base = 'assets/img/' } = 
   api.render = ({ fam, t = 0.5, pointer = [0, 0], now = performance.now(), settle = false }) => {
     if (fam !== active) { active = fam; }
     let moving = false;
+    // Easing is measured in time, not frames, so a slow or software renderer (1 frame a second on CI) still comes to rest
+    // within a second or two instead of drawing for a minute. Gaps are capped at half a second (a stalled tab does not jump).
+    const dt = last ? Math.min(0.5, Math.max(0, (now - last) / 1000)) : 1 / 60;
+    last = now;
+    const ease = (rate) => 1 - Math.exp(-rate * dt); // the per-second rates match the old 60 fps per-frame steps
     const ry = (t - 0.5) * 0.9 + pointer[0] * 0.55, rx = pointer[1] * 0.16;
-    const k = settle ? 0.12 : 0.08;
+    const k = ease(settle ? 7.7 : 5);
     cur.ry += (ry - cur.ry) * k; cur.rx += (rx - cur.rx) * k;
     if (Math.abs(ry - cur.ry) > 1e-3 || Math.abs(rx - cur.rx) > 1e-3) moving = true;
     for (const [i, s] of specimens.entries()) {
       const target = i === active ? 1 : 0;
-      s.scale += (target - s.scale) * 0.14;
+      s.scale += (target - s.scale) * ease(9);
       if (Math.abs(target - s.scale) < 1e-3) s.scale = target; else moving = true;
       s.group.visible = s.scale > 0.002;
       s.group.scale.setScalar(0.6 + 0.4 * s.scale);
@@ -134,7 +139,7 @@ export function createSpecimens(canvas, { low = false, base = 'assets/img/' } = 
     }
     const ph = now / 1000;
     const p = motesGeo.attributes.position;
-    for (let i = 0; i < N; i++) { let y = p.getY(i) + 0.0025; if (y > CASE.h * 0.45) y = -CASE.h * 0.45; p.setY(i, y); }
+    for (let i = 0; i < N; i++) { let y = p.getY(i) + 0.15 * dt; if (y > CASE.h * 0.45) y = -CASE.h * 0.45; p.setY(i, y); }
     p.needsUpdate = true;
     motes.material.opacity = 0.55 + 0.25 * Math.sin(ph * 0.8);
     renderer.render(scene, camera);
