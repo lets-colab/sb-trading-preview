@@ -626,8 +626,10 @@ let sheetKeepsScroll = false;
 let steppingBack = null, steppedBack = null;
 function landed() { if (steppedBack) { const done = steppedBack; steppingBack = steppedBack = null; done(); } }
 function stepBack() {
-  steppingBack = new Promise((r) => { steppedBack = r; });
-  setTimeout(landed, 1000); // a step that never lands does not hold the drawer
+  const step = new Promise((r) => { steppedBack = r; });
+  steppingBack = step;
+  // a step that never lands does not hold the drawer; an earlier step's timer cannot release this one
+  setTimeout(() => { if (steppingBack === step) landed(); }, 1500);
   history.back();
 }
 // Leaving the address happens once per open product, at the moment the page closes the drawer (closeSheet). The dialog's

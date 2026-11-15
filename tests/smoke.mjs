@@ -167,11 +167,12 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.waitForTimeout(700); await q.keyboard.press('Escape');
     await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
     await q.evaluate(() => document.getElementById('p-banana-leaves').click());
-    await q.waitForTimeout(1500);
+    await q.waitForFunction(() => document.getElementById('productSheet').open && location.hash === '#p-banana-leaves', null, { timeout: 6000 }).catch(() => {});
+    await q.waitForTimeout(500);
     const shown = await q.evaluate(() => ({ open: document.getElementById('productSheet').open, title: document.getElementById('sheetTitle').textContent, hash: location.hash }));
     await q.keyboard.press('Escape');
-    await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
-    await q.waitForTimeout(1500);
+    await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 6000 }).catch(() => {});
+    await q.waitForTimeout(1500); // and it stays closed
     const after = { open: await sheetOpen(), hash: await q.evaluate(() => location.hash) };
     check(shown.open && shown.title === 'Banana leaves' && shown.hash === '#p-banana-leaves' && !after.open && after.hash === '',
       `${name}: a product opened just after closing another is the one shown, and closing it leaves the drawer closed (${JSON.stringify({ shown, after })})`);
@@ -180,9 +181,12 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.waitForFunction(() => document.getElementById('productSheet').open, null, { timeout: 5000 }).catch(() => {});
     await q.waitForTimeout(700); await q.keyboard.press('Escape'); await q.waitForTimeout(60);
     await q.evaluate(() => document.getElementById('p-banana-leaves').click());
-    await q.waitForTimeout(1500);
+    await q.waitForFunction(() => document.getElementById('productSheet').open && location.hash === '#p-banana-leaves', null, { timeout: 6000 }).catch(() => {});
+    await q.waitForTimeout(500);
     const mid = await q.evaluate(() => ({ open: document.getElementById('productSheet').open, title: document.getElementById('sheetTitle').textContent, hash: location.hash }));
-    await q.keyboard.press('Escape'); await q.waitForTimeout(1500);
+    await q.keyboard.press('Escape');
+    await q.waitForFunction(() => !document.getElementById('productSheet').open, null, { timeout: 6000 }).catch(() => {});
+    await q.waitForTimeout(1500); // and it stays closed
     const midAfter = { open: await sheetOpen(), hash: await q.evaluate(() => location.hash) };
     check(mid.open && mid.title === 'Banana leaves' && mid.hash === '#p-banana-leaves' && !midAfter.open && midAfter.hash === '',
       `${name}: a product opened while another is still sliding out is the one shown, at its own address (${JSON.stringify({ mid, midAfter })})`);
@@ -355,10 +359,12 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       const box = await p.evaluate(() => { const r = document.querySelector('#bamboo .exhibit').getBoundingClientRect(); return { x: Math.max(0, r.left), y: Math.max(0, r.top), width: Math.min(r.width, innerWidth - r.left), height: Math.min(r.height, innerHeight - r.top) }; });
       // On a software renderer the GPU process can be saturated; if this capture times out, say what the page was doing
       // (frame rate, long tasks, 3D state, renderer) before failing, so a CI-only stall leaves evidence (#18).
-      const shot = (o) => p.screenshot(o).catch(async (err) => {
-        const diag = await Promise.race([p.evaluate(() => new Promise((r) => { let n = 0; const t = performance.now(); const f = () => { n++; if (performance.now() - t < 2000) requestAnimationFrame(f); else r({ fps: n / 2, cls: document.documentElement.className, state: document.querySelector('.studies')?.dataset.renderState, renderer: (() => { const g = document.createElement('canvas').getContext('webgl2'), d = g?.getExtension('WEBGL_debug_renderer_info'); return d ? String(g.getParameter(d.UNMASKED_RENDERER_WEBGL)) : 'none'; })() }); }; requestAnimationFrame(f); })), new Promise((r) => setTimeout(() => r('page did not answer within 20 s'), 20000))]);
-        console.log('DIAG screenshot timeout:', JSON.stringify(diag));
-        throw err;
+      // CI's software renderer has stalled a capture while the page stayed healthy (60 fps, 3D idle): record what the page
+      // was doing, then try the capture once more; the pixel comparison below still has to pass on real captures.
+      const diag = () => Promise.race([p.evaluate(() => new Promise((r) => { let n = 0; const t = performance.now(); const f = () => { n++; if (performance.now() - t < 2000) requestAnimationFrame(f); else r({ fps: n / 2, cls: document.documentElement.className, state: document.querySelector('.studies')?.dataset.renderState, dialogs: [...document.querySelectorAll('dialog[open]')].map((d) => d.id), media: [...document.querySelectorAll('audio, video')].filter((m) => !m.paused).length + (window.__story && !window.__story.paused ? 1 : 0), animations: document.getAnimations().filter((a) => a.playState === 'running').length, renderer: (() => { const g = document.createElement('canvas').getContext('webgl2'), d = g?.getExtension('WEBGL_debug_renderer_info'); return d ? String(g.getParameter(d.UNMASKED_RENDERER_WEBGL)) : 'none'; })() }); }; requestAnimationFrame(f); })), new Promise((r) => setTimeout(() => r('page did not answer within 20 s'), 20000))]);
+      const shot = (o) => p.screenshot({ ...o, timeout: 30000 }).catch(async (err) => {
+        console.log('DIAG screenshot timeout (trying once more):', JSON.stringify(await diag()));
+        return p.screenshot({ ...o, timeout: 30000 }).catch(async (again) => { console.log('DIAG second capture timeout:', JSON.stringify(await diag())); throw again; });
       });
       const withObj = (await shot({ clip: box })).toString('base64');
       await p.evaluate(() => { document.querySelector('.studies').style.visibility = 'hidden'; });
