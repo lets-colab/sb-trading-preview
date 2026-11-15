@@ -226,6 +226,25 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
 
   if (!touch) {
     check(await p.evaluate(() => document.documentElement.classList.contains('has-3d')), `${name}: the 3D studies load`);
+    { // each family is a 3D cut-out of SB Trading's own photograph, drawn in WebGL (three.js) on a pedestal in a glass
+      // case, not the flat photo (owner's request); the photo stays in the page for no-WebGL and reduced motion
+      await toExplore(0.15); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
+      await p.waitForFunction(() => document.querySelector('.studies')?.dataset.specimen === '0', null, { timeout: 20000 }).catch(() => {});
+      await p.mouse.move(700, 400); await p.mouse.move(760, 430); await p.waitForTimeout(1200);
+      const st = await p.evaluate(() => ({ arch: getComputedStyle(document.querySelector('#bamboo .arch')).opacity, inExhibit: !!document.querySelector('#bamboo .exhibit .studies'), ready: document.querySelector('.studies').dataset.specimen }));
+      const box = await p.evaluate(() => { const r = document.querySelector('#bamboo .exhibit').getBoundingClientRect(); return { x: Math.max(0, r.left), y: Math.max(0, r.top), width: Math.min(r.width, innerWidth - r.left), height: Math.min(r.height, innerHeight - r.top) }; });
+      const withObj = (await p.screenshot({ clip: box })).toString('base64');
+      await p.evaluate(() => { document.querySelector('.studies').style.visibility = 'hidden'; });
+      const without = (await p.screenshot({ clip: box })).toString('base64');
+      await p.evaluate(() => { document.querySelector('.studies').style.visibility = ''; });
+      const drawn = await p.evaluate(async ([a, b]) => {
+        const px = async (s) => { const im = new Image(); im.src = 'data:image/png;base64,' + s; await im.decode(); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0); return g.getImageData(0, 0, c.width, c.height).data; };
+        const [d1, d2] = await Promise.all([px(a), px(b)]); let n = 0;
+        for (let i = 0; i < d1.length; i += 4) if (Math.abs(d1[i] - d2[i]) + Math.abs(d1[i + 1] - d2[i + 1]) + Math.abs(d1[i + 2] - d2[i + 2]) > 60) n++;
+        return +(n / (d1.length / 4)).toFixed(3);
+      }, [withObj, without]);
+      check(st.arch === '0' && st.inExhibit && st.ready === '0' && drawn > 0.08, `${name}: the family on stage is a 3D cut-out drawn in WebGL in place of the photo (${JSON.stringify(st)}, ${Math.round(drawn * 100)}% of the exhibit drawn)`);
+    }
     // keyboard reaches every family: Tab past the last bamboo product lands on the first fibre product, and back
     // wait until the Bamboo family is the live one (an inert family cannot take focus), then focus its last product
     await toExplore(0.15); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});

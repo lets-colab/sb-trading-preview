@@ -41,6 +41,7 @@ src/rifat-fn.js       Pages Function source (Anthropic TypeScript SDK) -> functi
 src/materials3d.js    3D studies (three.js r187)        -> assets/materials3d.js
 src/smooth.js         Lenis re-export                   -> assets/vendor/smooth.js
 assets/sound.js       tactile sound cues (lazy-loaded on the Sound press)
+assets/img/cutout/    3D specimen cut-outs (tools/build-cutouts.py); src/specimens.js -> assets/vendor/specimens.js (three.js 0.186.0, MIT)
 assets/film/{d,m}/    142 WebP frames (desktop 1280x720, phone 405x720 crop) built by tools/build-film.py from the owner's showroom reference clip 97f87dc2 (generated): grove 0-1.95 s, fibre close-ups 3.0-5.95 s (zoomed, edges softened: drifting cards with invented text), gallery 6.0-7.4 s. Excluded: 2.0-2.95 s (plinth cards misspell the company name) and 8.3 s on (drawn-in fake quote form). docs/storyboard.html: reference vs site, scene by scene. Do NOT use gemini_generated_video_9f29a4ec (owner withdrew it).
 assets/img/           five real product photographs + logo variants (see rule 5)
 assets/vendor/        Motion 12, Lenis, three.js licence, fonts (Gloock, Schibsted Grotesk; OFL)
@@ -58,7 +59,7 @@ docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions
 ## Commands
 ```bash
 npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
-CHROMIUM_PATH=<chrome> npm test                          # 166 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone (incl. film label, dust, spec drawer)
+CHROMIUM_PATH=<chrome> npm test                          # 167 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast, accessibility (axe), smoke on desktop + phone (incl. film label, dust, spec drawer)
 node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector: 10 findings, all documented intent
 cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
 ```

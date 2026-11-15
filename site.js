@@ -244,7 +244,7 @@ explore.addEventListener('keydown', (e) => {
 // No WebGL2, reduced motion or a lost context: the plain <img> in the arch carries it.
 const studiesCanvas = $('.studies', explore), stage = $('.explore-stage', explore);
 let studies = null, settling = true, restDrawn = false, mountedFam = -1;
-function sizeStudies() { const a = studiesCanvas.parentElement.getBoundingClientRect(); studies?.setSize(a.width, a.height); }
+function sizeStudies() { const a = studiesCanvas.getBoundingClientRect(); studies?.setSize(a.width, a.height); }
 async function loadStudies() {
   try {
     if (reduced) throw new Error('reduced motion: no 3D');
@@ -253,8 +253,8 @@ async function loadStudies() {
     const dbg = probe.getExtension('WEBGL_debug_renderer_info');
     const soft = /swiftshader|llvmpipe|software/i.test(dbg ? String(probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '');
     probe.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
-    const { createPhotoDepth } = await import('./assets/photodepth.js');
-    studies = createPhotoDepth(studiesCanvas, { low: soft || innerWidth < 820 });
+    const { createSpecimens } = await import('./assets/vendor/specimens.js');
+    studies = createSpecimens(studiesCanvas, { low: soft || innerWidth < 820 });
     sizeStudies();
     studiesCanvas.addEventListener('webglcontextlost', () => { studies = null; root.classList.add('no-3d'); });
     root.classList.add('has-3d');
@@ -306,7 +306,10 @@ function tick(now = performance.now()) {
     stage.style.setProperty('--dark', dark.toFixed(3));
     const inView = er.top < innerHeight && er.bottom > 0;
     if (studies && inView && (active || settling || !restDrawn || studies.dirty)) { // dirty: a texture arrived or the canvas moved/resized
-      if (idx !== mountedFam) { mountedFam = idx; studies.mount(fams[idx].querySelector('.arch')); sizeStudies(); }
+      if (idx !== mountedFam) {
+        mountedFam = idx; studies.mount(fams[idx].querySelector('.exhibit')); sizeStudies();
+        const k = idx; studies.whenReady(k).then((ok) => { if (ok && mountedFam === k) studiesCanvas.dataset.specimen = String(k); });
+      }
       settling = studies.render({ fam: idx, t, pointer, now, settle: !active });
       restDrawn = !active && !settling;
     }

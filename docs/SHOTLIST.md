@@ -35,6 +35,10 @@ Dark slate or ink-blue ground, one warm light at 45 degrees from the left, no fi
 | Arch stills: one in-context still per family, from Day 1 | 3 | Portrait 2:3 | Explore arches (second photo). Bark currently has none. |
 | Product stills, with a ruler or a hand for scale | 9 | 16:10, at least 2000 px wide | Product drawer: Bamboo poles, Bamboo splits, Ski poles, Woven mats, Grade A banana silk, Grade B standard banana fibre yarn, Grade C industrial banana fibre yarn, Banana bark, Banana leaves |
 
+## Turntable (for full 360° specimens)
+
+The 3D specimens in Explore are cut out of single photographs, so they turn only about a quarter-turn either way. For full 360° objects, photograph one specimen per product on a turntable: plain mid-grey ground, even soft light, 36 photographs at 10° steps, plus 12 from 30° above; the product filling most of the frame, sharp throughout. These become photogrammetry models that replace the cut-outs.
+
 ## After the shoot
 
 1. Send the files with the record sheet. Product names and grades shown in the stills must be the real ones.

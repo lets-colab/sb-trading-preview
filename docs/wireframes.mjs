@@ -43,6 +43,7 @@ const PARTS = [
   ['.fam.on .fam-lede', 'Family lede', 'text'],
   ['.fam.on .products', 'Product chips (open the spec drawer)', 'control'],
   ['.fam.on .arch', 'Arch window: photograph in depth (WebGL)', 'media'],
+  ['.fam.on .exhibit .studies', 'Arch: 3D specimen (WebGL cut-out in a glass case)', 'media'],
   ['.fam.on .plinth', 'Plinth: 01 / 03 · family name · ← →', 'control'],
   ['.study-label', 'Depth-effect label', 'chrome'],
   ['.explore-note', 'Note: names and grades being confirmed', 'chrome'],

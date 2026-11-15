@@ -38,7 +38,7 @@ const SCENES = [
     site: 'The film ends in the same gallery. Caption Bamboo, yarn and bark. with the three family cards, each going straight to that family.' },
   { title: 'One family, on its plinth', feel: 'Focus. The camera moves in on one case.',
     ref: ['A', 7.6], go: exploreAt(0.15),
-    site: 'Explore is the bright showroom: the family’s real photograph in an arch on a plinth (01 / 03 Bamboo, arrows to the next), its products as chips beside it.' },
+    site: 'Explore is the bright showroom: the family as a 3D cut-out of SB’s own photograph in a glass case on a lit pedestal (three.js), turning with scroll and pointer, on its plinth (01 / 03 Bamboo, arrows to the next); its products as chips beside it.' },
   { title: 'The spec drawer', feel: 'Confidence. The product’s facts on a pane of glass.',
     ref: ['B', 7.0], go: exploreAt(0.15), click: '.fam.on .product',
     site: 'A product opens a white frosted glass drawer: photograph, family, grade, supplied from Bangladesh, specification and minimum order (confirmed in the quotation), Request a quote in brand blue.',
