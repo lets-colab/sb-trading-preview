@@ -80,8 +80,11 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       return { title: g.querySelector('h1').textContent.trim(), enter: visible(g.querySelector('.gate-enter')) && g.querySelector('.gate-enter').textContent.trim(), lines: lines.length, drawn,
         foot: /headphones/i.test(g.querySelector('.gate-foot').textContent), card: !!document.querySelector('.spec-card'),
         captions: [...document.querySelectorAll('#film .beat[data-ch]')].filter(visible).length, cards: visible(document.querySelector('#film .fam-cards')),
-        inFilm: document.documentElement.classList.contains('in-film'), bar: Number(getComputedStyle(document.querySelector('.chapters')).opacity), ask: Number(getComputedStyle(document.querySelector('.top > .btn-small')).opacity) };
+        inFilm: document.documentElement.classList.contains('in-film'), bar: Number(getComputedStyle(document.querySelector('.chapters')).opacity), ask: Number(getComputedStyle(document.querySelector('.top > .btn-small')).opacity),
+        // links and buttons inside the chapters read to screen readers must not be keyboard stops while hidden (Codex on #20)
+        hiddenStops: [...document.querySelectorAll('#film .beat[data-ch] a[href], #film .beat[data-ch] button')].filter((el) => el.getClientRects().length > 0 && !el.closest('[inert]')).map((el) => el.textContent.trim()) };
     });
+    check(gate.hiddenStops.length === 0, `${name}: no link or button hidden in the film's chapters is a keyboard stop (${JSON.stringify(gate.hiddenStops)})`);
     check(gate.title === 'Materials in Motion.' && gate.enter === 'Click to enter' && gate.lines > 40 && gate.drawn === gate.lines && gate.foot,
       `${name}: the film opens on a gate drawn in fine lines, with its title and "Click to enter" (${JSON.stringify({ title: gate.title, enter: gate.enter, lines: gate.lines, drawn: gate.drawn })})`);
     check(!gate.card && gate.captions === 0 && !gate.cards && gate.inFilm && gate.bar === 0 && gate.ask === 0,
@@ -110,6 +113,24 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const want = touch ? ['Bamboo', 'Banana fibre'] : ['Bamboo', 'Banana fibre', 'Bark and leaves'];
     check(Math.abs((await prog()) - 0.555) < 0.004 && want.every((w) => split.rings.includes(w)) && split.tabbable,
       `${name}: the specimen opens onto the materials, each with its ring, reachable by keyboard only while shown (${JSON.stringify(split)})`);
+    { // press and hold on a ring: the scene leans in on that material and a 3D glass board with its products fades in
+      // while the narrator reads them; letting go returns the scene (and is not taken as a tap)
+      const ring = await q.evaluate(() => { const r = document.querySelector('.spot.on[data-key="bamboo"]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+      const cdp = touch ? await ctx.newCDPSession(q) : null;
+      const press = async (down) => {
+        if (touch) await cdp.send('Input.dispatchTouchEvent', { type: down ? 'touchStart' : 'touchEnd', touchPoints: down ? [{ x: ring.x, y: ring.y }] : [] });
+        else { await q.mouse.move(ring.x, ring.y); if (down) await q.mouse.down(); else await q.mouse.up(); }
+      };
+      await press(true); await q.waitForTimeout(1400);
+      const held = await q.evaluate(() => { const b = document.querySelector('.board'); return { on: !!b?.classList.contains('on'), title: b?.querySelector('.board-title')?.textContent, items: [...(b?.querySelectorAll('.board-list li') || [])].map((li) => li.textContent),
+        zoom: getComputedStyle(document.querySelector('.film-canvas')).transform, sub: document.querySelector('.subtitle').textContent.trim(), others: [...document.querySelectorAll('.spot.on:not(.held)')].filter((s) => getComputedStyle(s).visibility === 'visible').length }; });
+      await press(false); await q.waitForTimeout(1400);
+      const gone = await q.evaluate(() => ({ on: !!document.querySelector('.board')?.classList.contains('on'), zoom: getComputedStyle(document.querySelector('.film-canvas')).transform, sub: document.querySelector('.subtitle').classList.contains('on'), story: !!window.__story && !window.__story.paused }));
+      const flat = (m) => m === 'none' || m === 'matrix(1, 0, 0, 1, 0, 0)';
+      check(held.on && held.title === 'Bamboo' && ['Bamboo poles', 'Bamboo splits', 'Ski poles', 'Woven mats'].every((p) => held.items.includes(p)) && !flat(held.zoom) && /^Bamboo, from Bangladesh/.test(held.sub) && held.others === 0,
+        `${name}: holding the bamboo ring leans the scene in and fades in a glass board with bamboo's products as the narrator reads them (${JSON.stringify(held)})`);
+      check(!gone.on && flat(gone.zoom) && !gone.sub && !gone.story, `${name}: letting go returns the scene, and the release is not taken as a tap (${JSON.stringify(gone)})`);
+    }
     // a ring tells that material's story, with its words as the subtitle; pressing again stops it
     await q.click('.spot.on[data-key="bamboo"]');
     await q.waitForTimeout(1200);

@@ -532,6 +532,9 @@ html:not(.motion) .film .say{display:block;max-width:46ch;margin:.7em 0 0;font-s
 .gate-ready .gate-load{visibility:hidden}
 /* the chapters, with motion, are read by screen readers and spoken by the narrator: the picture carries only the subtitle */
 .motion .film .beat:not(.gate){position:absolute;left:0;top:0;width:1px;height:1px;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* the end chapter's family links are for the plain page; with motion Explore follows at once, and clipped links would be
+   invisible keyboard stops */
+.motion .film .fam-cards{display:none}
 .hud{position:absolute;inset:0;z-index:4;pointer-events:none}
 .hud[hidden]{display:none}
 .hud .subtitle,.hud-index,.hud-next{opacity:0;transition:opacity .5s var(--ease)}
@@ -565,6 +568,32 @@ html:not(.motion) .film .say{display:block;max-width:46ch;margin:.7em 0 0;font-s
 .spot.cover .spot-tag{position:absolute;inset:0;display:grid;place-items:center;padding:0;border:1px solid #5fd3e080;border-radius:var(--r-pill);background:#06121ff2;box-shadow:0 0 22px #5fd3e033,inset 0 0 0 1px #5fd3e014;text-shadow:none}
 .spot.cover:hover .spot-tag,.spot.cover:focus-visible .spot-tag{border-color:var(--signal);box-shadow:0 0 28px #5fd3e059}
 .spot.cover:focus-visible .spot-tag{outline:2px solid var(--signal);outline-offset:4px}
+/* press and hold a ring: the scene leans in on that material and a pane of smoked glass opens beside it */
+.spot{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.spot-hold{font:600 10px/1.4 var(--text);letter-spacing:.18em;text-transform:uppercase;color:var(--mist)}
+.motion .film-canvas{transition:transform .9s var(--ease)}
+.film-stage.expanded .film-canvas{transform:scale(1.14)}
+.film-stage::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(circle at var(--zx,50%) var(--zy,50%),#05122200 18%,#051222b8 78%);opacity:0;transition:opacity .8s var(--ease)}
+.film-stage.expanded::after{opacity:1}
+.film-stage.expanded .spot.on:not(.held){opacity:0;visibility:hidden}
+.film-stage.expanded .hud-next,.film-stage.expanded .hud-index{opacity:.25}
+.spot.held .spot-ring{transform:scale(1.25);transition:transform .5s var(--ease)}
+.spot.held .spot-tag,.spot.held .spot-line{opacity:0;transition:opacity .3s var(--ease)}
+.board{position:absolute;left:0;top:0;z-index:6;width:var(--bw,420px);perspective:1300px;pointer-events:none;opacity:0;visibility:hidden;transform:translate(var(--bx,0),var(--by,0));transition:opacity .45s var(--ease),visibility 0s .45s}
+.board.on{opacity:1;visibility:visible;transition:opacity .5s var(--ease)}
+.board-glass{position:relative;padding:26px 28px 22px;transform-style:preserve-3d;transform:rotateY(var(--ry,-12deg)) rotateX(var(--rx,4deg)) translateZ(-140px) scale(.88);transition:transform .9s var(--ease)}
+.board.on .board-glass{transform:rotateY(var(--ry,-12deg)) rotateX(var(--rx,4deg)) translateZ(0) scale(1)}
+.board-glass::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:var(--r-md);border:1px solid #ffffff3d;background:linear-gradient(150deg,#ffffff29 0%,#0c2440d1 20%,#06121fe0 64%,#5fd3e021 100%);-webkit-backdrop-filter:blur(26px) saturate(1.5);backdrop-filter:blur(26px) saturate(1.5);box-shadow:0 46px 100px #000c,inset 0 1px 0 #ffffffbf,inset 1px 0 0 #ffffff2e,inset 0 0 48px #5fd3e014}
+.board-glass::after{content:"";position:absolute;inset:0;border-radius:var(--r-md);pointer-events:none;background:linear-gradient(115deg,#ffffff00 32%,#ffffff17 46%,#ffffff00 60%);transform:translateZ(2px)}
+.board-kicker{margin:0;font:600 11px/1.4 var(--text);letter-spacing:.2em;text-transform:uppercase;color:var(--signal);transform:translateZ(22px)}
+.board-title{margin:10px 0 0;font:400 clamp(30px,2.6vw,40px)/1 var(--display);color:var(--cloud);transform:translateZ(52px)}
+.board-lede{margin:10px 0 0;font-size:16px;line-height:1.5;color:var(--cloud);transform:translateZ(34px)}
+.board-list{display:grid;gap:9px;margin:18px 0 0;padding:16px 0 0;border-top:1px solid #ffffff24;list-style:none;transform:translateZ(28px)}
+.board-list li{display:flex;align-items:center;gap:12px;font-size:15px;color:var(--cloud)}
+.board-list li::before{content:"";width:7px;height:7px;flex:none;border-radius:50%;border:1px solid var(--signal);box-shadow:0 0 8px #5fd3e080}
+.board-note{margin:16px 0 0;font-size:13px;line-height:1.5;color:var(--mist);transform:translateZ(16px)}
+.board-hint{margin:14px 0 0;font:600 10px/1 var(--text);letter-spacing:.2em;text-transform:uppercase;color:var(--mist);transform:translateZ(12px)}
+@media (max-width:640px){.board-glass{padding:20px 20px 18px}.board-title{font-size:28px}.board-lede{font-size:15px}}
 /* with motion the film's source label is a small line at the edge of the picture */
 .motion .film-label{left:auto;right:var(--gutter);bottom:24px;max-width:min(44vw,420px);padding:0;background:none;font:600 10px/1.5 var(--text);letter-spacing:.12em;text-transform:uppercase;text-align:right;color:var(--mist);text-shadow:0 0 10px #051222}
 /* while the film fills the screen the page's chrome steps back: the chapter bar leaves, the header keeps its marks */

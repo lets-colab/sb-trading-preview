@@ -59,6 +59,7 @@ for (const [name, vp, mobile] of [['desktop', { width: 1440, height: 900 }, fals
     for (let k = 0; k < rings; k++) {
       await measure(p, name, `${c.key}, ring name`, '.spot.on .spot-name:not(.sr)', k);
       await measure(p, name, `${c.key}, ring label`, '.spot.on .story-label', k);
+      await measure(p, name, `${c.key}, ring hold hint`, '.spot.on .spot-hold', k);
     }
     for (const sel of ['.hud-index', '.hud-next', '.film-label']) await measure(p, name, `${c.key}, edge`, sel);
   }

@@ -235,13 +235,13 @@ const dust = (() => {
 const explore = $('#explore');
 const fams = $$('.fam', explore), ambient = $$('.ambient img', explore);
 let famActive = -1;
-// The storyteller (after hatom.com): each family's short history, narrated (assets/voice/, ElevenLabs voice "Moksh"),
+// The storyteller (after hatom.com): each family's short history, narrated (assets/voice/, Kokoro voice "George", tools/narrate.py),
 // with its words as subtitles. "Hear its story" plays or stops it; with Sound on it also starts as the family comes on
 // stage, once per family. The score ducks under the voice. A family whose recording is not made yet shows no button.
 const STORIES = {
-  bamboo: { src: 'assets/voice/bamboo.mp3?v=53d87132', text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots. Dried and bundled, it leaves the grove as poles, splits and sections, ready to build with.' },
-  fibre: { src: 'assets/voice/fibre.mp3?v=16255d51', text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
-  bark: { src: 'assets/voice/bark.mp3?v=08edcb15', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
+  bamboo: { src: 'assets/voice/bamboo.mp3?v=a0432255', text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots. Dried and bundled, it leaves the grove as poles, splits and sections, ready to build with.' },
+  fibre: { src: 'assets/voice/fibre.mp3?v=282aae02', text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
+  bark: { src: 'assets/voice/bark.mp3?v=1fa864f6', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
 };
 const storyCap = $('.story-caption'), storyBtns = $$('.story'), told = new Set();
 let storyNow = null;
@@ -328,10 +328,21 @@ const chapters = (() => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = d.cover ? 'spot cover' : 'spot'; b.dataset.key = d.key; b.dataset.ch = c.key; b.tabIndex = -1;
       if (d.key !== 'open') b.setAttribute('aria-pressed', 'false');
-      b.innerHTML = `<span class="spot-ring" aria-hidden="true"></span><span class="spot-line" aria-hidden="true"></span><span class="spot-tag"><b class="spot-name${d.quiet || d.cover ? ' sr' : ''}">${d.name || STORY_NAMES[d.key]}</b><span class="story-label">${d.label || 'Hear its story'}</span></span>`;
+      b.innerHTML = `<span class="spot-ring" aria-hidden="true"></span><span class="spot-line" aria-hidden="true"></span><span class="spot-tag"><b class="spot-name${d.quiet || d.cover ? ' sr' : ''}">${d.name || STORY_NAMES[d.key]}</b><span class="story-label">${d.label || 'Hear its story'}</span>${d.key === 'open' ? '' : '<span class="spot-hold">Hold for details</span>'}</span>`;
       b.addEventListener('pointerenter', () => sound.cue('hover', b));
+      if (d.key !== 'open') { // press and hold: the scene leans in and the glass board opens; letting go closes it
+        let timer = 0;
+        const start = () => { clearTimeout(timer); timer = setTimeout(() => expand(spots.find((x) => x.b === b), d.key), HOLD_MS); };
+        const end = () => { clearTimeout(timer); if (held?.b === b) { collapse(); b.dataset.swallow = '1'; } };
+        b.addEventListener('pointerdown', (e) => { if (e.button > 0) return; b.setPointerCapture?.(e.pointerId); start(); });
+        for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, end);
+        b.addEventListener('keydown', (e) => { if (e.key === ' ' && !e.repeat) start(); });
+        b.addEventListener('keyup', (e) => { if (e.key === ' ') { const was = held?.b === b; end(); if (was) e.preventDefault(); } });
+        b.addEventListener('contextmenu', (e) => e.preventDefault()); // a long touch is a hold, not the browser's menu
+      }
       b.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (b.dataset.swallow) { delete b.dataset.swallow; return; } // the release after a hold is not a tap
         if (d.key === 'open') { go(c.k + 1); return; }
         sound.cue('open', b);
         if (storyNow?.btn === b) stopStory(); else playStory(d.key, { btn: b, cap: subtitle });
@@ -341,6 +352,51 @@ const chapters = (() => {
     }
   }
   let current = -1, narrated = -1, flying = false, flyTimer = 0, lastScroll = 0, intent = 0, entered = false;
+  // The glass board: holding a ring leans the scene in on that material (the canvas scales about the ring) and a tilted
+  // pane of smoked glass fades in beside it with the family's products, read from Explore's own markup, while the
+  // narrator reads DETAILS; it tilts with the pointer and closes as the hold ends. Words only until each is recorded.
+  const HOLD_MS = 260, filmStage = $('.film-stage', film);
+  const DETAILS = {
+    bamboo: { src: 'assets/voice/detail-bamboo.mp3?v=24b05525', say: 'Bamboo, from Bangladesh: poles, splits, ski poles and woven mats. Sizes and treatment are confirmed with your quotation.' },
+    fibre: { src: 'assets/voice/detail-fibre.mp3?v=72eb5126', say: 'Banana fibre yarn, from Bangladesh, in three grades: fine banana silk, standard yarn, and industrial yarn. Grades and quantities are confirmed with your quotation.' },
+    bark: { src: 'assets/voice/detail-bark.mp3?v=8bf32fdb', say: 'Banana bark and banana leaves, from Bangladesh: the third family of the range. Sizes and quantities are confirmed with your quotation.' },
+  };
+  const board = document.createElement('aside');
+  board.className = 'board'; board.setAttribute('aria-hidden', 'true'); // the same facts are in Explore, and spoken
+  board.innerHTML = '<div class="board-glass"><p class="board-kicker"></p><h3 class="board-title"></h3><p class="board-lede"></p><ul class="board-list"></ul><p class="board-note">Sizes, grades and treatment are confirmed by SB Trading with your quotation.</p><p class="board-hint">Release to return</p></div>';
+  hud.appendChild(board);
+  let held = null;
+  function expand(sp, key) {
+    if (!sp || !sp.b.classList.contains('on')) return;
+    const fam = $(`#${key}`, explore), products = $$('.product', fam).map((x) => x.textContent.trim());
+    $('.board-kicker', board).textContent = `Origin Bangladesh · ${products.length} products`;
+    $('.board-title', board).textContent = $('h3', fam).textContent.trim();
+    $('.board-lede', board).textContent = ($('.fam-lede', fam).textContent.match(/^[^.]+\./) || [''])[0];
+    $('.board-list', board).replaceChildren(...products.map((t) => Object.assign(document.createElement('li'), { textContent: t })));
+    const W = innerWidth, H = innerHeight, bw = Math.min(420, W - 32);
+    const x = parseFloat(sp.b.style.getPropertyValue('--x')), y = parseFloat(sp.b.style.getPropertyValue('--y'));
+    const left = W < 700 ? (W - bw) / 2 : x < W / 2 ? Math.min(x + 120, W - bw - 32) : Math.max(32, x - 120 - bw);
+    const top = W < 700 ? 84 : clamp(y - 190, 84, H - 470);
+    board.style.setProperty('--bw', `${bw}px`); board.style.setProperty('--bx', `${left.toFixed(0)}px`); board.style.setProperty('--by', `${top.toFixed(0)}px`);
+    board.style.setProperty('--ry', `${x < W / 2 ? -12 : 12}deg`); board.style.setProperty('--rx', '4deg');
+    canvas.style.transformOrigin = `${x.toFixed(0)}px ${y.toFixed(0)}px`;
+    filmStage.style.setProperty('--zx', `${x.toFixed(0)}px`); filmStage.style.setProperty('--zy', `${y.toFixed(0)}px`);
+    filmStage.classList.add('expanded'); sp.b.classList.add('held'); board.classList.add('on');
+    held = sp;
+    sound.cue('open', sp.b);
+    speak({ key: `detail:${key}`, src: (sound.playing && DETAILS[key].src) || null, text: DETAILS[key].say, cap: subtitle, whole: true });
+  }
+  function collapse() {
+    if (!held) return;
+    held.b.classList.remove('held'); held = null;
+    filmStage.classList.remove('expanded'); board.classList.remove('on');
+    if (String(storyNow?.key).startsWith('detail:')) stopStory();
+  }
+  addEventListener('pointermove', (e) => { // the pane tilts with the pointer while it is held
+    if (!held) return;
+    const r = board.getBoundingClientRect(), dx = (e.clientX - (r.left + r.width / 2)) / innerWidth, dy = (e.clientY - (r.top + r.height / 2)) / innerHeight;
+    board.style.setProperty('--ry', `${clamp(dx * 40, -16, 16).toFixed(1)}deg`); board.style.setProperty('--rx', `${clamp(-dy * 24, -10, 10).toFixed(1)}deg`);
+  }, { passive: true });
   addEventListener('scroll', () => { lastScroll = performance.now(); }, { passive: true });
   // only the visitor's own scrolling (wheel, touch, keys) settles onto a chapter; a link, an anchor or a script's
   // scroll is left where it lands
