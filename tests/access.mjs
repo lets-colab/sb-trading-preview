@@ -132,6 +132,21 @@ for (const [name, opts] of [['desktop 1440', { viewport: { width: 1440, height: 
   await ctx.close();
 }
 
+// ---------------------------------------------------------------- 5. a slow device steps the opening's detail down
+// on a machine that renders slowly (here the CPU is slowed 20 times), the live 3D drops to its lightest detail within
+// seconds, however long each frame takes, so the page stays responsive (CI found frames over a second never counted)
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const p = await ctx.newPage();
+  const cdp = await ctx.newCDPSession(p); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 20 });
+  await p.goto(ORIGIN + '/');
+  const t0 = Date.now();
+  const dropped = await p.waitForFunction(() => document.querySelector('.gate-3d')?.dataset.level === '0', null, { timeout: 8000, polling: 250 }).then(() => true, () => false);
+  const level = await p.evaluate(() => document.querySelector('.gate-3d')?.dataset.level);
+  check(dropped, `a slow device: the opening drops to its lightest detail within 8 s (level ${level} after ${((Date.now() - t0) / 1000).toFixed(1)} s)`);
+  await ctx.close();
+}
+
 await browser.close(); server.close();
 if (failures) { console.error(`${failures} accessibility check(s) failed`); process.exit(1); }
 console.log('access: all passing');

@@ -103,9 +103,9 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
   // ------------------------------------------------------------------ camera and drawing
   let W = 0, H = 0, dpr = 1, start = 0, last = 0, frames = 0, cleared = false;
   // detail adapts to the device: 2 full (with the glow pass), 1 without the glow, 0 also without the finest lines (leaf
-  // veins, every other terrain row, half the fibres) at a lower pixel ratio. It steps down when frames run long for about
-  // a second and never steps back up, so it does not flicker; a device with a GPU stays at 2.
-  let level = low ? 0 : 2, ema = 16, slow = 0, edgeTop = '#0000', edgeFoot = '#0000';
+  // veins, every other terrain row, half the fibres) at a lower pixel ratio. It steps down after 0.8 s of long frames (by
+  // the clock, so a very slow machine adapts as fast as a slightly slow one) and never steps back up, so it does not flicker; a device with a GPU stays at 2.
+  let level = low ? 0 : 2, ema = 16, slowFor = 0, edgeTop = '#0000', edgeFoot = '#0000';
   let playing = intro, skipFrom = null, skipAt = 0, tShift = 0; // tShift moves the reveal clock on after a skip
   const turn = [0, 0];
   const cam = { x: 0, y: 0, z: 0, r: [1, 0, 0], u: [0, 1, 0], f: [0, 0, -1], F: 1, cy: 0, sin: 0, cos: 1, ps: 0, pc: 1, near: 0.12 };
@@ -221,7 +221,12 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
       if (!W) this.size();
       if (!start) start = now - (intro ? 0 : T_END * 1000);
       const t = (now - start) / 1000, dt = last ? Math.min(0.1, (now - last) / 1000) : 1 / 60;
-      if (level > 0 && now - last < 1000) { ema += (now - last - ema) * 0.1; slow = ema > 28 ? slow + 1 : 0; if (slow > 40) { level--; slow = 0; ema = 16; if (level === 0) this.size(); } }
+      if (level > 0 && last && t > 0.6) { // judged by time, not frames: on a slow machine each long frame counts in full
+        const iv = Math.min(now - last, 2000);
+        ema += (iv - ema) * Math.min(1, iv / 160);
+        slowFor = ema > 28 ? slowFor + iv : 0;
+        if (slowFor > 800) { level--; slowFor = 0; ema = 16; if (level === 0) this.size(); }
+      }
       last = now;
       if (playing && (t >= T_END || p > 0.012)) finish(now, t);
       const tr = t + tShift; // the reveal clock
@@ -261,7 +266,7 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, W, H);
       g.globalCompositeOperation = 'lighter';
-      const fade = smooth(0, 0.6, t) * (1 - smooth(0.055, 0.1, p));
+      const fade = smooth(0, 0.6, t) * (1 - smooth(0.035, 0.072, p)); // gone as the footage's traced lines draw in (filmtrace.js)
       g.lineCap = 'round';
       for (const pass of level === 2 ? [0, 1] : [1]) { // a soft wide glow, then the fine line
         g.lineWidth = pass ? 1.05 : 3.4;
