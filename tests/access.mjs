@@ -115,6 +115,23 @@ for (const [name, opts] of [['desktop 1440', { viewport: { width: 1440, height: 
   await ctx.close();
 }
 
+// ---------------------------------------------------------------- 4. the opening fails closed
+// if the live 3D cannot start (here the browser gives its canvas no 2D context), the page falls back to the line
+// drawing with the title and "Click to enter" shown, and the film keeps running (Codex on #22)
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { const o = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (t, ...a) { return this.classList.contains('gate-3d') && t === '2d' ? null : o.call(this, t, ...a); }; });
+  const p = await ctx.newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
+  await p.goto(ORIGIN + '/'); await p.waitForTimeout(3000);
+  const s = await p.evaluate(() => ({ intro: document.documentElement.classList.contains('gate-intro'), live: document.documentElement.classList.contains('gate-live'), canvas: !!document.querySelector('.gate-3d'),
+    title: Number(getComputedStyle(document.querySelector('.gate h1')).opacity), enter: Number(getComputedStyle(document.querySelector('.gate .hero-actions')).opacity), art: Number(getComputedStyle(document.querySelector('.gate-art')).opacity) }));
+  await p.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * 0.16); });
+  const film = await p.waitForFunction(() => document.querySelector('.hud-name')?.textContent === 'The grove', null, { timeout: 15000 }).then(() => true, () => false);
+  check(!s.intro && !s.live && !s.canvas && s.title > 0.95 && s.enter > 0.95 && s.art > 0.95 && film && errors.length === 0,
+    `the opening fails closed: without a canvas it shows the line drawing, the title and "Click to enter", and the film runs (${JSON.stringify({ ...s, film, errors })})`);
+  await ctx.close();
+}
+
 await browser.close(); server.close();
 if (failures) { console.error(`${failures} accessibility check(s) failed`); process.exit(1); }
 console.log('access: all passing');

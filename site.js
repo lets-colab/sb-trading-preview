@@ -117,7 +117,7 @@ const filmBeats = gate ? [{ el: gate, at: gate.dataset.at.split(',').map(Number)
 // back to the plant and across to the bamboo grove, where the title fades in (once a visit; a click, tap, key or scroll
 // skips it, and the click that skips is not taken as "Click to enter"). At rest the grove turns toward the pointer and
 // the camera flies into it as the film begins. The line drawing in the HTML stays until it is ready, and with reduced motion.
-let gate3d = null;
+let gate3d = null, gate3dFailed = () => {};
 if (gate && !reduced) {
   let seen = false;
   try { seen = sessionStorage.getItem('sb-opening') === '1'; sessionStorage.setItem('sb-opening', '1'); } catch { /* storage blocked: play it */ }
@@ -126,12 +126,16 @@ if (gate && !reduced) {
   const ended = () => root.classList.remove('gate-intro');
   const cv = document.createElement('canvas');
   cv.className = 'gate-3d'; cv.setAttribute('aria-hidden', 'true');
-  import('./assets/gate3d.js?v=f6b76d72').then(({ createGate3D }) => {
+  // if it cannot load, start or draw, it fails closed: the canvas goes, the line drawing and the title show at once,
+  // and the film runs on
+  gate3dFailed = () => { gate3d = null; cv.remove(); root.classList.remove('gate-live'); ended(); };
+  import('./assets/gate3d.js?v=a274a99b').then(({ createGate3D }) => {
     gate.prepend(cv);
-    gate3d = createGate3D(cv, { low: !fine || innerWidth < 700 || (navigator.hardwareConcurrency || 8) < 4, intro, onIntroEnd: ended });
-    gate3d.size();
+    const g3 = createGate3D(cv, { low: !fine || innerWidth < 700 || (navigator.hardwareConcurrency || 8) < 4, intro, onIntroEnd: ended });
+    g3.size();
+    gate3d = g3;
     root.classList.add('gate-live');
-  }, ended); // without it the line drawing stays, and the title shows at once
+  }).catch(gate3dFailed);
   const skip = (e) => { if (!gate3d?.intro) return false; gate3d.skip(); return true; };
   film.addEventListener('click', (e) => { if (skip()) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   for (const type of ['wheel', 'touchmove', 'keydown']) addEventListener(type, skip, { passive: true });
@@ -565,7 +569,9 @@ function tick(now = performance.now()) {
   if (i !== shown) draw(i);
   if (!reduced) {
     beats(filmP); labelShot(drawnFrom); filmCues(i); chapters.update(now, p);
-    if (gate3d && !document.hidden) gate3d.draw(now, filmP, target); // past the gate it clears once and rests
+    if (gate3d && !document.hidden) { // past the gate it clears once and rests
+      try { gate3d.draw(now, filmP, target); } catch { gate3dFailed(); } // a draw that throws must not stop the film's loop
+    }
     const fr0 = film.getBoundingClientRect();
     if (fr0.bottom > 0 && fr0.top < innerHeight && !document.hidden) dust.draw(now);
   }

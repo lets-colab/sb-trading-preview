@@ -30,6 +30,7 @@ function rng(seed) {
 
 export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = () => {} } = {}) {
   const g = canvas.getContext('2d', { willReadFrequently: true });
+  if (!g) throw new Error('gate3d: no 2D canvas context'); // the caller falls back to the line drawing
   const rnd = rng(20261116);
   const delay = intro ? GROVE : 0, groundDelay = intro ? 1.3 : 0;
   const lines = []; // fixed polylines: { p: [x, y, z, ...], c: colour, a: alpha, t0: reveal start (s), d: reveal length (s) }
