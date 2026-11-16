@@ -1,4 +1,4 @@
-// SB Trading · Materials in Motion (client review draft).
+// SB Trading · From leaf to fibre (client review draft).
 // One loop reads the scroll position and drives: the film (WebP frames on a canvas, stages 01–03), the pinned
 // Explore stage (three families in arched windows, stage 04), the ordering fibre line, the chapter bar, and the
 // opt-in sound. Motion (motion.dev, MIT) runs reveals; Lenis (MIT) smooths wheel scrolling. Rifat (stage 05) lives
@@ -113,6 +113,29 @@ const frames = new Array(FRAMES);
 let shown = -1, filmP = 0;
 const gate = $('.gate', film);
 const filmBeats = gate ? [{ el: gate, at: gate.dataset.at.split(',').map(Number) }] : [];
+// the gate in live 3D (assets/gate3d.js): it opens on its own, from inside the banana's stem among its fibres, pulling
+// back to the plant and across to the bamboo grove, where the title fades in (once a visit; a click, tap, key or scroll
+// skips it, and the click that skips is not taken as "Click to enter"). At rest the grove turns toward the pointer and
+// the camera flies into it as the film begins. The line drawing in the HTML stays until it is ready, and with reduced motion.
+let gate3d = null;
+if (gate && !reduced) {
+  let seen = false;
+  try { seen = sessionStorage.getItem('sb-opening') === '1'; sessionStorage.setItem('sb-opening', '1'); } catch { /* storage blocked: play it */ }
+  const intro = !seen && progressOf(film) < 0.01;
+  if (intro) root.classList.add('gate-intro');
+  const ended = () => root.classList.remove('gate-intro');
+  const cv = document.createElement('canvas');
+  cv.className = 'gate-3d'; cv.setAttribute('aria-hidden', 'true');
+  import('./assets/gate3d.js?v=8473d6ab').then(({ createGate3D }) => {
+    gate.prepend(cv);
+    gate3d = createGate3D(cv, { low: !fine || innerWidth < 700 || (navigator.hardwareConcurrency || 8) < 4, intro, onIntroEnd: ended });
+    gate3d.size();
+    root.classList.add('gate-live');
+  }, ended); // without it the line drawing stays, and the title shows at once
+  const skip = (e) => { if (!gate3d?.intro) return false; gate3d.skip(); return true; };
+  film.addEventListener('click', (e) => { if (skip()) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  for (const type of ['wheel', 'touchmove', 'keydown']) addEventListener(type, skip, { passive: true });
+}
 
 function size() {
   const dpr = Math.min(devicePixelRatio || 1, 1.5);
@@ -542,6 +565,7 @@ function tick(now = performance.now()) {
   if (i !== shown) draw(i);
   if (!reduced) {
     beats(filmP); labelShot(drawnFrom); filmCues(i); chapters.update(now, p);
+    if (gate3d && !document.hidden) gate3d.draw(now, filmP, target); // past the gate it clears once and rests
     const fr0 = film.getBoundingClientRect();
     if (fr0.bottom > 0 && fr0.top < innerHeight && !document.hidden) dust.draw(now);
   }
@@ -619,7 +643,7 @@ function tick(now = performance.now()) {
 
 // ------------------------------------------------------------------ start
 size(); dust.size();
-addEventListener('resize', () => { size(); dust.size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
+addEventListener('resize', () => { size(); dust.size(); gate3d?.size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
 addEventListener('scroll', () => { lastInput = performance.now(); }, { passive: true });
 if (fine && !reduced) addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; lastInput = performance.now(); }, { passive: true });
 // The 3D studies (shader compile, photographs, depth maps) load when Explore is within two screens, not at page load.

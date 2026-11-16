@@ -88,8 +88,8 @@ const Chip = ({ label, at }) => {
 const Open = () => {
   const f = useCurrentFrame(), wide = useWide(), { width } = useVideoConfig();
   const mark = ramp(f, 0, 24), rule = ramp(f, 10, 44), head = ramp(f, 22, 50), lede = ramp(f, 38, 62), exit = ramp(f, 84, 96, io);
-  const [a, b] = ['Materials', 'in Motion.'];
-  if (`${a} ${b}` !== line('Materials in Motion.')) throw new Error('headline');
+  const [a, b] = ['From leaf', 'to fibre.'];
+  if (`${a} ${b}` !== line('From leaf to fibre.')) throw new Error('headline');
   return (
     <AbsoluteFill style={{ padding: wide ? '0 150px' : '0 90px', justifyContent: 'center', opacity: 1 - exit, transform: `translateY(${-exit * 30}px)` }}>
       <Img src={staticFile('img/sb-mark-light.webp')} style={{ width: 92, height: 'auto', opacity: mark, marginBottom: 46 }} />

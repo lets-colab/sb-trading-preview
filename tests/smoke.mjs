@@ -68,10 +68,37 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     check(/generated footage, not SB Trading's own/.test(t) && !/Pexels/.test(t), `${name}: the label follows the frame drawn, not the frame asked for (${t})`);
     await q.close();
   }
+  { // a click (or tap) during the opening skips it to the title, and is not taken as "Click to enter"
+    const q = await ctx.newPage();
+    await q.goto(ORIGIN + '/');
+    await q.waitForFunction(() => document.querySelector('.gate-3d')?.dataset.phase === 'micro', null, { timeout: 5000 }).catch(() => {});
+    const before = await q.evaluate(() => document.documentElement.classList.contains('gate-intro'));
+    if (touch) await q.touchscreen.tap(viewport.width / 2, viewport.height * 0.3); else await q.mouse.click(viewport.width / 2, viewport.height * 0.3);
+    await q.waitForTimeout(1500);
+    const after = await q.evaluate(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect();
+      return { intro: document.documentElement.classList.contains('gate-intro'), phase: document.querySelector('.gate-3d')?.dataset.phase, title: Number(getComputedStyle(document.querySelector('.gate h1')).opacity), p: +(-r.top / (r.height - innerHeight)).toFixed(3), ac: window.__ac }; });
+    check(before && !after.intro && after.phase === 'grove' && after.title > 0.95 && after.p < 0.01 && !after.ac,
+      `${name}: a ${touch ? 'tap' : 'click'} during the opening skips to the title and does not enter the film (${JSON.stringify({ before, ...after })})`);
+    await q.close();
+  }
   { // the film is a journey after hatom.com: a gate drawn in fine lines, then a clean picture where only rings on the
     // materials, one subtitle line and small edge labels sit over the footage. Its own page, so Sound starts off below.
     const q = await ctx.newPage();
-    await q.goto(ORIGIN + '/'); await q.waitForTimeout(3800);
+    await q.goto(ORIGIN + '/');
+    { // the opening plays on its own: micro (inside the banana stem, among its fibres), macro (the whole banana plant),
+      // then the camera moves across to the bamboo grove and the title fades in. The title waits for the camera.
+      const cam = () => q.evaluate(() => { const c = document.querySelector('.gate-3d'), h = document.querySelector('.gate h1');
+        return { intro: document.documentElement.classList.contains('gate-intro'), phase: c?.dataset.phase, dist: Number(c?.dataset.dist || 0), title: Number(getComputedStyle(h).opacity) }; });
+      await q.waitForFunction(() => document.querySelector('.gate-3d')?.dataset.phase, null, { timeout: 5000 }).catch(() => {});
+      const micro = await cam();
+      await q.waitForFunction(() => document.querySelector('.gate-3d')?.dataset.phase === 'macro', null, { timeout: 8000 }).catch(() => {});
+      const macro = await cam();
+      await q.waitForFunction(() => !document.documentElement.classList.contains('gate-intro'), null, { timeout: 14000 }).catch(() => {});
+      await q.waitForTimeout(1300); // the title fades in
+      const rest = await cam();
+      check(micro.intro && micro.phase === 'micro' && micro.dist < 1 && micro.title < 0.1 && macro.phase === 'macro' && macro.dist > micro.dist * 3 && rest.phase === 'grove' && !rest.intro && rest.title > 0.95,
+        `${name}: the opening zooms out from the banana's fibres to the whole plant, crosses to the bamboo grove, then shows the title (${JSON.stringify({ micro, macro, rest })})`);
+    }
     const prog = () => q.evaluate(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return +(-r.top / (r.height - innerHeight)).toFixed(3); });
     const gate = await q.evaluate(() => {
       const g = document.querySelector('.gate'), lines = [...g.querySelectorAll('.gate-art .ln')];
@@ -85,8 +112,19 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
         hiddenStops: [...document.querySelectorAll('#film .beat[data-ch] a[href], #film .beat[data-ch] button')].filter((el) => el.getClientRects().length > 0 && !el.closest('[inert]')).map((el) => el.textContent.trim()) };
     });
     check(gate.hiddenStops.length === 0, `${name}: no link or button hidden in the film's chapters is a keyboard stop (${JSON.stringify(gate.hiddenStops)})`);
-    check(gate.title === 'Materials in Motion.' && gate.enter === 'Click to enter' && gate.lines > 40 && gate.drawn === gate.lines && gate.foot,
+    check(gate.title === 'From leaf to fibre.' && gate.enter === 'Click to enter' && gate.lines > 40 && gate.drawn === gate.lines && gate.foot,
       `${name}: the film opens on a gate drawn in fine lines, with its title and "Click to enter" (${JSON.stringify({ title: gate.title, enter: gate.enter, lines: gate.lines, drawn: gate.drawn })})`);
+    { // the gate is live 3D: a wireframe drawn every frame (counted on the canvas), turning toward the pointer
+      const lit = () => q.evaluate(() => { const c = document.querySelector('.gate-3d'); if (!c) return { live: false };
+        const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0, h = 0;
+        for (let i = 3; i < d.length; i += 16) if (d[i] > 24) { n++; h = (h * 31 + i) >>> 0; }
+        return { live: document.documentElement.classList.contains('gate-live'), n, h, frames: Number(c.dataset.frames || 0) }; });
+      const w0 = await lit();
+      if (!touch) { await q.mouse.move(60, 60); await q.waitForTimeout(1500); } else await q.waitForTimeout(1500);
+      const w1 = await lit();
+      check(w0.live && w0.n > 1500 && w1.frames > w0.frames && w1.h !== w0.h,
+        `${name}: the gate is a live 3D wireframe, drawn every frame${touch ? '' : ' and turning toward the pointer'} (${JSON.stringify({ w0, w1 })})`);
+    }
     check(!gate.card && gate.captions === 0 && !gate.cards && gate.inFilm && gate.bar === 0 && gate.ask === 0,
       `${name}: nothing is laid over the picture: no card, no captions, no family cards, and the chapter bar and Ask Rifat step aside (${JSON.stringify(gate)})`);
     // "Click to enter" is the gesture that turns Sound on; the camera flies to the first chapter as the narrator speaks
@@ -97,6 +135,11 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       voice: window.__story?.src.includes('/assets/voice/ch-grove.mp3') && !window.__story.paused, idx: document.querySelector('.hud-name').textContent }));
     check(grove.ac === 1 && grove.sound === 'true' && (await prog()) > 0.155 && grove.on && /^It starts as a living plant\. From Bangladesh/.test(grove.sub) && grove.voice && grove.idx === 'The grove',
       `${name}: "Click to enter" turns Sound on and flies to the grove as the narrator speaks it, with its subtitle (${JSON.stringify(grove)})`);
+    { // once the film is under way the gate's 3D stops drawing (it costs nothing while the footage plays)
+      const frames = () => q.evaluate(() => Number(document.querySelector('.gate-3d')?.dataset.frames || 0));
+      const f1 = await frames(); await q.waitForTimeout(900); const f2 = await frames();
+      check(f1 > 0 && f2 === f1, `${name}: past the gate the live 3D stops drawing (${f1} -> ${f2} frames)`);
+    }
     // "Click to continue" flies to the next chapter
     await q.click('.hud-next');
     await q.waitForFunction(() => document.querySelector('.hud-name').textContent === 'The specimen' && /^Origin: Bangladesh/.test(document.querySelector('.subtitle').textContent), null, { timeout: 8000 }).catch(() => {});

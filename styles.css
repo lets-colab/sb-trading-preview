@@ -1,4 +1,4 @@
-/* SB Trading · Materials in Motion. Self-hosted fonts (OFL): Gloock (display), Schibsted Grotesk (text). No external requests.
+/* SB Trading · From leaf to fibre. Self-hosted fonts (OFL): Gloock (display), Schibsted Grotesk (text). No external requests.
    One continuous blue-hour world from the SB Trading proposal palette: Brand Blue, Deep Ink, Cloud, Mist, Natural Fibre. */
 @font-face{font-family:"Gloock";src:url(assets/vendor/fonts/gloock-latin-400-normal.woff2?v=9389ada8) format("woff2");font-display:swap}
 @font-face{font-family:"Schibsted Grotesk";src:url(assets/vendor/fonts/schibsted-grotesk-latin-wght-normal.woff2?v=4c8b93f4) format("woff2");font-weight:400 900;font-display:swap}
@@ -511,6 +511,11 @@ html:not(.motion) .film .say{display:block;max-width:46ch;margin:.7em 0 0;font-s
 .gate-art .sig{stroke:var(--signal);stroke-opacity:.72}
 .gate-art .spin{stroke-dasharray:.06 .04;stroke-dashoffset:0;opacity:0;transform-origin:800px 440px;animation:fade-in 1.4s var(--ease) 1.3s forwards,spin 48s linear infinite}
 .gate-art .reticle{transform:translate(calc(var(--gx,0) * 36px),calc(var(--gy,0) * 26px));transition:transform .8s var(--ease)}
+.gate-3d{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;-webkit-mask-image:linear-gradient(#0000,#000 16%,#000 80%,#0000);mask-image:linear-gradient(#0000,#000 16%,#000 80%,#0000)} /* the lines fade under the header and the foot */
+.gate-live .gate-art{opacity:0;transition:opacity 1s var(--ease)}
+/* the opening: while the camera travels from the banana's fibres to the grove, only the 3D shows; then the title fades in */
+.motion .gate>:not(.gate-3d){transition:opacity 1.1s var(--ease)}
+.gate-intro .gate>:not(.gate-3d){opacity:0;transition:none} /* hidden at once; fades in when the opening ends */
 @keyframes draw{to{stroke-dashoffset:0}}
 @keyframes spin{to{transform:rotate(1turn)}}
 @keyframes fade-in{to{opacity:1}}
@@ -603,6 +608,7 @@ html.in-film .top .sound-toggle,html.in-film .top .menu-toggle{background:transp
 .chapters,.top>.btn-small,.top .sound-toggle,.top .menu-toggle{transition:opacity .5s var(--ease),background .5s var(--ease),border-color .5s var(--ease)}
 @media (max-width:640px){
   .motion .gate{padding:96px var(--gutter) 150px}
+  .motion .gate-foot{bottom:64px} /* above the footage label */
   .motion .gate-meta{top:84px}
   .subtitle{bottom:120px;font-size:17px}
   .hud-next{bottom:52px}

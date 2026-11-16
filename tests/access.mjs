@@ -43,8 +43,10 @@ const open = async (opts) => { const ctx = await browser.newContext(opts); const
     beats: [...document.querySelectorAll('#film .beat')].every((b) => getComputedStyle(b).visibility === 'visible' && parseFloat(getComputedStyle(b).opacity) === 1),
     label: document.querySelector('.film-label').textContent.trim(),
     explore: getComputedStyle(document.getElementById('explore')).position,
+    gate3d: !!document.querySelector('.gate-3d') || document.documentElement.classList.contains('gate-live'),
   }));
   check(!s.motion, 'reduced motion: the page does not turn its motion layer on');
+  check(!s.gate3d, 'reduced motion: the opening stays the plain page, with no live 3D wireframe');
   check(p.__film === 0, `reduced motion: the film is a poster, so no film frames are downloaded (${p.__film} frame requests)`);
   check(s.poster && s.canvas === 'none' && s.beats, 'reduced motion: the film is a still poster with every caption visible');
   check(/^Film: generated footage, not SB Trading's own/.test(s.label), `reduced motion: the film label keeps its whole-film sentence (${s.label})`);
