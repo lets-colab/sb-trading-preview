@@ -125,6 +125,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       const held = await q.evaluate(() => { const b = document.querySelector('.board'); return { on: !!b?.classList.contains('on'), title: b?.querySelector('.board-title')?.textContent, items: [...(b?.querySelectorAll('.board-list li') || [])].map((li) => li.textContent),
         zoom: getComputedStyle(document.querySelector('.film-canvas')).transform, sub: document.querySelector('.subtitle').textContent.trim(), others: [...document.querySelectorAll('.spot.on:not(.held)')].filter((s) => getComputedStyle(s).visibility === 'visible').length }; });
       await press(false); await q.waitForTimeout(1400);
+      // the scene eases back over its transition; a slow machine is still finishing it, so wait (up to 5 s) for it to rest
+      await q.waitForFunction(() => /^(none|matrix\(1, 0, 0, 1, 0, 0\))$/.test(getComputedStyle(document.querySelector('.film-canvas')).transform), null, { timeout: 5000 }).catch(() => {});
       const gone = await q.evaluate(() => ({ on: !!document.querySelector('.board')?.classList.contains('on'), zoom: getComputedStyle(document.querySelector('.film-canvas')).transform, sub: document.querySelector('.subtitle').classList.contains('on'), story: !!window.__story && !window.__story.paused }));
       const flat = (m) => m === 'none' || m === 'matrix(1, 0, 0, 1, 0, 0)';
       check(held.on && held.title === 'Bamboo' && ['Bamboo poles', 'Bamboo splits', 'Ski poles', 'Woven mats'].every((p) => held.items.includes(p)) && !flat(held.zoom) && /^Bamboo, from Bangladesh/.test(held.sub) && held.others === 0,
@@ -148,7 +150,10 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     // after the last chapter, "Continue to the materials" leaves the film for Explore, and stays there
     for (const ch of ['Bark and leaves', 'Together']) { await q.click('.hud-next'); await q.waitForFunction((c) => document.querySelector('.hud-name').textContent === c, ch, { timeout: 8000 }).catch(() => {}); await q.waitForTimeout(2600); }
     const last = await q.evaluate(() => document.querySelector('.hud-next').textContent.trim());
-    await q.click('.hud-next'); await q.waitForTimeout(5000);
+    await q.click('.hud-next');
+    // the flight takes 1.6 s; a slow machine takes longer, so wait (up to 12 s) for it to land, then check it stays
+    await q.waitForFunction(() => Math.abs(document.getElementById('explore').getBoundingClientRect().top) < 40, null, { timeout: 12000 }).catch(() => {});
+    await q.waitForTimeout(2000);
     const out = await q.evaluate(() => ({ explore: Math.round(document.getElementById('explore').getBoundingClientRect().top), inFilm: document.documentElement.classList.contains('in-film') }));
     check(last === 'Continue to the materials' && Math.abs(out.explore) < 40 && !out.inFilm, `${name}: past the last chapter, "Continue to the materials" lands in Explore and stays there (${JSON.stringify({ last, ...out })})`);
     await q.close();
