@@ -106,18 +106,6 @@ html[data-score="playing"] .sound-toggle[aria-pressed="true"] .bars i{animation:
 .film-shade{position:absolute;inset:0;background:linear-gradient(0deg,#051222cc 0%,#05122200 26%),linear-gradient(180deg,#05122273 0%,#05122200 15%)}
 .beat{position:absolute;left:var(--gutter);right:var(--gutter);bottom:clamp(96px,16vh,170px);max-width:1000px}
 .beat h2{max-width:13ch}
-/* the specimen card laid over the beam shot (thin cyan lines, dark glass), where the footage's own drawn card was */
-.spec-card{position:absolute;z-index:3;left:50%;top:62%;width:min(460px,calc(100% - 32px));margin:0;padding:14px 18px 16px;border:1px solid #5fd3e05c;border-radius:var(--r-sm);background:#06121fc2;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:var(--cloud);box-shadow:inset 0 0 0 1px #5fd3e014,0 24px 60px #0009}
-.spec-card::before,.spec-card::after{content:"";position:absolute;width:12px;height:12px;border:1px solid var(--signal);pointer-events:none}
-.spec-card::before{left:-5px;top:-5px;border-right:0;border-bottom:0}
-.spec-card::after{right:-5px;bottom:-5px;border-left:0;border-top:0}
-.spec-card dl{display:grid;grid-template-columns:repeat(3,auto);justify-content:space-between;gap:4px 18px;margin:0;padding-right:30px}
-.spec-card dt{font:600 11px/1.2 var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--signal)}
-.spec-card dd{margin:2px 0 0;font:400 22px/1.1 var(--display)}
-.spec-ring{position:absolute;right:16px;top:14px;width:22px;height:22px;margin:0;border:1px solid #5fd3e080;border-radius:50%;box-shadow:inset 0 0 0 5px #06121f,inset 0 0 0 6px #5fd3e080}
-.spec-hint{margin:12px 0 10px;font:600 11px/1 var(--text);letter-spacing:.16em;text-transform:uppercase;color:var(--mist)}
-.spec-actions{display:flex;flex-wrap:wrap;gap:8px;margin:0}
-.spec-card .btn{min-height:44px;padding:0 18px;font-size:14px}
 /* the storyteller: a quiet pill under the products, and subtitles low on the stage */
 .story{display:inline-flex;align-items:center;gap:10px;min-height:44px;margin-top:18px;padding:0 18px 0 8px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--paper);color:var(--ink);font:600 14px/1 var(--text);cursor:pointer}
 .story:hover{border-color:var(--blue)}
@@ -167,7 +155,7 @@ html:not(.motion) .dust,html:not(.motion) .scroll-ring{display:none}
 html:not(.js) .film-stage,html:not(.motion) .film-stage{position:relative;height:auto;min-height:100svh;padding:140px var(--gutter) 120px;display:flex;flex-direction:column;justify-content:flex-end;gap:56px}
 html:not(.js) .film-poster,html:not(.motion) .film-poster{display:block}
 html:not(.js) .film-canvas,html:not(.motion) .film-canvas{display:none}
-html:not(.js) .beat,html:not(.motion) .beat,html:not(.js) .spec-card,html:not(.motion) .spec-card{position:relative;left:auto;right:auto;top:auto;bottom:auto}
+html:not(.js) .beat,html:not(.motion) .beat{position:relative;left:auto;right:auto;top:auto;bottom:auto}
 html:not(.js) .film-label,html:not(.motion) .film-label{position:relative;right:auto;bottom:auto}
 
 /* ------------------------------------------------------------ 04 explore: pinned stage, arched windows */
@@ -468,7 +456,6 @@ html.at-end .tray{opacity:0;pointer-events:none;transform:translateY(12px)}
   .study-label{left:var(--gutter);right:auto;bottom:62px;font-size:11px}
   .film-label{bottom:64px;left:var(--gutter);right:auto}
   .beat{bottom:clamp(92px,14vh,140px)}
-  .spec-card{left:var(--gutter)!important;right:var(--gutter);top:auto!important;bottom:84px;width:auto!important}
   .film-shade{background:linear-gradient(0deg,#051222e6 0%,#05122200 30%),linear-gradient(180deg,#05122273 0%,#05122200 14%)}
 }
 
@@ -508,6 +495,125 @@ html.at-end .tray{opacity:0;pointer-events:none;transform:translateY(12px)}
   .beat-hero .hero-actions .btn .orb-xs{--s:19px}
   .beat-hero .scroll-ring{display:none}
 }
+
+/* ------------------------------------------------------------ the immersive film: gate, chapters, wireframe
+   With motion, nothing sits over the picture but the wireframe (rings and leader lines on the materials), one subtitle
+   line for the narrator and small labels at the edges. Without motion (reduced motion, no script) the gate is the
+   page's plain opening and the chapters are captions. */
+.gate-art,.gate-meta,.gate-enter,.gate-foot,.say{display:none}
+html:not(.motion) .film .say{display:block;max-width:46ch;margin:.7em 0 0;font-size:clamp(16px,1.3vw,19px);line-height:1.5;color:var(--mist)}
+.motion .gate{left:0;right:0;bottom:0;top:0;max-width:none;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:96px var(--gutter) 120px;text-align:center;z-index:2}
+.motion .gate .lede,.motion .gate .specimen,.motion .gate .hero-actions .btn{display:none}
+.motion .gate h1{max-width:9ch;margin:0;font-size:clamp(52px,8.4vw,132px);line-height:.94;text-shadow:0 2px 40px #051222}
+.motion .gate-art{display:block;position:absolute;inset:0;z-index:-1;width:100%;height:100%;overflow:visible}
+.gate-art .ln{fill:none;stroke:var(--cloud);stroke-opacity:.4;stroke-width:1.1;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1;animation:draw 2.6s var(--ease) var(--d,0s) forwards}
+.gate-art .hz{stroke-opacity:.62}
+.gate-art .sig{stroke:var(--signal);stroke-opacity:.72}
+.gate-art .spin{stroke-dasharray:.06 .04;stroke-dashoffset:0;opacity:0;transform-origin:800px 440px;animation:fade-in 1.4s var(--ease) 1.3s forwards,spin 48s linear infinite}
+.gate-art .reticle{transform:translate(calc(var(--gx,0) * 36px),calc(var(--gy,0) * 26px));transition:transform .8s var(--ease)}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes spin{to{transform:rotate(1turn)}}
+@keyframes fade-in{to{opacity:1}}
+.motion .gate-meta{display:flex;gap:22px;position:absolute;top:92px;left:50%;transform:translateX(-50%);margin:0;white-space:nowrap}
+.motion .gate-meta,.gate-foot,.hud-index,.hud-next,.gate-label,.spot .story-label{font:600 11px/1.5 var(--text);letter-spacing:.2em;text-transform:uppercase}
+.motion .gate-meta{color:var(--mist)}
+.motion .gate .hero-actions{justify-content:center;margin:40px 0 0}
+.motion .gate-enter{display:inline-flex;flex-direction:column;align-items:center;gap:14px;min-height:44px;padding:6px 16px;border:0;background:none;color:var(--cloud);cursor:pointer}
+.gate-ring{position:relative;display:grid;place-items:center;width:68px;height:68px}
+.gate-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.gate-ring circle{fill:none;stroke:#f3f8fc47;stroke-width:1.2;vector-effect:non-scaling-stroke}
+.gate-ring circle.fill{stroke:var(--fibre);stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--load,0));transition:stroke-dashoffset .5s var(--ease)}
+.gate-ring::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--fibre);animation:breathe 2.4s ease-in-out infinite}
+.gate-enter:hover .gate-ring::after,.gate-enter:focus-visible .gate-ring::after{animation:none;transform:scale(2.2)}
+.gate-enter:focus-visible{outline:none}.gate-enter:focus-visible .gate-ring{outline:2px solid var(--signal);outline-offset:6px;border-radius:50%}
+@keyframes breathe{50%{transform:scale(1.9);opacity:.6}}
+.motion .gate-foot{display:block;position:absolute;left:50%;bottom:30px;transform:translateX(-50%);width:max-content;max-width:calc(100% - 2 * var(--gutter));margin:0;color:var(--mist)}
+.gate-load{display:block;color:var(--cloud)}
+.gate-ready .gate-load{visibility:hidden}
+/* the chapters, with motion, are read by screen readers and spoken by the narrator: the picture carries only the subtitle */
+.motion .film .beat:not(.gate){position:absolute;left:0;top:0;width:1px;height:1px;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* the end chapter's family links are for the plain page; with motion Explore follows at once, and clipped links would be
+   invisible keyboard stops */
+.motion .film .fam-cards{display:none}
+.hud{position:absolute;inset:0;z-index:4;pointer-events:none}
+.hud[hidden]{display:none}
+.hud .subtitle,.hud-index,.hud-next{opacity:0;transition:opacity .5s var(--ease)}
+.hud.live .hud-index,.hud.live .hud-next{opacity:1}
+.hud-next{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;min-height:44px;padding:8px 18px 0;border:0;background:none;color:var(--cloud);text-shadow:0 0 10px #051222;cursor:pointer;pointer-events:auto}
+.hud-next::after{content:"";width:1px;height:16px;background:var(--cloud);animation:cue 2.2s var(--ease) infinite}
+.hud-next:focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-radius:var(--r-sm)}
+.hud-index{position:absolute;left:var(--gutter);bottom:24px;display:flex;align-items:baseline;gap:10px;margin:0;color:var(--mist);text-shadow:0 0 10px #051222}
+.hud-n{font:400 20px/1 var(--display);letter-spacing:0;color:var(--cloud)}
+.subtitle{position:absolute;left:50%;bottom:88px;transform:translateX(-50%);width:min(820px,calc(100% - 2 * var(--gutter)));margin:0;text-align:center;font:400 clamp(17px,1.45vw,21px)/1.45 var(--text);color:var(--cloud);text-shadow:0 1px 2px #051222,0 0 20px #051222}
+.subtitle::before{content:"";position:absolute;inset:-26px -56px;z-index:-1;background:radial-gradient(closest-side,#051222d9 30%,#05122200)}
+.hud .subtitle.on{opacity:1}
+.spots{position:absolute;inset:0}
+.spot{position:absolute;left:0;top:0;width:56px;height:56px;margin:-28px 0 0 -28px;padding:0;border:0;border-radius:50%;background:none;color:var(--cloud);cursor:pointer;transform:translate(var(--x,-200px),var(--y,-200px));opacity:0;visibility:hidden;transition:opacity .6s var(--ease),visibility 0s .6s;pointer-events:auto}
+.spot.on{opacity:1;visibility:visible;transition:opacity .6s var(--ease)}
+.spot-ring{position:absolute;inset:0;border-radius:50%;border:1px solid #f3f8fcd9;box-shadow:0 0 0 1px #0512224d,inset 0 0 0 1px #0512224d}
+.spot-ring::before{content:"";position:absolute;inset:23px;border-radius:50%;background:var(--signal);box-shadow:0 0 14px var(--signal)}
+.spot-ring::after{content:"";position:absolute;inset:-10px;border-radius:50%;border:1px dashed #5fd3e08c;animation:spin 22s linear infinite}
+.spot-line{position:absolute;left:46px;top:-6px;width:70px;height:1px;background:linear-gradient(90deg,#f3f8fccc,#f3f8fc40);transform-origin:left center;transform:rotate(-28deg) scaleX(var(--l,.6));transition:transform .5s var(--ease)}
+.spot-tag{position:absolute;left:104px;top:-56px;display:grid;gap:6px;padding:8px 12px 9px;text-align:left;white-space:nowrap;border:1px solid #5fd3e059;border-radius:var(--r-sm);background:#06121fe6;box-shadow:0 10px 30px #0008,inset 0 0 0 1px #5fd3e00f;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.spot-name{font:400 21px/1 var(--display);color:var(--cloud)}
+.spot .story-label{color:var(--signal)}
+.spot.flip .spot-line{left:auto;right:46px;transform-origin:right center;transform:rotate(28deg) scaleX(var(--l,.6))}
+.spot.flip .spot-tag{left:auto;right:104px;text-align:right}
+.spot:hover,.spot:focus-visible,.spot[aria-pressed="true"]{--l:1}
+.spot[aria-pressed="true"] .spot-ring::before{animation:speak .9s ease-in-out infinite alternate}
+@keyframes speak{to{transform:scale(1.8);opacity:.7}}
+.spot:focus-visible{outline:none}.spot:focus-visible .spot-ring{outline:2px solid var(--signal);outline-offset:8px}
+.spot.cover{width:var(--w,220px);height:34px;margin:-17px 0 0 calc(var(--w,220px) / -2);border-radius:var(--r-pill)}
+.spot.cover .spot-ring,.spot.cover .spot-line{display:none}
+.spot.cover .spot-tag{position:absolute;inset:0;display:grid;place-items:center;padding:0;border:1px solid #5fd3e080;border-radius:var(--r-pill);background:#06121ff2;box-shadow:0 0 22px #5fd3e033,inset 0 0 0 1px #5fd3e014;text-shadow:none}
+.spot.cover:hover .spot-tag,.spot.cover:focus-visible .spot-tag{border-color:var(--signal);box-shadow:0 0 28px #5fd3e059}
+.spot.cover:focus-visible .spot-tag{outline:2px solid var(--signal);outline-offset:4px}
+/* press and hold a ring: the scene leans in on that material and a pane of smoked glass opens beside it */
+.spot{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.spot-hold{font:600 10px/1.4 var(--text);letter-spacing:.18em;text-transform:uppercase;color:var(--mist)}
+.motion .film-canvas{transition:transform .9s var(--ease)}
+.film-stage.expanded .film-canvas{transform:scale(1.14)}
+.film-stage::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(circle at var(--zx,50%) var(--zy,50%),#05122200 18%,#051222b8 78%);opacity:0;transition:opacity .8s var(--ease)}
+.film-stage.expanded::after{opacity:1}
+.film-stage.expanded .spot.on:not(.held){opacity:0;visibility:hidden}
+.film-stage.expanded .hud-next,.film-stage.expanded .hud-index{opacity:.25}
+.spot.held .spot-ring{transform:scale(1.25);transition:transform .5s var(--ease)}
+.spot.held .spot-tag,.spot.held .spot-line{opacity:0;transition:opacity .3s var(--ease)}
+.board{position:absolute;left:0;top:0;z-index:6;width:var(--bw,420px);perspective:1300px;pointer-events:none;opacity:0;visibility:hidden;transform:translate(var(--bx,0),var(--by,0));transition:opacity .45s var(--ease),visibility 0s .45s}
+.board.on{opacity:1;visibility:visible;transition:opacity .5s var(--ease)}
+.board-glass{position:relative;padding:26px 28px 22px;transform-style:preserve-3d;transform:rotateY(var(--ry,-12deg)) rotateX(var(--rx,4deg)) translateZ(-140px) scale(.88);transition:transform .9s var(--ease)}
+.board.on .board-glass{transform:rotateY(var(--ry,-12deg)) rotateX(var(--rx,4deg)) translateZ(0) scale(1)}
+.board-glass::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:var(--r-md);border:1px solid #ffffff3d;background:linear-gradient(150deg,#ffffff29 0%,#0c2440d1 20%,#06121fe0 64%,#5fd3e021 100%);-webkit-backdrop-filter:blur(26px) saturate(1.5);backdrop-filter:blur(26px) saturate(1.5);box-shadow:0 46px 100px #000c,inset 0 1px 0 #ffffffbf,inset 1px 0 0 #ffffff2e,inset 0 0 48px #5fd3e014}
+.board-glass::after{content:"";position:absolute;inset:0;border-radius:var(--r-md);pointer-events:none;background:linear-gradient(115deg,#ffffff00 32%,#ffffff17 46%,#ffffff00 60%);transform:translateZ(2px)}
+.board-kicker{margin:0;font:600 11px/1.4 var(--text);letter-spacing:.2em;text-transform:uppercase;color:var(--signal);transform:translateZ(22px)}
+.board-title{margin:10px 0 0;font:400 clamp(30px,2.6vw,40px)/1 var(--display);color:var(--cloud);transform:translateZ(52px)}
+.board-lede{margin:10px 0 0;font-size:16px;line-height:1.5;color:var(--cloud);transform:translateZ(34px)}
+.board-list{display:grid;gap:9px;margin:18px 0 0;padding:16px 0 0;border-top:1px solid #ffffff24;list-style:none;transform:translateZ(28px)}
+.board-list li{display:flex;align-items:center;gap:12px;font-size:15px;color:var(--cloud)}
+.board-list li::before{content:"";width:7px;height:7px;flex:none;border-radius:50%;border:1px solid var(--signal);box-shadow:0 0 8px #5fd3e080}
+.board-note{margin:16px 0 0;font-size:13px;line-height:1.5;color:var(--mist);transform:translateZ(16px)}
+.board-hint{margin:14px 0 0;font:600 10px/1 var(--text);letter-spacing:.2em;text-transform:uppercase;color:var(--mist);transform:translateZ(12px)}
+@media (max-width:640px){.board-glass{padding:20px 20px 18px}.board-title{font-size:28px}.board-lede{font-size:15px}}
+/* with motion the film's source label is a small line at the edge of the picture */
+.motion .film-label{left:auto;right:var(--gutter);bottom:24px;max-width:min(44vw,420px);padding:0;background:none;font:600 10px/1.5 var(--text);letter-spacing:.12em;text-transform:uppercase;text-align:right;color:var(--mist);text-shadow:0 0 10px #051222}
+/* while the film fills the screen the page's chrome steps back: the chapter bar leaves, the header keeps its marks */
+html.in-film .chapters{opacity:0;pointer-events:none}
+html.in-film .top>.btn-small{opacity:0;pointer-events:none}
+html.in-film .top .sound-toggle,html.in-film .top .menu-toggle{background:transparent;border-color:transparent}
+.chapters,.top>.btn-small,.top .sound-toggle,.top .menu-toggle{transition:opacity .5s var(--ease),background .5s var(--ease),border-color .5s var(--ease)}
+@media (max-width:640px){
+  .motion .gate{padding:96px var(--gutter) 150px}
+  .motion .gate-meta{top:84px}
+  .subtitle{bottom:120px;font-size:17px}
+  .hud-next{bottom:52px}
+  .hud-index{bottom:18px}
+  .motion .film-label{bottom:14px;max-width:52vw}
+  .spot-line{width:44px}
+  .spot-tag{left:80px;top:-44px}
+  .spot.flip .spot-tag{right:80px}
+  .spot-name{font-size:18px}
+}
+@media (prefers-reduced-motion:reduce){.gate-art .ln{animation:none;stroke-dashoffset:0}.gate-art .spin{animation:none;opacity:1}}
 
 @media (prefers-reduced-motion:reduce){
   .score-fx{display:none}

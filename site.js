@@ -98,6 +98,8 @@ const sound = (() => {
     motion(speed) { if (on && engine) guard(() => engine.motion(speed)); },
     /** True while the visitor has Sound on. */
     get playing() { return on; },
+    /** Turns Sound on (the gate's "Click to enter" is the visitor's gesture). */
+    enable() { if (!on) set(true); },
     /** Lowers the score under the storyteller's voice, or brings it back. */
     duck(v) { if (on && engine?.duck) guard(() => engine.duck(v)); },
   };
@@ -109,7 +111,8 @@ const SET = innerWidth / innerHeight < 0.9 ? 'm' : 'd';
 const film = $('#film'), canvas = $('.film-canvas'), ctx = canvas.getContext('2d');
 const frames = new Array(FRAMES);
 let shown = -1, filmP = 0;
-const filmBeats = $$('.beat, .spec-card', film).map((el) => ({ el, at: el.dataset.at.split(',').map(Number) }));
+const gate = $('.gate', film);
+const filmBeats = gate ? [{ el: gate, at: gate.dataset.at.split(',').map(Number) }] : [];
 
 function size() {
   const dpr = Math.min(devicePixelRatio || 1, 1.5);
@@ -133,6 +136,12 @@ function draw(i) {
 // 255 downloads and decodes do not compete with the first paint on a phone. A newly decoded frame triggers a redraw
 // only when it is closer to the frame the scroll asks for than the one on the canvas.
 const idle = () => new Promise((r) => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 1500 }) : setTimeout(r, 200)));
+let firstPass = 0;
+const gateLoadEl = $('.gate-load', film);
+function gateLoad(f) { // the gate's ring fills as the film's first pass (every 8th frame) arrives
+  root.style.setProperty('--load', f.toFixed(3));
+  if (gateLoadEl) gateLoadEl.textContent = `Loading 6 chapters ${Math.round(f * 100)}`;
+}
 async function loadFrames() {
   const seen = new Set();
   for (const step of [8, 4, 2, 1]) {
@@ -145,9 +154,11 @@ async function loadFrames() {
         img.src = filmFile(`${SET}/${String(i + 1).padStart(3, '0')}.webp`);
         try { await img.decode(); frames[i] = img; if (drawnFrom < 0 || Math.abs(i - wanted) < Math.abs(drawnFrom - wanted)) shown = -1; }
         catch (e) { /* a missing frame is covered by its neighbours */ }
+        if (step === 8) gateLoad(++firstPass / order.length);
       }
     };
     await Promise.all(Array.from({ length: step === 8 ? 6 : 3 }, worker));
+    if (step === 8) { root.style.setProperty('--load', '1'); root.classList.add('gate-ready'); }
     await idle();
   }
 }
@@ -163,42 +174,6 @@ function labelShot(i) { // i: the index of the loaded frame on the canvas (not t
   if (!shot || shot === filmShot) return;
   filmShot = shot;
   filmLabel.textContent = `This shot: ${shot.src}, not SB Trading's own.`;
-}
-// The specimen card: the beam shot's own drawn card misspells its labels, so tools/build-film.py blurs it out of every
-// frame and records where it was (assets/film/film.json). On desktop the page's real card follows that track over the
-// loaded frame on the canvas; on phones (a centre crop) it sits above the chapter bar.
-const specCard = $('.spec-card', film);
-let cardTrack = null;
-fetch(filmFile('film.json')).then((r) => r.json()).then((j) => { cardTrack = new Map(j.card.map(([i, ...b]) => [i, b])); }).catch(() => { /* the card stays in its CSS place */ });
-let cardFrame = -1;
-function placeCard(i) {
-  if (!specCard || !cardTrack || SET === 'm' || i === cardFrame) return;
-  const keys = [...cardTrack.keys()], k = Math.min(Math.max(i, keys[0]), keys.at(-1)), box = cardTrack.get(k);
-  if (!box) return;
-  cardFrame = i;
-  const s = Math.max(innerWidth / 1280, innerHeight / 720), ox = (innerWidth - 1280 * s) / 2, oy = (innerHeight - 720 * s) / 2;
-  const [x0, y0, x1] = box, cx = ox + ((x0 + x1) / 2) * 1280 * s, w = Math.max((x1 - x0) * 1280 * s, 360);
-  specCard.style.left = `${Math.round(cx - w / 2)}px`; specCard.style.width = `${Math.round(w)}px`;
-  specCard.style.top = `${Math.round(Math.min(oy + y0 * 720 * s, innerHeight - specCard.offsetHeight - 76))}px`;
-}
-// Hold to split: the beam shot's own prompt reads "hold or scroll to split". Pressing and holding on the film while the
-// specimen is in the beam plays the film forward to the split at a steady pace (0.16 of the film a second); letting go
-// stops it. A touch that starts scrolling is the browser's (pointercancel), so phones keep their normal swipe.
-let holdT = 0;
-const HOLD_FROM = 0.2, HOLD_TO = 0.6;
-film.addEventListener('pointerdown', (e) => {
-  if (reduced || e.button > 0 || e.target.closest('a, button')) return;
-  const q = progressOf(film);
-  if (q >= HOLD_FROM && q < HOLD_TO - 0.01) holdT = performance.now();
-});
-for (const ev of ['pointerup', 'pointercancel', 'blur']) addEventListener(ev, () => { holdT = 0; });
-function hold(now) {
-  if (!holdT) return;
-  const dt = Math.min(0.1, (now - holdT) / 1000); holdT = now;
-  const span = film.offsetHeight - innerHeight, end = film.offsetTop + span * HOLD_TO;
-  const y = Math.min(end, scrollY + span * 0.16 * dt);
-  if (y >= end - 1) holdT = 0;
-  scrollTo({ top: y, behavior: 'instant' }); lenis?.scrollTo(y, { immediate: true, force: true });
 }
 // Film sound design (assets/sound.js), fired when scrolling forward crosses each moment: the cut from the grove into the
 // hall, the beam, the bamboo splitting, the fibre vortex, the close shot and the dome opening (frame numbers from
@@ -260,49 +235,233 @@ const dust = (() => {
 const explore = $('#explore');
 const fams = $$('.fam', explore), ambient = $$('.ambient img', explore);
 let famActive = -1;
-// The storyteller (after hatom.com): each family's short history, narrated (assets/voice/, ElevenLabs voice "Moksh"),
+// The storyteller (after hatom.com): each family's short history, narrated (assets/voice/, Kokoro voice "George", tools/narrate.py),
 // with its words as subtitles. "Hear its story" plays or stops it; with Sound on it also starts as the family comes on
 // stage, once per family. The score ducks under the voice. A family whose recording is not made yet shows no button.
 const STORIES = {
-  bamboo: { src: 'assets/voice/bamboo.mp3?v=53d87132', text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots. Dried and bundled, it leaves the grove as poles, splits and sections, ready to build with.' },
-  fibre: { src: 'assets/voice/fibre.mp3?v=16255d51', text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
-  bark: { src: 'assets/voice/bark.mp3?v=08edcb15', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
+  bamboo: { src: 'assets/voice/bamboo.mp3?v=a0432255', text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots. Dried and bundled, it leaves the grove as poles, splits and sections, ready to build with.' },
+  fibre: { src: 'assets/voice/fibre.mp3?v=282aae02', text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
+  bark: { src: 'assets/voice/bark.mp3?v=1fa864f6', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
 };
 const storyCap = $('.story-caption'), storyBtns = $$('.story'), told = new Set();
 let storyNow = null;
 storyBtns.forEach((b) => { b.hidden = !STORIES[b.dataset.story]?.src; });
+// One voice at a time: a family's story (a "Hear its story" button, or a ring on the film) or a chapter's narration.
+// Its words show as subtitles in the caption it is given (Explore's, or the film's one line). Without a recording, or
+// for a chapter while Sound is off, the words alone are shown at a reading pace.
 function stopStory() {
   if (!storyNow) return;
-  const { audio, btn } = storyNow;
+  const { audio, btn, cap, timer } = storyNow;
   storyNow = null; window.__story = null;
-  audio.pause();
-  btn.setAttribute('aria-pressed', 'false'); btn.querySelector('.story-label').textContent = 'Hear its story';
-  if (storyCap) { storyCap.hidden = true; storyCap.textContent = ''; }
+  audio?.pause(); clearTimeout(timer);
+  if (btn) { btn.setAttribute('aria-pressed', 'false'); const l = btn.querySelector('.story-label'); if (l) l.textContent = 'Hear its story'; }
+  if (cap) { cap.classList.remove('on'); if (cap === storyCap) { cap.hidden = true; cap.textContent = ''; } }
   sound.duck(false);
 }
-function playStory(key) {
-  const s = STORIES[key], btn = $(`.story[data-story="${key}"]`);
-  if (!s?.src || !btn) return;
+function speak({ key, src, text, btn = null, cap = storyCap, whole = false }) {
   stopStory();
-  told.add(key);
-  const audio = new Audio(s.src), lines = s.text.match(/[^.;:]+[.;:]?/g).map((l) => l.trim()).filter(Boolean);
+  const lines = whole ? [text] : text.match(/[^.;:]+[.;:]?/g).map((l) => l.trim()).filter(Boolean);
+  const audio = src ? new Audio(src) : null, now = { audio, btn, cap, key, timer: 0 };
+  storyNow = now; window.__story = audio;
+  if (btn) { btn.setAttribute('aria-pressed', 'true'); const l = btn.querySelector('.story-label'); if (l) l.textContent = 'Stop the story'; }
+  if (cap) { cap.hidden = false; cap.textContent = lines[0]; cap.classList.add('on'); }
+  const read = (l) => Math.max(2600, l.length * 62); // a comfortable reading pace for the words alone
+  if (!audio) {
+    let k = 0;
+    const next = () => { if (storyNow !== now) return; if (++k >= lines.length) { stopStory(); return; } if (cap) cap.textContent = lines[k]; now.timer = setTimeout(next, read(lines[k])); };
+    now.timer = setTimeout(next, read(lines[0]));
+    return;
+  }
   const total = lines.reduce((n, l) => n + l.length, 0), ends = [];
   let acc = 0;
   for (const l of lines) { acc += l.length; ends.push(acc / total); }
-  storyNow = { audio, btn, key }; window.__story = audio;
-  btn.setAttribute('aria-pressed', 'true'); btn.querySelector('.story-label').textContent = 'Stop the story';
-  if (storyCap) { storyCap.hidden = false; storyCap.textContent = lines[0]; }
   audio.addEventListener('timeupdate', () => {
-    if (!storyCap || !audio.duration) return;
+    if (storyNow !== now || !cap || !audio.duration) return; // a paused voice fires one last update: it must not write over the next
     const f = audio.currentTime / audio.duration, k = Math.max(0, ends.findIndex((e) => f <= e));
-    if (storyCap.textContent !== lines[k]) storyCap.textContent = lines[k];
+    if (cap.textContent !== lines[k]) cap.textContent = lines[k];
   });
-  audio.addEventListener('ended', () => { if (storyNow?.audio === audio) stopStory(); });
+  audio.addEventListener('ended', () => { if (storyNow === now) now.timer = setTimeout(() => { if (storyNow === now) stopStory(); }, 900); });
   sound.duck(true);
-  audio.play().catch(() => { if (storyNow?.audio === audio) stopStory(); });
+  audio.play().catch(() => { if (storyNow === now) stopStory(); });
+}
+function playStory(key, { btn, cap } = {}) {
+  const s = STORIES[key];
+  if (!s?.src) return;
+  told.add(key);
+  speak({ key, src: s.src, text: s.text, btn: btn ?? $(`.story[data-story="${key}"]`), cap: cap ?? storyCap });
 }
 document.addEventListener('sb:sound', (e) => { if (!e.detail) stopStory(); }); // Sound off silences the voice too
-storyBtns.forEach((b) => b.addEventListener('click', () => (storyNow?.key === b.dataset.story ? stopStory() : playStory(b.dataset.story))));
+storyBtns.forEach((b) => b.addEventListener('click', () => (storyNow?.btn === b ? stopStory() : playStory(b.dataset.story))));
+
+// ------------------------------------------------------------------ the film's chapters: narrator and wireframe
+// Six chapters (the .beat[data-ch] elements: range of the film, the frame the camera rests on, the narrator's line and
+// its recording). The gate's "Click to enter" (or a click anywhere on it) turns Sound on and flies to the first chapter;
+// a click on the picture, or "Click to continue", flies to the next, and past the last into Explore. When the film comes
+// to rest in a chapter it settles on that chapter's frame and the narrator speaks its line (the words always, the voice
+// with Sound on). Rings on the materials (SPOTS: where each sits in the chapter's frame, 0-1 of the desktop film; m: the
+// phone film's own place when the centre crop moves it) tell that material's story; the specimen's ring opens it.
+const chapters = (() => {
+  const hud = $('.hud', film), spotsEl = $('.spots', film), subtitle = $('.subtitle', film);
+  const hudN = $('.hud-n', film), hudName = $('.hud-name', film), hudNext = $('.hud-next', film), enter = $('.gate-enter', film);
+  const NAMES = { grove: 'The grove', specimen: 'The specimen', split: 'Opened', fibre: 'Banana fibre', bark: 'Bark and leaves', dome: 'Together' };
+  const STORY_NAMES = { bamboo: 'Bamboo', fibre: 'Banana fibre', bark: 'Bark and leaves' };
+  const SPOTS = {
+    grove: [{ key: 'bamboo', x: 0.72, y: 0.40, m: [0.78, 0.32] }],
+    // the beam shot draws its own prompt across the specimen ("hold or scroll to split"): this plate sits over it with the
+    // site's own way in, so the footage never asks for a gesture the page does not use
+    specimen: [{ key: 'open', x: 0.5, y: 0.487, cover: 0.19, name: 'Open the specimen', label: 'Click to open' }],
+    split: [{ key: 'bamboo', x: 0.40, y: 0.56 }, { key: 'fibre', x: 0.57, y: 0.38 }, { key: 'bark', x: 0.19, y: 0.45 }],
+    fibre: [{ key: 'fibre', x: 0.64, y: 0.30, m: [0.72, 0.42] }],
+    bark: [{ key: 'fibre', x: 0.17, y: 0.48, name: 'Banana fibre yarn' }, { key: 'bark', x: 0.60, y: 0.46, m: [0.74, 0.44] }],
+    dome: [{ key: 'fibre', x: 0.18, y: 0.46, quiet: true }, { key: 'bark', x: 0.50, y: 0.68 }, { key: 'bamboo', x: 0.86, y: 0.42 }],
+  };
+  const list = $$('.beat[data-ch]', film).map((el, k) => ({ k, key: el.dataset.ch, at: el.dataset.at.split(',').map(Number), anchor: Number(el.dataset.anchor),
+    voice: el.dataset.voice || null, text: $('.say', el)?.textContent.trim() || '' }));
+  if (reduced || !hud || !list.length) return { update() {}, next() {}, list };
+  hud.hidden = false;
+  const IW = SET === 'm' ? 405 : 1280, IH = 720;
+  const spots = [];
+  for (const c of list) {
+    for (const d of SPOTS[c.key] || []) {
+      const fx = SET === 'm' ? (d.m ? d.m[0] : (d.x * 1280 - 437.5) / 405) : d.x, fy = SET === 'm' && d.m ? d.m[1] : d.y;
+      if (fx < 0.08 || fx > 0.92) continue; // outside the phone film's centre crop
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = d.cover ? 'spot cover' : 'spot'; b.dataset.key = d.key; b.dataset.ch = c.key; b.tabIndex = -1;
+      if (d.key !== 'open') b.setAttribute('aria-pressed', 'false');
+      b.innerHTML = `<span class="spot-ring" aria-hidden="true"></span><span class="spot-line" aria-hidden="true"></span><span class="spot-tag"><b class="spot-name${d.quiet || d.cover ? ' sr' : ''}">${d.name || STORY_NAMES[d.key]}</b><span class="story-label">${d.label || 'Hear its story'}</span>${d.key === 'open' ? '' : '<span class="spot-hold">Hold for details</span>'}</span>`;
+      b.addEventListener('pointerenter', () => sound.cue('hover', b));
+      if (d.key !== 'open') { // press and hold: the scene leans in and the glass board opens; letting go closes it
+        let timer = 0;
+        const start = () => { clearTimeout(timer); timer = setTimeout(() => expand(spots.find((x) => x.b === b), d.key), HOLD_MS); };
+        const end = () => { clearTimeout(timer); if (held?.b === b) { collapse(); b.dataset.swallow = '1'; } };
+        b.addEventListener('pointerdown', (e) => { if (e.button > 0) return; b.setPointerCapture?.(e.pointerId); start(); });
+        for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, end);
+        b.addEventListener('keydown', (e) => { if (e.key === ' ' && !e.repeat) start(); });
+        b.addEventListener('keyup', (e) => { if (e.key === ' ') { const was = held?.b === b; end(); if (was) e.preventDefault(); } });
+        b.addEventListener('contextmenu', (e) => e.preventDefault()); // a long touch is a hold, not the browser's menu
+      }
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (b.dataset.swallow) { delete b.dataset.swallow; return; } // the release after a hold is not a tap
+        if (d.key === 'open') { go(c.k + 1); return; }
+        sound.cue('open', b);
+        if (storyNow?.btn === b) stopStory(); else playStory(d.key, { btn: b, cap: subtitle });
+      });
+      spotsEl.appendChild(b);
+      spots.push({ b, c, fx, fy, cover: d.cover ? d.cover * (SET === 'm' ? 1280 / 405 : 1) : 0 });
+    }
+  }
+  let current = -1, narrated = -1, flying = false, flyTimer = 0, lastScroll = 0, intent = 0, entered = false;
+  // The glass board: holding a ring leans the scene in on that material (the canvas scales about the ring) and a tilted
+  // pane of smoked glass fades in beside it with the family's products, read from Explore's own markup, while the
+  // narrator reads DETAILS; it tilts with the pointer and closes as the hold ends. Words only until each is recorded.
+  const HOLD_MS = 260, filmStage = $('.film-stage', film);
+  const DETAILS = {
+    bamboo: { src: 'assets/voice/detail-bamboo.mp3?v=24b05525', say: 'Bamboo, from Bangladesh: poles, splits, ski poles and woven mats. Sizes and treatment are confirmed with your quotation.' },
+    fibre: { src: 'assets/voice/detail-fibre.mp3?v=72eb5126', say: 'Banana fibre yarn, from Bangladesh, in three grades: fine banana silk, standard yarn, and industrial yarn. Grades and quantities are confirmed with your quotation.' },
+    bark: { src: 'assets/voice/detail-bark.mp3?v=8bf32fdb', say: 'Banana bark and banana leaves, from Bangladesh: the third family of the range. Sizes and quantities are confirmed with your quotation.' },
+  };
+  const board = document.createElement('aside');
+  board.className = 'board'; board.setAttribute('aria-hidden', 'true'); // the same facts are in Explore, and spoken
+  board.innerHTML = '<div class="board-glass"><p class="board-kicker"></p><h3 class="board-title"></h3><p class="board-lede"></p><ul class="board-list"></ul><p class="board-note">Sizes, grades and treatment are confirmed by SB Trading with your quotation.</p><p class="board-hint">Release to return</p></div>';
+  hud.appendChild(board);
+  let held = null;
+  function expand(sp, key) {
+    if (!sp || !sp.b.classList.contains('on')) return;
+    const fam = $(`#${key}`, explore), products = $$('.product', fam).map((x) => x.textContent.trim());
+    $('.board-kicker', board).textContent = `Origin Bangladesh · ${products.length} products`;
+    $('.board-title', board).textContent = $('h3', fam).textContent.trim();
+    $('.board-lede', board).textContent = ($('.fam-lede', fam).textContent.match(/^[^.]+\./) || [''])[0];
+    $('.board-list', board).replaceChildren(...products.map((t) => Object.assign(document.createElement('li'), { textContent: t })));
+    const W = innerWidth, H = innerHeight, bw = Math.min(420, W - 32);
+    const x = parseFloat(sp.b.style.getPropertyValue('--x')), y = parseFloat(sp.b.style.getPropertyValue('--y'));
+    const left = W < 700 ? (W - bw) / 2 : x < W / 2 ? Math.min(x + 120, W - bw - 32) : Math.max(32, x - 120 - bw);
+    const top = W < 700 ? 84 : clamp(y - 190, 84, H - 470);
+    board.style.setProperty('--bw', `${bw}px`); board.style.setProperty('--bx', `${left.toFixed(0)}px`); board.style.setProperty('--by', `${top.toFixed(0)}px`);
+    board.style.setProperty('--ry', `${x < W / 2 ? -12 : 12}deg`); board.style.setProperty('--rx', '4deg');
+    canvas.style.transformOrigin = `${x.toFixed(0)}px ${y.toFixed(0)}px`;
+    filmStage.style.setProperty('--zx', `${x.toFixed(0)}px`); filmStage.style.setProperty('--zy', `${y.toFixed(0)}px`);
+    filmStage.classList.add('expanded'); sp.b.classList.add('held'); board.classList.add('on');
+    held = sp;
+    sound.cue('open', sp.b);
+    speak({ key: `detail:${key}`, src: (sound.playing && DETAILS[key].src) || null, text: DETAILS[key].say, cap: subtitle, whole: true });
+  }
+  function collapse() {
+    if (!held) return;
+    held.b.classList.remove('held'); held = null;
+    filmStage.classList.remove('expanded'); board.classList.remove('on');
+    if (String(storyNow?.key).startsWith('detail:')) stopStory();
+  }
+  addEventListener('pointermove', (e) => { // the pane tilts with the pointer while it is held
+    if (!held) return;
+    const r = board.getBoundingClientRect(), dx = (e.clientX - (r.left + r.width / 2)) / innerWidth, dy = (e.clientY - (r.top + r.height / 2)) / innerHeight;
+    board.style.setProperty('--ry', `${clamp(dx * 40, -16, 16).toFixed(1)}deg`); board.style.setProperty('--rx', `${clamp(-dy * 24, -10, 10).toFixed(1)}deg`);
+  }, { passive: true });
+  addEventListener('scroll', () => { lastScroll = performance.now(); }, { passive: true });
+  // only the visitor's own scrolling (wheel, touch, keys) settles onto a chapter; a link, an anchor or a script's
+  // scroll is left where it lands
+  for (const ev of ['wheel', 'touchmove', 'keydown']) addEventListener(ev, () => { intent = performance.now(); }, { passive: true });
+  const at = (p) => list.findIndex((c) => p >= c.at[0] && p < c.at[1]);
+  function flyTo(y, dur = 1.8) {
+    flying = true; clearTimeout(flyTimer);
+    if (lenis) lenis.scrollTo(y, { duration: dur, easing: (t) => 1 - (1 - t) ** 3, force: true, onComplete: () => { flying = false; } });
+    else scrollTo({ top: y, behavior: 'smooth' });
+    flyTimer = setTimeout(() => { flying = false; }, dur * 1000 + 700);
+  }
+  const yOf = (p) => film.offsetTop + (film.offsetHeight - innerHeight) * p;
+  function go(k) {
+    if (k >= list.length) { if (storyNow?.cap === subtitle) stopStory(); flyTo(explore.offsetTop, 1.6); return; }
+    sound.cue('whoosh');
+    narrated = k; narrate(list[k]); // the narrator speaks as the camera moves, as the click is answered
+    flyTo(yOf(list[k].anchor));
+  }
+  function next() { const p = progressOf(film), k = at(p); go(p < list[0].at[0] ? 0 : k < 0 ? list.length : k + 1); }
+  function begin() { entered = true; sound.enable(); go(0); }
+  enter?.addEventListener('click', (e) => { e.stopPropagation(); begin(); });
+  hudNext.addEventListener('click', (e) => { e.stopPropagation(); next(); });
+  // a click on the picture moves on; on the gate it enters (a click there is the gesture that may turn on Sound)
+  film.addEventListener('click', (e) => {
+    if (e.target.closest('a, button, input, select, textarea')) return;
+    if (progressOf(film) < list[0].at[0]) begin(); else next();
+  });
+  function narrate(c) {
+    if (storyNow && storyNow.cap === subtitle && !String(storyNow.key).startsWith('ch:')) stopStory(); // moving on ends a story
+    speak({ key: `ch:${c.key}`, src: sound.playing ? c.voice : null, text: c.text, cap: subtitle, whole: true });
+  }
+  function place(sp) {
+    const W = innerWidth, H = innerHeight, s = Math.max(W / IW, H / IH);
+    const x = (W - IW * s) / 2 + sp.fx * IW * s, y = (H - IH * s) / 2 + sp.fy * IH * s;
+    sp.b.style.setProperty('--x', `${x.toFixed(1)}px`); sp.b.style.setProperty('--y', `${y.toFixed(1)}px`);
+    if (sp.cover) sp.b.style.setProperty('--w', `${Math.min(W - 32, sp.cover * IW * s).toFixed(0)}px`);
+    sp.b.classList.toggle('flip', x > W * 0.56);
+    return x > 20 && x < W - 20 && y > 70 && y < H - 120;
+  }
+  return {
+    list, next,
+    /** Called every frame while the film is on screen: chapter index, rings, narration and the settle onto a chapter. */
+    update(now, p) {
+      const k = at(filmP), live = filmP >= list[0].at[0] - 0.01;
+      hud.classList.toggle('live', live);
+      if (gate) { gate.style.setProperty('--gx', target[0].toFixed(3)); gate.style.setProperty('--gy', target[1].toFixed(3)); }
+      if (k !== current) {
+        current = k;
+        if (k >= 0) { hudN.textContent = String(k + 1).padStart(2, '0'); hudName.textContent = NAMES[list[k].key]; }
+        hudNext.textContent = k === list.length - 1 ? 'Continue to the materials' : 'Click to continue';
+        if (k < 0 && storyNow?.cap === subtitle) stopStory();
+      }
+      for (const sp of spots) {
+        const near = k >= 0 && sp.c === list[k] && Math.abs(filmP - sp.c.anchor) < 0.03 && place(sp);
+        if (near !== sp.b.classList.contains('on')) { sp.b.classList.toggle('on', near); sp.b.tabIndex = near ? 0 : -1; }
+      }
+      const resting = Math.abs(p - filmP) < 0.0015 && now - lastScroll > 420 && !flying;
+      const fr = film.getBoundingClientRect(), pinned = fr.top <= 1 && fr.bottom >= innerHeight - 1; // progress stops at 1 once the film has gone
+      if (!resting || k < 0 || !pinned) return;
+      const c = list[k];
+      if (now - intent < 4000 && Math.abs(p - c.anchor) > 0.003 && Math.abs(p - c.anchor) < 0.075) { intent = 0; flyTo(yOf(c.anchor), 0.9); return; } // settle onto the chapter's frame
+      if (k !== narrated && (entered || Math.abs(p - c.anchor) <= 0.003)) { narrated = k; narrate(c); }
+    },
+  };
+})();
 function setFamily(i) {
   if (i === famActive) return;
   const forward = i > famActive;
@@ -376,14 +535,13 @@ function setChapter(c) {
 
 // ------------------------------------------------------------------ the loop
 function tick(now = performance.now()) {
-  hold(now);
   const p = progressOf(film);
   filmP = reduced || Math.abs(p - filmP) > 0.2 ? p : filmP + (p - filmP) * 0.16; // a jump (a link, Home/End) lands at once; scrolling glides
   if (Math.abs(p - filmP) < 1e-4) filmP = p;
   const i = Math.round(filmP * (FRAMES - 1));
   if (i !== shown) draw(i);
   if (!reduced) {
-    beats(filmP); labelShot(drawnFrom); placeCard(drawnFrom); filmCues(i);
+    beats(filmP); labelShot(drawnFrom); filmCues(i); chapters.update(now, p);
     const fr0 = film.getBoundingClientRect();
     if (fr0.bottom > 0 && fr0.top < innerHeight && !document.hidden) dust.draw(now);
   }
@@ -434,6 +592,7 @@ function tick(now = performance.now()) {
   if (fr.bottom > mid) c = p < 0.205 ? 0 : p < 0.5 ? 1 : 2; // the grove, the specimen in the beam, the materials
   else if (er.bottom > mid) c = 3;
   setChapter(c);
+  root.classList.toggle('in-film', !reduced && fr.top <= 1 && fr.bottom >= innerHeight - 1); // the page's chrome steps back while the film fills the screen
   sound.scene(c, Math.max(0, famActive));
   sound.motion(Math.abs(scrollY - lastY) / innerHeight * 12);
   lastY = scrollY;

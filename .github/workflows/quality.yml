@@ -15,7 +15,7 @@ concurrency:
 jobs:
   build-and-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30  # the suite photographs every line over the film on desktop and phone: ~12 min locally, longer on CI
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

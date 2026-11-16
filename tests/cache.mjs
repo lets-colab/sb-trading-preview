@@ -71,7 +71,7 @@ async function journey(name, options, desktop) {
   check(files.length > 20, `${name}: the journey loaded the page's files (${files.length} requests)`);
   check(bad.length === 0, `${name}: every file is fetched at its current versioned address (${bad.length} not: ${bad.slice(0, 4).join(', ')})`);
   if (desktop) {
-    const kinds = ['/styles.css', '/site.js', '/assets/rifat.js', '/assets/rifat-knowledge.js', '/assets/sound.js', '/assets/vendor/specimens.js', '/assets/film/film.json', '/assets/voice/bark.mp3', '/assets/img/cutout/', '/assets/img/bamboo-poles.webp'];
+    const kinds = ['/styles.css', '/site.js', '/assets/rifat.js', '/assets/rifat-knowledge.js', '/assets/sound.js', '/assets/vendor/specimens.js', '/assets/voice/bark.mp3', '/assets/img/cutout/', '/assets/img/bamboo-poles.webp'];
     const missed = kinds.filter((k) => !files.some((u) => u.startsWith(k)));
     check(missed.length === 0, `${name}: the journey reached every kind of file the page loads (missed: ${missed.join(', ') || 'none'})`);
   }
