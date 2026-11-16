@@ -29,20 +29,20 @@ function rng(seed) {
 }
 
 export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = () => {} } = {}) {
-  const g = canvas.getContext('2d');
+  const g = canvas.getContext('2d', { willReadFrequently: true });
   const rnd = rng(20261116);
   const delay = intro ? GROVE : 0, groundDelay = intro ? 1.3 : 0;
   const lines = []; // fixed polylines: { p: [x, y, z, ...], c: colour, a: alpha, t0: reveal start (s), d: reveal length (s) }
-  const add = (p, c, a, t0, d = 1.1) => lines.push({ p, c, a, t0, d });
+  const add = (p, c, a, t0, d = 1.1, fine = false) => lines.push({ p, c, a, t0, d, fine });
 
   // terrain: contour rows, flat near the camera and rising into a ridge at the back; the farthest row is the skyline
-  for (let z = -10; z <= 2.6; z += low ? 0.8 : 0.5) {
+  for (let z = -10, row = 0; z <= 2.6; z += low ? 0.8 : 0.5, row++) {
     const far = smooth(-2.5, -9.5, z), p = [];
     for (let x = -14; x <= 14.01; x += low ? 0.7 : 0.45) {
       const ridge = 0.5 * Math.sin(x * 0.42 + 1.3) + 0.3 * Math.sin(x * 0.93 + z * 0.7) + 0.18 * Math.sin(x * 1.9 + 2.1);
       p.push(x, Y0 + far * (1.35 + ridge * 1.25) + (1 - far) * 0.04 * Math.sin(x * 1.3 + z * 2), z);
     }
-    add(p, 0, z < -9.6 ? 0.85 : 0.3, groundDelay + 0.1 + ((z + 10) / 12.6) * 0.5, 1.2);
+    add(p, 0, z < -9.6 ? 0.85 : 0.3, groundDelay + 0.1 + ((z + 10) / 12.6) * 0.5, 1.2, row % 2 === 1);
   }
 
   // bamboo culms: wires along each culm, rings at its nodes, leaves (swaying, below) at the upper nodes
@@ -101,6 +101,10 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
 
   // ------------------------------------------------------------------ camera and drawing
   let W = 0, H = 0, dpr = 1, start = 0, last = 0, frames = 0, cleared = false;
+  // detail adapts to the device: 2 full (with the glow pass), 1 without the glow, 0 also without the finest lines (leaf
+  // veins, every other terrain row, half the fibres) at a lower pixel ratio. It steps down when frames run long for about
+  // a second and never steps back up, so it does not flicker; a device with a GPU stays at 2.
+  let level = low ? 0 : 2, ema = 16, slow = 0, edgeTop = '#0000', edgeFoot = '#0000';
   let playing = intro, skipFrom = null, skipAt = 0, tShift = 0; // tShift moves the reveal clock on after a skip
   const turn = [0, 0];
   const cam = { x: 0, y: 0, z: 0, r: [1, 0, 0], u: [0, 1, 0], f: [0, 0, -1], F: 1, cy: 0, sin: 0, cos: 1, ps: 0, pc: 1, near: 0.12 };
@@ -203,9 +207,11 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
   return {
     get intro() { return playing; },
     size() {
-      dpr = Math.min(devicePixelRatio || 1, low ? 1.25 : 1.75);
+      dpr = Math.min(devicePixelRatio || 1, level === 0 ? 1.25 : 1.75);
       W = canvas.clientWidth; H = canvas.clientHeight;
       canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+      edgeTop = g.createLinearGradient(0, 0, 0, H * 0.16); edgeTop.addColorStop(0, '#000'); edgeTop.addColorStop(1, '#0000');
+      edgeFoot = g.createLinearGradient(0, H * 0.8, 0, H); edgeFoot.addColorStop(0, '#0000'); edgeFoot.addColorStop(1, '#000');
     },
     skip() { if (playing) finish(last || performance.now(), last && start ? (last - start) / 1000 : 0); },
     draw(now, p, pointer) {
@@ -214,6 +220,7 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
       if (!W) this.size();
       if (!start) start = now - (intro ? 0 : T_END * 1000);
       const t = (now - start) / 1000, dt = last ? Math.min(0.1, (now - last) / 1000) : 1 / 60;
+      if (level > 0 && now - last < 1000) { ema += (now - last - ema) * 0.1; slow = ema > 28 ? slow + 1 : 0; if (slow > 40) { level--; slow = 0; ema = 16; if (level === 0) this.size(); } }
       last = now;
       if (playing && (t >= T_END || p > 0.012)) finish(now, t);
       const tr = t + tShift; // the reveal clock
@@ -231,15 +238,15 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
       canvas.dataset.dist = current.dist.toFixed(2);
 
       buckets.clear();
-      for (const l of lines) stroke(l.p, l.c, l.a, reveal(tr, l.t0, l.d));
+      for (const l of lines) if (level > 0 || !l.fine) stroke(l.p, l.c, l.a, reveal(tr, l.t0, l.d));
       const strandA = 0.16 + 0.6 * (1 - smooth(0.8, 3.2, current.dist)); // bright up close, a faint glow in the stem from afar
-      for (const s of strands) { const f = reveal(tr, s.t0, 1.1); if (f > 0 && strandA * LEVELS >= 0.5) stroke(strand(s, t), 2, strandA, f); }
-      for (const o of leaves) { const f = reveal(tr, o.t0, 0.8); if (f <= 0) continue; const [outline, mid] = leaf(o, t, 0.09); stroke(outline, 0, 0.55, f); stroke(mid, 0, 0.35, f); }
+      for (const [i, s] of strands.entries()) { if (level === 0 && i % 2) continue; const f = reveal(tr, s.t0, 1.1); if (f > 0 && strandA * LEVELS >= 0.5) stroke(strand(s, t), 2, strandA, f); }
+      for (const o of leaves) { const f = reveal(tr, o.t0, 0.8); if (f <= 0) continue; const [outline, mid] = leaf(o, t, 0.09); stroke(outline, 0, 0.55, f); if (level > 0) stroke(mid, 0, 0.35, f); }
       for (const o of bananas) {
         const f = reveal(tr, o.t0, 1.2); if (f <= 0) continue;
         const b = bananaLeaf(o, t);
         stroke(b.mid, 0, 0.7, f); stroke(b.e1, 0, 0.55, f); stroke(b.e2, 0, 0.55, f);
-        for (const v of b.veins) stroke(v, 0, 0.26, f);
+        if (level > 0) for (const v of b.veins) stroke(v, 0, 0.26, f);
       }
       // the reticle on the specimen point: a ring, its ticks and a turning dashed halo, in signal cyan
       const rf = reveal(tr, delay + (intro ? 2.4 : 1.2), 0.9);
@@ -255,7 +262,7 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
       g.globalCompositeOperation = 'lighter';
       const fade = smooth(0, 0.6, t) * (1 - smooth(0.055, 0.1, p));
       g.lineCap = 'round';
-      for (const pass of low ? [1] : [0, 1]) { // a soft wide glow, then the fine line
+      for (const pass of level === 2 ? [0, 1] : [1]) { // a soft wide glow, then the fine line
         g.lineWidth = pass ? 1.05 : 3.4;
         for (const [key, path] of buckets) {
           const c = Math.floor(key / 100), level = key % 100;
@@ -272,8 +279,11 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
         g.fillStyle = `rgba(${COLORS[2]},${a.toFixed(3)})`;
         g.fillRect(A[0] - s / 2, A[1] - s / 2, s, s);
       }
+      g.globalCompositeOperation = 'destination-out'; // the lines fade out under the header and toward the foot
+      g.fillStyle = edgeTop; g.fillRect(0, 0, W, H * 0.16);
+      g.fillStyle = edgeFoot; g.fillRect(0, H * 0.8, W, H * 0.2);
       g.globalCompositeOperation = 'source-over';
-      canvas.dataset.frames = String(++frames);
+      canvas.dataset.frames = String(++frames); canvas.dataset.level = String(level);
       return true;
     },
   };

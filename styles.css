@@ -511,7 +511,7 @@ html:not(.motion) .film .say{display:block;max-width:46ch;margin:.7em 0 0;font-s
 .gate-art .sig{stroke:var(--signal);stroke-opacity:.72}
 .gate-art .spin{stroke-dasharray:.06 .04;stroke-dashoffset:0;opacity:0;transform-origin:800px 440px;animation:fade-in 1.4s var(--ease) 1.3s forwards,spin 48s linear infinite}
 .gate-art .reticle{transform:translate(calc(var(--gx,0) * 36px),calc(var(--gy,0) * 26px));transition:transform .8s var(--ease)}
-.gate-3d{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;-webkit-mask-image:linear-gradient(#0000,#000 16%,#000 80%,#0000);mask-image:linear-gradient(#0000,#000 16%,#000 80%,#0000)} /* the lines fade under the header and the foot */
+.gate-3d{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block} /* the lines fade under the header and the foot inside the canvas (a CSS mask costs a third of a phone's frame rate) */
 .gate-live .gate-art{opacity:0;transition:opacity 1s var(--ease)}
 /* the opening: while the camera travels from the banana's fibres to the grove, only the 3D shows; then the title fades in */
 .motion .gate>:not(.gate-3d){transition:opacity 1.1s var(--ease)}

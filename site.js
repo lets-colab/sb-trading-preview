@@ -126,7 +126,7 @@ if (gate && !reduced) {
   const ended = () => root.classList.remove('gate-intro');
   const cv = document.createElement('canvas');
   cv.className = 'gate-3d'; cv.setAttribute('aria-hidden', 'true');
-  import('./assets/gate3d.js?v=8473d6ab').then(({ createGate3D }) => {
+  import('./assets/gate3d.js?v=f6b76d72').then(({ createGate3D }) => {
     gate.prepend(cv);
     gate3d = createGate3D(cv, { low: !fine || innerWidth < 700 || (navigator.hardwareConcurrency || 8) < 4, intro, onIntroEnd: ended });
     gate3d.size();
