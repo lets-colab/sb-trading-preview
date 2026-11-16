@@ -68,6 +68,32 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     check(/generated footage, not SB Trading's own/.test(t) && !/Pexels/.test(t), `${name}: the label follows the frame drawn, not the frame asked for (${t})`);
     await q.close();
   }
+  { // entering, the live 3D grove gives way to lines traced from the footage itself (on its stalks and leaves, not
+    // beside them); the footage brightens under them and they dissolve before the first chapter
+    const q = await ctx.newPage();
+    await q.goto(ORIGIN + '/');
+    await q.waitForFunction(() => document.documentElement.classList.contains('gate-live'), null, { timeout: 10000 }).catch(() => {});
+    const at = async (x) => { await q.evaluate((v) => { const f = document.getElementById('film'); scrollTo({ top: f.offsetTop + (f.offsetHeight - innerHeight) * v, behavior: 'instant' }); }, x); await q.waitForTimeout(3000); };
+    await at(0.075);
+    const melt = await q.evaluate(() => {
+      const t = document.querySelector('.film-trace'), f = document.querySelector('.film-canvas');
+      if (!t) return { trace: false };
+      const w = t.width, h = t.height, td = t.getContext('2d').getImageData(0, 0, w, h).data, fd = f.getContext('2d').getImageData(0, 0, w, h).data;
+      const L = (i) => 0.2126 * fd[i] + 0.7152 * fd[i + 1] + 0.0722 * fd[i + 2];
+      const grad = (x, y) => { const i = (y * w + x) * 4; return Math.abs(L(i + 4) - L(i - 4)) + Math.abs(L(i + w * 4) - L(i - w * 4)); };
+      let n = 0, on = 0, all = 0, m = 0;
+      for (let y = 2; y < h - 2; y += 2) for (let x = 2; x < w - 2; x += 2) {
+        const g = grad(x, y); all += g; m++;
+        if (td[(y * w + x) * 4 + 3] > 60) { n++; on += g; }
+      }
+      return { trace: true, n, ratio: +((on / Math.max(1, n)) / (all / m)).toFixed(2), frame: Number(t.dataset.frame), want: Number(t.dataset.want), same: w === f.width && h === f.height };
+    });
+    await at(0.25);
+    const after = await q.evaluate(() => { const t = document.querySelector('.film-trace'); if (!t) return -1; const d = t.getContext('2d').getImageData(0, 0, t.width, t.height).data; let n = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 24) n++; return n; });
+    check(melt.trace && melt.same && melt.n > (touch ? 300 : 1500) && melt.ratio > 1.8 && Math.abs(melt.frame - melt.want) <= 1 && after === 0,
+      `${name}: entering, the 3D grove gives way to lines traced on the footage's own bamboo, which dissolve by the first chapter (${JSON.stringify({ ...melt, after })})`);
+    await q.close();
+  }
   { // a click (or tap) during the opening skips it to the title, and is not taken as "Click to enter"
     const q = await ctx.newPage();
     await q.goto(ORIGIN + '/');
@@ -75,6 +101,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const before = await q.evaluate(() => document.documentElement.classList.contains('gate-intro'));
     if (touch) await q.touchscreen.tap(viewport.width / 2, viewport.height * 0.3); else await q.mouse.click(viewport.width / 2, viewport.height * 0.3);
     await q.waitForTimeout(1500);
+    // the title fades in over 1.1 s once the opening ends; a slow machine takes longer, so wait for it (up to 5 s)
+    await q.waitForFunction(() => Number(getComputedStyle(document.querySelector('.gate h1')).opacity) > 0.95, null, { timeout: 5000 }).catch(() => {});
     const after = await q.evaluate(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect();
       return { intro: document.documentElement.classList.contains('gate-intro'), phase: document.querySelector('.gate-3d')?.dataset.phase, title: Number(getComputedStyle(document.querySelector('.gate h1')).opacity), p: +(-r.top / (r.height - innerHeight)).toFixed(3), ac: window.__ac }; });
     check(before && !after.intro && after.phase === 'grove' && after.title > 0.95 && after.p < 0.01 && !after.ac,

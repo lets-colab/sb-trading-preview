@@ -7,7 +7,7 @@ import { createRifat } from './assets/rifat.js?v=205e2f23';
 
 // Every file is loaded at a versioned address (?v= and a hash of its contents, kept current by tools/stamp.mjs), so a
 // returning visitor's cache can never pair this page with an old file. The film's frames share one tag for the folder.
-const FILM = 'assets/film/?v=c9d6c2ba', filmFile = (p) => FILM.replace('?', `${p}?`);
+const FILM = 'assets/film/?v=6c1e1b65', filmFile = (p) => FILM.replace('?', `${p}?`);
 const root = document.documentElement;
 root.classList.add('js');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -117,7 +117,7 @@ const filmBeats = gate ? [{ el: gate, at: gate.dataset.at.split(',').map(Number)
 // back to the plant and across to the bamboo grove, where the title fades in (once a visit; a click, tap, key or scroll
 // skips it, and the click that skips is not taken as "Click to enter"). At rest the grove turns toward the pointer and
 // the camera flies into it as the film begins. The line drawing in the HTML stays until it is ready, and with reduced motion.
-let gate3d = null, gate3dFailed = () => {};
+let gate3d = null, gate3dFailed = () => {}, filmTrace = null;
 if (gate && !reduced) {
   let seen = false;
   try { seen = sessionStorage.getItem('sb-opening') === '1'; sessionStorage.setItem('sb-opening', '1'); } catch { /* storage blocked: play it */ }
@@ -129,7 +129,7 @@ if (gate && !reduced) {
   // if it cannot load, start or draw, it fails closed: the canvas goes, the line drawing and the title show at once,
   // and the film runs on
   gate3dFailed = () => { gate3d = null; cv.remove(); root.classList.remove('gate-live'); ended(); };
-  import('./assets/gate3d.js?v=a274a99b').then(({ createGate3D }) => {
+  import('./assets/gate3d.js?v=91e64339').then(({ createGate3D }) => {
     gate.prepend(cv);
     const g3 = createGate3D(cv, { low: !fine || innerWidth < 700 || (navigator.hardwareConcurrency || 8) < 4, intro, onIntroEnd: ended });
     g3.size();
@@ -139,11 +139,25 @@ if (gate && !reduced) {
   const skip = (e) => { if (!gate3d?.intro) return false; gate3d.skip(); return true; };
   film.addEventListener('click', (e) => { if (skip()) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   for (const type of ['wheel', 'touchmove', 'keydown']) addEventListener(type, skip, { passive: true });
+  // the handover (assets/filmtrace.js): as the visitor enters, lines traced from the footage's own opening frames draw
+  // in over the film while the 3D grove fades, then dissolve as the footage brightens under them. Without it the
+  // grove simply crossfades into the footage.
+  const tcv = document.createElement('canvas');
+  tcv.className = 'film-trace'; tcv.setAttribute('aria-hidden', 'true');
+  Promise.all([import('./assets/filmtrace.js?v=b94946f9'), fetch(filmFile('trace.bin')).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`trace ${r.status}`))))])
+    .then(([{ createFilmTrace }, bytes]) => {
+      canvas.after(tcv);
+      const t = createFilmTrace(tcv, bytes, { set: SET });
+      t.size(canvas.width, canvas.height);
+      filmTrace = t;
+    })
+    .catch(() => tcv.remove()); // the crossfade alone is the fallback
 }
 
 function size() {
   const dpr = Math.min(devicePixelRatio || 1, 1.5);
   canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  filmTrace?.size(canvas.width, canvas.height);
   shown = -1;
 }
 function nearest(i) {
@@ -572,6 +586,7 @@ function tick(now = performance.now()) {
     if (gate3d && !document.hidden) { // past the gate it clears once and rests
       try { gate3d.draw(now, filmP, target); } catch { gate3dFailed(); } // a draw that throws must not stop the film's loop
     }
+    if (filmTrace) { try { filmTrace.draw(filmP); } catch { $('.film-trace')?.remove(); filmTrace = null; } } // the same: no trace, no harm
     const fr0 = film.getBoundingClientRect();
     if (fr0.bottom > 0 && fr0.top < innerHeight && !document.hidden) dust.draw(now);
   }

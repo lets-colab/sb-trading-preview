@@ -578,6 +578,7 @@ html:not(.motion) .film .say{display:block;max-width:46ch;margin:.7em 0 0;font-s
 .spot-hold{font:600 10px/1.4 var(--text);letter-spacing:.18em;text-transform:uppercase;color:var(--mist)}
 .motion .film-canvas{transition:transform .9s var(--ease)}
 .film-stage.expanded .film-canvas{transform:scale(1.14)}
+.film-trace{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .film-stage::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(circle at var(--zx,50%) var(--zy,50%),#05122200 18%,#051222b8 78%);opacity:0;transition:opacity .8s var(--ease)}
 .film-stage.expanded::after{opacity:1}
 .film-stage.expanded .spot.on:not(.held){opacity:0;visibility:hidden}
@@ -640,10 +641,10 @@ html.in-film .top .sound-toggle,html.in-film .top .menu-toggle{background:transp
 .explore .ambient img.on{opacity:0}
 /* the showroom stays inside the film's last room (the reference's gallery of lit cases), softly out of focus behind the
    family; a light wash keeps the text side readable */
-.explore .ambient::before{content:"";position:absolute;inset:-3%;background:url(assets/film/d/190.webp?v=c9d6c2ba) center/cover;filter:blur(5px) saturate(.95)}
+.explore .ambient::before{content:"";position:absolute;inset:-3%;background:url(assets/film/d/190.webp?v=6c1e1b65) center/cover;filter:blur(5px) saturate(.95)}
 .explore .ambient::after{background:linear-gradient(90deg,#eef0ebf5 0%,#eef0ebd9 40%,#eef0eb40 78%,#eef0eb26 100%)}
 @media (max-width:820px){
-  .explore .ambient::before{background-image:url(assets/film/m/190.webp?v=c9d6c2ba)}
+  .explore .ambient::before{background-image:url(assets/film/m/190.webp?v=6c1e1b65)}
   .explore .ambient::after{background:linear-gradient(0deg,#eef0ebf5 0%,#eef0ebe6 52%,#eef0eb66 100%)}
 }
 .dawn{position:absolute;inset:0;z-index:6;pointer-events:none;background:var(--ink-0);opacity:var(--dark,0)}
