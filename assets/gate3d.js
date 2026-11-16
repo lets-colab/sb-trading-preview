@@ -105,7 +105,7 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
   // detail adapts to the device: 2 full (with the glow pass), 1 without the glow, 0 also without the finest lines (leaf
   // veins, every other terrain row, half the fibres) at a lower pixel ratio. It steps down after 0.8 s of long frames (by
   // the clock, so a very slow machine adapts as fast as a slightly slow one) and never steps back up, so it does not flicker; a device with a GPU stays at 2.
-  let level = low ? 0 : 2, ema = 16, slowFor = 0, edgeTop = '#0000', edgeFoot = '#0000';
+  let level = low ? 0 : 2, ema = 16, slowFor = 0, skipFrame = false, edgeTop = '#0000', edgeFoot = '#0000';
   let playing = intro, skipFrom = null, skipAt = 0, tShift = 0; // tShift moves the reveal clock on after a skip
   const turn = [0, 0];
   const cam = { x: 0, y: 0, z: 0, r: [1, 0, 0], u: [0, 1, 0], f: [0, 0, -1], F: 1, cy: 0, sin: 0, cos: 1, ps: 0, pc: 1, near: 0.12 };
@@ -229,6 +229,7 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
       }
       last = now;
       if (playing && (t >= T_END || p > 0.012)) finish(now, t);
+      if (level === 0 && !low && (skipFrame = !skipFrame)) return true; // the lightest detail on a large screen draws every other frame
       const tr = t + tShift; // the reveal clock
       // at rest the scene turns toward the pointer (eased), with a slow drift of its own; still during the opening
       const settle = playing ? 0 : skipFrom ? smooth(0, 900, now - skipAt) : 1, k = 1 - Math.exp(-3 * dt);

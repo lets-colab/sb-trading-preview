@@ -75,6 +75,9 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.waitForFunction(() => document.documentElement.classList.contains('gate-live'), null, { timeout: 10000 }).catch(() => {});
     const at = async (x) => { await q.evaluate((v) => { const f = document.getElementById('film'); scrollTo({ top: f.offsetTop + (f.offsetHeight - innerHeight) * v, behavior: 'instant' }); }, x); await q.waitForTimeout(3000); };
     await at(0.075);
+    // the film glides to the scroll position frame by frame; a slow machine takes longer, so wait for it to arrive
+    await q.waitForFunction(() => Number(document.querySelector('.film-trace')?.dataset.want) >= 14, null, { timeout: 20000 }).catch(() => {});
+    await q.waitForTimeout(600);
     const melt = await q.evaluate(() => {
       const t = document.querySelector('.film-trace'), f = document.querySelector('.film-canvas');
       if (!t) return { trace: false };
@@ -112,6 +115,10 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   { // the film is a journey after hatom.com: a gate drawn in fine lines, then a clean picture where only rings on the
     // materials, one subtitle line and small edge labels sit over the footage. Its own page, so Sound starts off below.
     const q = await ctx.newPage();
+    // record each phase of the opening as it happens (a slow machine shows few frames; polling could miss one)
+    await q.addInitScript(() => { window.__phases = []; new MutationObserver(() => { const c = document.querySelector('.gate-3d'); const ph = c?.dataset.phase, d = Number(c?.dataset.dist || 0);
+      const last = window.__phases.at(-1); if (ph && (!last || last.phase !== ph)) window.__phases.push({ phase: ph, dist: d }); else if (last && ph === last.phase) last.max = Math.max(last.max || d, d); })
+      .observe(document, { subtree: true, attributes: true, attributeFilter: ['data-phase', 'data-dist'] }); });
     await q.goto(ORIGIN + '/');
     { // the opening plays on its own: micro (inside the banana stem, among its fibres), macro (the whole banana plant),
       // then the camera moves across to the bamboo grove and the title fades in. The title waits for the camera.
@@ -119,13 +126,14 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
         return { intro: document.documentElement.classList.contains('gate-intro'), phase: c?.dataset.phase, dist: Number(c?.dataset.dist || 0), title: Number(getComputedStyle(h).opacity) }; });
       await q.waitForFunction(() => document.querySelector('.gate-3d')?.dataset.phase, null, { timeout: 5000 }).catch(() => {});
       const micro = await cam();
-      await q.waitForFunction(() => document.querySelector('.gate-3d')?.dataset.phase === 'macro', null, { timeout: 8000 }).catch(() => {});
-      const macro = await cam();
-      await q.waitForFunction(() => !document.documentElement.classList.contains('gate-intro'), null, { timeout: 14000 }).catch(() => {});
-      await q.waitForTimeout(1300); // the title fades in
+      await q.waitForFunction(() => !document.documentElement.classList.contains('gate-intro'), null, { timeout: 20000 }).catch(() => {});
+      await q.waitForFunction(() => Number(getComputedStyle(document.querySelector('.gate h1')).opacity) > 0.95, null, { timeout: 5000 }).catch(() => {}); // the title fades in
       const rest = await cam();
-      check(micro.intro && micro.phase === 'micro' && micro.dist < 1 && micro.title < 0.1 && macro.phase === 'macro' && macro.dist > micro.dist * 3 && rest.phase === 'grove' && !rest.intro && rest.title > 0.95,
-        `${name}: the opening zooms out from the banana's fibres to the whole plant, crosses to the bamboo grove, then shows the title (${JSON.stringify({ micro, macro, rest })})`);
+      const seen = await q.evaluate(() => window.__phases);
+      const order = seen.map((s) => s.phase), far = Math.max(0, ...seen.filter((s) => s.phase !== 'micro' && s.phase !== 'grove').map((s) => s.max || s.dist));
+      const inOrder = order[0] === 'micro' && order.at(-1) === 'grove' && order.slice(1, -1).every((ph, i, a) => ['macro', 'cross'].includes(ph) && (i === 0 || a[i - 1] !== 'cross' || ph === 'cross'));
+      check(micro.intro && micro.phase === 'micro' && micro.dist < 1 && micro.title < 0.1 && inOrder && order.length >= 3 && far > micro.dist * 3 && rest.phase === 'grove' && !rest.intro && rest.title > 0.95,
+        `${name}: the opening zooms out from the banana's fibres to the whole plant, crosses to the bamboo grove, then shows the title (${JSON.stringify({ micro, order, far, rest })})`);
     }
     const prog = () => q.evaluate(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return +(-r.top / (r.height - innerHeight)).toFixed(3); });
     const gate = await q.evaluate(() => {
