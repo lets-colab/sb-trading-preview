@@ -1,35 +1,47 @@
 // SB Trading sound: a generated score plus small tactile cues, all synthesised in the browser, no audio files.
 // Loaded only after the visitor presses Sound (the AudioContext is created inside that click).
-// The score (see "score" below) is a Southeast Asian bamboo-and-bronze groove (gamelan and angklung) whose ensemble
-// follows the chapter, with air that rises with scroll speed. It sits under the cues (tests/score.mjs measures it
-// offline) and reports each gong and saron note's position so the page can show it as light. The film's sound design
-// (whoosh, beam, split, fibre, close, dome) is fired by the page at the matching frames.
+// The score (see "score" below) is slow, relaxed and South Asian, made for headphones: a tanpura drone, sparse santoor
+// strokes and bansuri phrases in raga Bhupali on C, the key of the owner's film clips, with the grove's own air placed
+// around the listener (birds, bamboo leaves, wind). The chapter sets the blend. It sits under the cues and the narrator
+// (tests/score.mjs measures it offline) and reports each santoor and flute note's position so the page can show it as
+// light. With the film's sound loaded (loadFilm: the clips' own audio, cut as the picture is, and a loop of their steady
+// shimmer) the score gains that shimmer as a layer, a flight through the film plays the soundtrack of exactly the frames
+// it crosses (film), and a moment crossed by scrolling plays its own slice (moment). Without it, the film's moments
+// (leaves, brush, glass, glint, beam, split, fibre, yarn, bark, dome) are generated, fired by the page on their frames.
 //   knock / knock-soft  a hollow bamboo knock (modal synthesis) when a material family opens
-//   hover               a short fibre brush when the pointer meets a product
-//   open                a deeper knock with a breath of air when a product sheet opens
-//   reply               a soft two-note chime when Rifat answers
+//   hover               a light santoor touch when the pointer meets a product
+//   open                a deeper stroke with a breath of air when a product sheet opens
+//   reply               two soft temple-bell notes when Rifat answers
 //   send / tick         a rising pluck when a message goes out; a light wooden tick when the enquiry updates
 // Every cue is panned toward the element that triggered it (x is 0..1 across the viewport).
 export function createSoundEngine(ctx, { seed } = {}) {
+  const realtime = !(typeof OfflineAudioContext !== 'undefined' && ctx instanceof OfflineAudioContext);
+  const SR = ctx.sampleRate;
+  let s = (seed ?? Math.random() * 2 ** 32) >>> 0;
+  const rnd = () => { s = (s + 0x6d2b79f5) >>> 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const pick = (a) => a[Math.floor(rnd() * a.length)];
+
   const master = ctx.createGain();
   master.gain.value = 0.7;
   const limiter = ctx.createDynamicsCompressor();
   limiter.threshold.value = -10; limiter.knee.value = 6; limiter.ratio.value = 8; limiter.attack.value = 0.002; limiter.release.value = 0.12;
   master.connect(limiter).connect(ctx.destination);
 
-  // A small room: generated impulse, kept short and dark so cues stay crisp.
-  const room = ctx.createConvolver();
-  const len = Math.round(ctx.sampleRate * 0.7), ir = ctx.createBuffer(2, len, ctx.sampleRate);
-  for (let c = 0; c < 2; c++) {
-    const d = ir.getChannelData(c); let lp = 0;
-    for (let i = 0; i < len; i++) { lp += (Math.random() * 2 - 1 - lp) * 0.35; d[i] = lp * Math.pow(1 - i / len, 3.2); }
+  // Two generated rooms: a small dark one for the cues, a long soft hall for the score (the drone and flute bloom in it).
+  function space(seconds, darkness, decay) {
+    const c = ctx.createConvolver(), len = Math.round(SR * seconds), ir = ctx.createBuffer(2, len, SR);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = ir.getChannelData(ch); let lp = 0;
+      for (let i = 0; i < len; i++) { lp += (rnd() * 2 - 1 - lp) * darkness; d[i] = lp * Math.pow(1 - i / len, decay); }
+    }
+    c.buffer = ir; return c;
   }
-  room.buffer = ir;
+  const room = space(0.7, 0.35, 3.2);
   const wet = ctx.createGain(); wet.gain.value = 0.22;
   room.connect(wet).connect(master);
 
-  const noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-  { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  const noise = ctx.createBuffer(1, SR, SR);
+  { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = rnd() * 2 - 1; }
 
   function bus(x, send = 0.25) {
     const pan = ctx.createStereoPanner();
@@ -50,13 +62,13 @@ export function createSoundEngine(ctx, { seed } = {}) {
     o.start(t); o.stop(t + decay + 0.05);
   }
   function burst(out, { dur, freq, q = 1, amp, to = freq, t, type = 'bandpass', attack = 0.002 }) {
-    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
-    s.buffer = noise; s.playbackRate.value = 0.9 + Math.random() * 0.2;
+    const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    n.buffer = noise; n.playbackRate.value = 0.9 + rnd() * 0.2;
     f.type = type; f.Q.value = q;
     f.frequency.setValueAtTime(freq, t); f.frequency.exponentialRampToValueAtTime(to, t + dur);
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f).connect(g).connect(out);
-    s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.05);
+    n.connect(f).connect(g).connect(out);
+    n.start(t, rnd() * 0.5); n.stop(t + dur + 0.05);
   }
   // Hollow tube modes: inharmonic partials with short, faster-decaying overtones.
   function knock(out, f, amp, t) {
@@ -64,212 +76,219 @@ export function createSoundEngine(ctx, { seed } = {}) {
     for (const [r, a, d] of modes) partial(out, f * r, amp * a, d, t);
     burst(out, { dur: 0.012, freq: 2600, q: 0.8, amp: amp * 0.5, t });
   }
+  // A small brass temple bell: two inharmonic partials and a slow shimmer between them.
+  function bell(out, f, amp, t, decay = 2.2) {
+    for (const [r, a, d] of [[1, 1, 1], [2.76, 0.32, 0.55], [5.4, 0.12, 0.3], [1.0035, 0.7, 1]]) partial(out, f * r, amp * a, decay * d, t);
+  }
 
-  let lastHover = -1;
-  const cues = {
-    knock(x, t) { knock(bus(x, 0.3), 330 * (0.97 + Math.random() * 0.06), 0.42, t); },
-    'knock-soft'(x, t) { knock(bus(x, 0.3), 270 * (0.97 + Math.random() * 0.06), 0.28, t); },
-    hover(x, t) {
-      if (t - lastHover < 0.09) return;
-      lastHover = t;
-      burst(bus(x, 0.1), { dur: 0.09, freq: 2800, to: 6200, q: 1.4, amp: 0.16, t, attack: 0.012 });
-    },
-    open(x, t) {
-      const out = bus(x, 0.35);
-      knock(out, 220, 0.34, t);
-      burst(out, { dur: 0.42, freq: 700, to: 3200, q: 0.7, amp: 0.06, t, type: 'lowpass', attack: 0.08 });
-    },
-    reply(x, t) {
-      const out = bus(x, 0.45);
-      partial(out, 659.25, 0.1, 1.1, t); partial(out, 659.25 * 2.4, 0.018, 0.5, t);
-      partial(out, 987.77, 0.08, 1.2, t + 0.085); partial(out, 987.77 * 2.4, 0.014, 0.5, t + 0.085);
-    },
-    send(x, t) {
-      const out = bus(x, 0.2);
-      partial(out, 523.25, 0.09, 0.16, t, 'triangle'); partial(out, 783.99, 0.09, 0.22, t + 0.07, 'triangle');
-    },
-    tick(x, t) {
-      const out = bus(x, 0.15);
-      partial(out, 1760, 0.14, 0.05, t); burst(out, { dur: 0.01, freq: 4200, amp: 0.12, t });
-    },
-    toggle(x, t) { knock(bus(x, 0.3), 300, 0.3, t); cues.reply(x, t + 0.12); },
-  };
+  // ------------------------------------------------------------------ strings (precomputed, Karplus-Strong)
+  // A santoor note is two struck strings a hair apart in pitch: a short noise burst through a tuned delay line that
+  // loses a little of its brightness on every pass. Rendered once per pitch, then played as a buffer.
+  const strings = new Map();
+  function string(f, seconds = 3.2, bright = 0.62) {
+    const key = `${f.toFixed(2)}:${bright}`;
+    if (strings.has(key)) return strings.get(key);
+    const len = Math.round(SR * seconds), buf = ctx.createBuffer(1, len, SR), out = buf.getChannelData(0);
+    for (const [detune, amp] of [[1, 0.6], [1.0026, 0.5]]) {
+      const n = Math.max(2, Math.round(SR / (f * detune))), line = new Float32Array(n);
+      let lp = 0;
+      for (let i = 0; i < n; i++) { lp += (rnd() * 2 - 1 - lp) * bright; line[i] = lp; } // the hammer: a softened burst
+      let k = 0, prev = 0;
+      const loss = Math.pow(0.5, 1 / (f * 1.6)); // about 1.6 s to halve, longer for low strings
+      for (let i = 0; i < len; i++) {
+        const cur = line[k], y = (cur * 0.5 + prev * 0.5) * loss;
+        prev = cur; line[k] = y; out[i] += cur * amp;
+        k = (k + 1) % n;
+      }
+    }
+    for (let i = 0; i < Math.min(len, 64); i++) out[i] *= i / 64; // no click at the strike
+    strings.set(key, buf);
+    return buf;
+  }
 
   // ------------------------------------------------------------------ score
-  // A Southeast Asian bamboo-and-bronze groove, after the gamelan and angklung of Indonesia and the tribal bamboo music
-  // of the region: a gong ageng closes every 16-beat cycle, kempul and kenong mark its quarters, two saron play a
-  // catchy balungan melody in slendro (five near-equal steps, 240 cents), bonang pairs interlock in fast kotekan
-  // (polos left, sangsih right), kendang drums drive it, angklung shakes bamboo tremolo on the accents and a suling
-  // (bamboo flute) answers. The chapter sets how much of the ensemble plays: sparse in the grove, the whole groove when
-  // the materials burst open. Seeded, so the offline test hears the same piece every run.
-  let s = (seed ?? Math.random() * 2 ** 32) >>> 0;
-  const rnd = () => { s = (s + 0x6d2b79f5) >>> 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  const realtime = !(typeof OfflineAudioContext !== 'undefined' && ctx instanceof OfflineAudioContext);
-  const ROOT_HZ = 146.83;                                         // D3
-  const sl = (deg, oct = 0) => ROOT_HZ * 2 ** (oct + (deg * 240) / 1200); // slendro degree -> Hz
-  const BEAT = 60 / 100, STEP = BEAT / 4;                         // 100 bpm, sixteenth-note steps
-
-  // Each chapter: which voices play (0..1 level) and the eight-beat balungan (slendro degrees 0-4, -1 rest).
+  // Sa = C3, the key of the owner's film clips (their drone and phrases sit on C, D, E, G and A). Raga Bhupali: Sa Re Ga Pa Dha (0 2 4 7 9 semitones), the calm pentatonic of a soft evening; no Ma, no Ni,
+  // so no step can clash with the drone. Tanpura: Pa Sa' Sa' Sa, plucked in turn, each string ringing ~7 s with the
+  // tanpura's jawari: a bright band that drifts up through the overtones as the string sounds. Santoor: single strokes
+  // and the occasional gentle run, placed across the field from low (left) to high (right) as on the instrument.
+  // Bansuri: breathy, sliding into each note (meend), vibrato that opens slowly; it sings short phrases with long rests.
+  // Around the listener: birds, close bamboo leaves and wind, each placed in space (HRTF on headphones).
+  const SA = 130.81, DEG = [0, 2, 4, 7, 9];
+  const hz = (deg, oct = 0) => SA * 2 ** (oct + DEG[((deg % 5) + 5) % 5] / 12 + Math.floor(deg / 5));
   const SCENES = {
-    0: { name: 'grove', gong: 1, saron: 0.35, bonang: 0, kendang: 0, angklung: 0.7, suling: 1, bal: [2, -1, 3, -1, 2, -1, 0, -1] },
-    1: { name: 'beam', gong: 1, saron: 0.8, bonang: 0.35, kendang: 0.6, angklung: 0.5, suling: 0.6, bal: [3, 2, 3, 4, 2, 1, 2, 0] },
-    2: { name: 'materials', gong: 1, saron: 1, bonang: 1, kendang: 1, angklung: 0.8, suling: 0.8, bal: [2, 3, 4, 3, 1, 2, 3, 0] },
-    e0: { name: 'bamboo', gong: 1, saron: 0.8, bonang: 0.6, kendang: 0.7, angklung: 1, suling: 0.4, bal: [0, 2, 3, 2, 4, 3, 2, 0] },
-    e1: { name: 'banana fibre', gong: 1, saron: 0.8, bonang: 0.8, kendang: 0.6, angklung: 0.5, suling: 0.8, bal: [3, 4, 3, 2, 1, 2, 1, 0] },
-    e2: { name: 'banana leaves', gong: 1, saron: 0.7, bonang: 0.5, kendang: 0.5, angklung: 0.8, suling: 0.6, bal: [1, 2, 4, 2, 3, 1, 2, 0] },
-    4: { name: 'enquire', gong: 1, saron: 0.5, bonang: 0, kendang: 0.25, angklung: 0.4, suling: 0.7, bal: [2, -1, 1, -1, 3, -1, 0, -1] },
+    0: { name: 'grove', drone: 0.85, santoor: 0.45, flute: 0.0, birds: 1.0, leaves: 1.0, wind: 0.7, deep: 0.0, shimmer: 0.5 },
+    1: { name: 'showroom', drone: 0.7, santoor: 1.0, flute: 0.35, birds: 0.15, leaves: 0.2, wind: 0.25, deep: 0.0, shimmer: 0.8 },
+    2: { name: 'inside', drone: 1.0, santoor: 0.3, flute: 0.0, birds: 0.0, leaves: 0.0, wind: 0.35, deep: 1.0, shimmer: 1.0 },
+    e0: { name: 'bamboo', drone: 0.75, santoor: 0.8, flute: 0.55, birds: 0.5, leaves: 0.6, wind: 0.4, deep: 0.0, shimmer: 0.5 },
+    e1: { name: 'fibre', drone: 0.75, santoor: 0.6, flute: 0.8, birds: 0.35, leaves: 0.3, wind: 0.3, deep: 0.0, shimmer: 0.6 },
+    e2: { name: 'bark', drone: 0.75, santoor: 0.7, flute: 0.6, birds: 0.6, leaves: 0.8, wind: 0.45, deep: 0.0, shimmer: 0.5 },
+    4: { name: 'enquire', drone: 0.65, santoor: 0.35, flute: 0.9, birds: 0.3, leaves: 0.2, wind: 0.2, deep: 0.0, shimmer: 0.4 },
   };
-  // Kendang: d = dhung (low, open), t = tak (dry slap), k = ket (light), . = rest; one bar of 16 steps.
-  const KENDANG = 'd..t.dk.d.tkd.t.';
-  // Suling: an eight-beat phrase every other cycle, [beat, degree, octave, length in beats].
-  const SULING = [[0, 3, 1, 1.5], [1.5, 4, 1, 0.5], [2, 3, 1, 1], [3, 2, 1, 2], [5, 1, 1, 0.5], [5.5, 2, 1, 0.5], [6, 0, 1, 2]];
 
-  // A long, dark, decorrelated hall, so the score has space and width.
-  const hall = ctx.createConvolver();
-  { const len = Math.round(ctx.sampleRate * 2.8), ir = ctx.createBuffer(2, len, ctx.sampleRate);
-    for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); let lp = 0;
-      for (let i = 0; i < len; i++) { lp += (rnd() * 2 - 1 - lp) * 0.22; d[i] = lp * Math.pow(1 - i / len, 2.8); } }
-    hall.buffer = ir; }
   const musicBus = ctx.createGain(); musicBus.gain.value = 0;
   const analyser = ctx.createAnalyser(); analyser.fftSize = 1024;
   musicBus.connect(analyser).connect(master);
-  const hallIn = ctx.createGain(), hallOut = ctx.createGain(); hallOut.gain.value = 0.5;
+  const hall = space(4.2, 0.12, 2.4), hallIn = ctx.createGain(), hallOut = ctx.createGain(); hallOut.gain.value = 0.55;
   hallIn.connect(hall).connect(hallOut).connect(musicBus);
-  const voiceBus = {};
-  for (const [k, pan, send] of [['gong', 0, 0.6], ['saronL', -0.35, 0.35], ['saronR', 0.35, 0.35], ['polos', -0.6, 0.3], ['sangsih', 0.6, 0.3], ['kendang', 0.1, 0.12], ['angklung', -0.2, 0.4], ['suling', 0.25, 0.55]]) {
-    const p = ctx.createStereoPanner(); p.pan.value = pan;
-    const g = ctx.createGain(), r = ctx.createGain(); r.gain.value = send;
-    p.connect(g).connect(musicBus); p.connect(r).connect(hallIn);
-    voiceBus[k] = p;
+  // each layer: its level (set by the chapter), then the dry signal and its own send into the hall
+  const LAYER_GAIN = { drone: 0.037, santoor: 2.0, flute: 0.06, birds: 0.8, leaves: 1.0, wind: 0.16, deep: 0.031, shimmer: 0.22 };
+  const LAYER_SEND = { drone: 0.5, santoor: 0.45, flute: 0.8, birds: 0.3, leaves: 0.15, wind: 0.2, deep: 0.6, shimmer: 0.3 };
+  const layer = {};
+  for (const k of Object.keys(LAYER_GAIN)) {
+    layer[k] = ctx.createGain(); layer[k].gain.value = 0; layer[k].connect(musicBus);
+    const send = ctx.createGain(); send.gain.value = LAYER_SEND[k]; layer[k].connect(send).connect(hallIn);
   }
 
-  // Bronze by FM synthesis: a sine carrier modulated at an inharmonic ratio, with the modulation dying faster than the
-  // note, so each stroke starts bright and clangy and settles into a warm hum (pure sines sound like a telephone). A copy
-  // 1.5-2.5 Hz away gives the slow gamelan shimmer ("ombak"); a short noise strike and a felt thud give the mallet.
-  function bronze(out, f, amp, t, { decay = 1.8, ratio = 1.41, index = 2.4, beat = 2, strike = 1 } = {}) {
-    const tone = ctx.createBiquadFilter(); tone.type = 'lowpass'; tone.frequency.value = Math.min(6000, f * 9); tone.Q.value = 0.4;
-    tone.connect(out);
-    for (const [d, a] of [[0, 0.62], [beat, 0.38]]) {
-      const car = ctx.createOscillator(), mod = ctx.createOscillator(), mg = ctx.createGain(), g = ctx.createGain();
-      car.frequency.value = f + d; mod.frequency.value = (f + d) * ratio;
-      mg.gain.setValueAtTime(f * index, t); mg.gain.exponentialRampToValueAtTime(f * index * 0.04, t + decay * 0.45);
-      mod.connect(mg).connect(car.frequency);
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp * a, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
-      car.connect(g).connect(tone); car.start(t); mod.start(t); car.stop(t + decay + 0.05); mod.stop(t + decay + 0.05);
-    }
-    const hum = ctx.createOscillator(), hg = ctx.createGain(); hum.frequency.value = f / 2;   // the body under the bar
-    hg.gain.setValueAtTime(0, t); hg.gain.linearRampToValueAtTime(amp * 0.18, t + 0.02); hg.gain.exponentialRampToValueAtTime(0.0001, t + decay * 0.7);
-    hum.connect(hg).connect(tone); hum.start(t); hum.stop(t + decay);
-    burst(tone, { dur: 0.012, freq: 2600, q: 0.8, amp: amp * 0.35 * strike, t, type: 'highpass' });
-    burst(tone, { dur: 0.05, freq: 500, q: 0.7, amp: amp * 0.3 * strike, t, type: 'lowpass' });
-  }
-  function gong(f, amp, t, decay = 6) {                       // big gong: a soft beater, a deep FM body, a slow swell
-    const out = voiceBus.gong, car = ctx.createOscillator(), mod = ctx.createOscillator(), mg = ctx.createGain(), g = ctx.createGain();
-    car.frequency.value = f; mod.frequency.value = f * 1.5;
-    mg.gain.setValueAtTime(f * 0.3, t); mg.gain.linearRampToValueAtTime(f * 1.1, t + 0.35); mg.gain.exponentialRampToValueAtTime(f * 0.05, t + decay * 0.6);
-    mod.connect(mg).connect(car.frequency);
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp, t + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
-    car.connect(g).connect(out); car.start(t); mod.start(t); car.stop(t + decay + 0.05); mod.stop(t + decay + 0.05);
-    const w = ctx.createOscillator(), wg = ctx.createGain(); w.frequency.value = f + 0.8;          // the slow beat of a big gong
-    wg.gain.setValueAtTime(0, t); wg.gain.linearRampToValueAtTime(amp * 0.5, t + 0.4); wg.gain.exponentialRampToValueAtTime(0.0001, t + decay * 0.9);
-    w.connect(wg).connect(out); w.start(t); w.stop(t + decay);
-    burst(out, { dur: 0.09, freq: 260, q: 0.7, amp: amp * 0.6, t, type: 'lowpass', attack: 0.01 });
-  }
-  function drum(kind, amp, t) {                               // kendang: a pitched skin, or a dry slap
-    const out = voiceBus.kendang;
-    if (kind === 'd') {
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(72, t + 0.16);
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-      o.connect(g).connect(out); o.start(t); o.stop(t + 0.33);
-      burst(out, { dur: 0.05, freq: 700, q: 0.8, amp: amp * 0.45, t, type: 'lowpass' });
-    } else {
-      burst(out, { dur: kind === 't' ? 0.08 : 0.045, freq: kind === 't' ? 1500 : 2600, q: 1.1, amp: amp * (kind === 't' ? 0.9 : 0.45), t });
-      burst(out, { dur: 0.03, freq: 350, q: 1, amp: amp * 0.3, t, type: 'lowpass' });
-    }
-  }
-  // Bamboo: a short hollow "tok": the tube's note and its overtone dying within a fifth of a second, over a wooden click.
-  function tube(out, f, amp, t) {
-    partial(out, f, amp, 0.2, t); partial(out, f * 2.6, amp * 0.3, 0.07, t); partial(out, f * 4.1, amp * 0.12, 0.035, t);
-    burst(out, { dur: 0.012, freq: 1800, q: 0.9, amp: amp * 0.5, t });
-  }
-  function angklung(f, amp, t, len) {                         // shaken by hand: an uneven rattle that swells and fades
-    let k = 0;
-    for (let at = 0; at < len; at += 0.1 + rnd() * 0.045, k++) {   // 7-10 shakes a second, like a hand (a fast even rattle reads as a phone bell)
-      const env = Math.sin((at / len) * Math.PI);
-      tube(voiceBus.angklung, f * (k % 2 ? 2 : 1) * (1 + (rnd() - 0.5) * 0.004), amp * (0.4 + 0.6 * env) * (0.7 + rnd() * 0.3), t + at);
-    }
-  }
-  function suling(f, amp, t, len) {                           // bamboo flute: soft reedy tone, breath in the pitch, late vibrato
-    const out = voiceBus.suling, tone = ctx.createBiquadFilter(), g = ctx.createGain(), vib = ctx.createOscillator(), vd = ctx.createGain();
-    tone.type = 'lowpass'; tone.frequency.value = f * 2.5; tone.Q.value = 0.7;
-    vib.frequency.value = 5.0; vd.gain.setValueAtTime(0, t); vd.gain.linearRampToValueAtTime(f * 0.01, t + len * 0.8);
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(amp, t + 0.09); g.gain.setValueAtTime(amp, t + len * 0.8); g.gain.linearRampToValueAtTime(0, t + len);
-    tone.connect(g).connect(out); vib.connect(vd); vib.start(t); vib.stop(t + len + 0.05);
-    for (const [type, mult, a] of [['triangle', 1, 0.8], ['sine', 2, 0.15]]) {
-      const o = ctx.createOscillator(), og = ctx.createGain(); o.type = type; o.frequency.value = f * mult; og.gain.value = a;
-      vd.connect(o.frequency); o.connect(og).connect(tone); o.start(t); o.stop(t + len + 0.05);
-    }
-    const br = ctx.createBufferSource(), bf = ctx.createBiquadFilter(), bg = ctx.createGain();       // breath, tuned to the note
-    br.buffer = noise; br.loop = true; bf.type = 'bandpass'; bf.frequency.value = f; bf.Q.value = 6;
-    bg.gain.setValueAtTime(0, t); bg.gain.linearRampToValueAtTime(amp * 1.6, t + 0.06); bg.gain.linearRampToValueAtTime(amp * 0.7, t + 0.2); bg.gain.linearRampToValueAtTime(0, t + len);
-    br.connect(bf).connect(bg).connect(out); br.start(t, rnd() * 0.5); br.stop(t + len + 0.05);
+  // a point in space around the listener: azimuth in degrees (0 ahead, -90 left, 90 right), elevation, distance
+  function at(az, el = 0, dist = 2, into = 'santoor') {
+    const p = ctx.createPanner();
+    p.panningModel = 'HRTF'; p.distanceModel = 'inverse'; p.refDistance = 1.5; p.rolloffFactor = 0.6;
+    const a = az * Math.PI / 180, e = el * Math.PI / 180;
+    p.positionX.value = Math.sin(a) * Math.cos(e) * dist; p.positionY.value = Math.sin(e) * dist; p.positionZ.value = -Math.cos(a) * Math.cos(e) * dist;
+    p.connect(layer[into]);
+    return p;
   }
 
-  let musicOn = false, started = false, current = null, step = 0, nextStep = 0;
-  const timeline = [];
-  const listeners = [];
+  let musicOn = false, started = false, current = null;
+  const timeline = [], listeners = [];
   const sceneAt = (t) => { let k = timeline[0]?.key ?? 0; for (const e of timeline) if (e.t <= t) k = e.key; return SCENES[k]; };
   const report = (t, x, y, v, sc) => { const n = { at: t, x, y, v, chord: sc.name }; for (const fn of listeners) fn(n); };
 
-  function playStep(t) {
-    const sc = sceneAt(t), inBar = step % 16, beat = Math.floor(step / 4), inCycle = beat % 16, onBeat = inBar % 4 === 0;
-    if (step % 64 === 0 && sc.gong) { gong(ROOT_HZ / 2, 0.1 * sc.gong, t); report(t, 0.5, 0.62, 1, sc); }
-    if (onBeat && (inCycle === 4 || inCycle === 12) && sc.gong) gong(sl(3, -1), 0.06 * sc.gong, t, 2.8);           // kempul
-    if (onBeat && inCycle === 8 && sc.gong) bronze(voiceBus.gong, sl(1), 0.09 * sc.gong, t, { decay: 2.6, ratio: 1.5, index: 1.4, beat: 1.5 }); // kenong
-    if (onBeat && sc.saron) {
-      const deg = sc.bal[beat % 8];
-      if (deg >= 0) {
-        bronze(voiceBus.saronL, sl(deg, 0), 0.095 * sc.saron, t); bronze(voiceBus.saronR, sl(deg, 1), 0.035 * sc.saron, t + 0.012, { decay: 1.1, index: 1.8 });
-        report(t, 0.3 + deg * 0.1, 0.38 + rnd() * 0.1, sc.saron, sc);
-      }
+  function tanpura(f, t, pan) {
+    const out = at(pan * 40, 0, 2.2, 'drone');
+    const g = ctx.createGain(), body = ctx.createBiquadFilter(), jawari = ctx.createBiquadFilter();
+    body.type = 'lowpass'; body.Q.value = 0.5;
+    body.frequency.setValueAtTime(3200, t); body.frequency.exponentialRampToValueAtTime(900, t + 5);
+    jawari.type = 'peaking'; jawari.Q.value = 7; jawari.gain.value = 10;
+    jawari.frequency.setValueAtTime(f * 5, t); jawari.frequency.exponentialRampToValueAtTime(f * 19, t + 3.6);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + 0.04); g.gain.setTargetAtTime(0, t + 0.3, 2.1);
+    for (const d of [1, 1.0017]) {
+      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f * d;
+      o.connect(body); o.start(t); o.stop(t + 7.5);
     }
-    if (sc.bonang) {                                       // kotekan: polos on 1 and 3 of each four, sangsih fills between
-      const next = sc.bal[(beat + 1) % 8] >= 0 ? sc.bal[(beat + 1) % 8] : 2, k = inBar % 4;
-      const polos = [next, next + 1, next, next + 1][k] % 5, sangsih = [next + 2, next + 1, next + 2, next][k] % 5;
-      if (k % 2 === 0) bronze(voiceBus.polos, sl(polos, 1), 0.04 * sc.bonang, t, { decay: 0.6, ratio: 2.76, index: 1.6, beat: 2.5, strike: 0.7 });
-      else bronze(voiceBus.sangsih, sl(sangsih, 1), 0.036 * sc.bonang, t, { decay: 0.6, ratio: 2.76, index: 1.6, beat: 2.5, strike: 0.7 });
+    body.connect(jawari).connect(g).connect(out);
+  }
+  function santoor(deg, oct, t, amp, sc) {
+    const f = hz(deg, oct), src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = string(f);
+    const span = (Math.log2(f / SA) - 0.4) / 2.6; // low strings left, high right
+    const az = -70 + 140 * Math.max(0, Math.min(1, span));
+    g.gain.value = amp;
+    src.connect(g).connect(at(az, 10, 2, 'santoor'));
+    src.start(t); src.stop(t + 3.2);
+    report(t, 0.5 + az / 180, 0.35 + rnd() * 0.3, amp, sc);
+  }
+  function bansuri(notes, t, sc) {                            // notes: [degree, octave, seconds]
+    const out = at(-18, 6, 2.4, 'flute');
+    const o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain(), g2 = ctx.createGain();
+    const vib = ctx.createOscillator(), vibG = ctx.createGain();
+    const br = ctx.createBufferSource(), brF = ctx.createBiquadFilter(), brG = ctx.createGain();
+    o.type = 'sine'; o2.type = 'sine'; g2.gain.value = 0.18;
+    vib.frequency.value = 5.1; vib.connect(vibG); vibG.connect(o.detune); vibG.connect(o2.detune);
+    br.buffer = noise; br.loop = true; brF.type = 'bandpass'; brF.Q.value = 2.5; brG.gain.value = 0.22;
+    o.connect(g); o2.connect(g2).connect(g); br.connect(brF).connect(brG).connect(g);
+    g.connect(out);
+    let time = t, total = notes.reduce((a, [, , d]) => a + d, 0);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + 0.35);
+    vibG.gain.setValueAtTime(0, t);
+    let prev = 0;
+    notes.forEach(([deg, oct, dur]) => {
+      const f = hz(deg, oct);
+      o.frequency.setValueAtTime(prev || f * 0.97, time); o.frequency.exponentialRampToValueAtTime(f, time + 0.2); // meend: slide in
+      prev = f;
+      o2.frequency.setValueAtTime(f * 2, time + 0.2);
+      brF.frequency.setValueAtTime(f * 2, time);
+      vibG.gain.setValueAtTime(0, time); vibG.gain.linearRampToValueAtTime(14, time + Math.min(dur, 0.9)); // the vibrato opens late
+      report(time, 0.38 + rnd() * 0.1, 0.25 + rnd() * 0.2, 0.6, sc);
+      time += dur;
+    });
+    g.gain.setValueAtTime(1, t + total - 0.4); g.gain.linearRampToValueAtTime(0, t + total + 0.3);
+    for (const n of [o, o2, vib, br]) { n.start(t); n.stop(t + total + 0.4); }
+  }
+  const PHRASES = [ // Bhupali movements: [degree, octave, seconds]
+    [[2, 1, 1.4], [1, 1, 0.6], [0, 1, 2.2]],
+    [[0, 1, 0.8], [1, 1, 0.6], [2, 1, 1.6], [3, 1, 2]],
+    [[3, 1, 1.2], [2, 1, 0.6], [1, 1, 0.6], [2, 1, 1.0], [1, 1, 0.6], [0, 1, 2.2]],
+    [[4, 0, 0.9], [0, 1, 0.9], [1, 1, 0.7], [2, 1, 2.4]],
+    [[2, 1, 0.8], [3, 1, 0.8], [4, 1, 1.4], [3, 1, 0.7], [2, 1, 2]],
+  ];
+  function bird(t) {
+    const out = at(-120 + rnd() * 240, 25 + rnd() * 30, 5 + rnd() * 6, 'birds');
+    const f0 = 2600 + rnd() * 1800, n = 2 + Math.floor(rnd() * 4);
+    for (let k = 0; k < n; k++) {
+      const o = ctx.createOscillator(), g = ctx.createGain(), tk = t + k * (0.09 + rnd() * 0.05);
+      o.frequency.setValueAtTime(f0, tk); o.frequency.exponentialRampToValueAtTime(f0 * (1.25 + rnd() * 0.3), tk + 0.05);
+      o.frequency.exponentialRampToValueAtTime(f0 * 0.92, tk + 0.08);
+      g.gain.setValueAtTime(0, tk); g.gain.linearRampToValueAtTime(0.5, tk + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, tk + 0.085);
+      o.connect(g).connect(out); o.start(tk); o.stop(tk + 0.1);
     }
-    if (sc.kendang) { const c = KENDANG[inBar]; if (c !== '.') drum(c, 0.13 * sc.kendang * (inBar === 0 ? 1.2 : 1), t); }
-    if (sc.angklung && onBeat && (inCycle === 3 || inCycle === 7 || inCycle === 11 || inCycle === 15)) angklung(sl(sc.bal[beat % 8] >= 0 ? sc.bal[beat % 8] : 2, 1), 0.05 * sc.angklung, t, BEAT * 0.9);
-    if (sc.suling && step % 128 === 32) for (const [b, d, o, l] of SULING) suling(sl(d, o), 0.028 * sc.suling, t + b * BEAT, l * BEAT * 0.95);
+  }
+  function rustle(t, len = 0.8 + rnd() * 1.2) {               // close leaves: many tiny brushes, rising and falling
+    const out = at(-100 + rnd() * 200, -10 + rnd() * 30, 0.8 + rnd() * 1.2, 'leaves');
+    const grains = Math.round(len * 26);
+    for (let k = 0; k < grains; k++) {
+      const u = k / grains, tk = t + u * len + rnd() * 0.02;
+      burst(out, { dur: 0.02 + rnd() * 0.04, freq: 3200 + rnd() * 4000, q: 1.2, amp: 0.5 * Math.sin(Math.PI * u) * (0.4 + rnd() * 0.6), t: tk, type: 'bandpass' });
+    }
   }
 
+  // continuous beds: wind (and the air that rises with scroll speed) and the hall's deep hum
+  const windSrc = ctx.createBufferSource(); windSrc.buffer = noise; windSrc.loop = true; windSrc.playbackRate.value = 0.5;
+  const windF = ctx.createBiquadFilter(); windF.type = 'lowpass'; windF.frequency.value = 420; windF.Q.value = 0.4;
+  const windPan = ctx.createStereoPanner(), windLfo = ctx.createOscillator(), windLfoG = ctx.createGain();
+  windLfo.frequency.value = 0.07; windLfoG.gain.value = 0.6; windLfo.connect(windLfoG).connect(windPan.pan);
+  windSrc.connect(windF).connect(windPan).connect(layer.wind);
+  const airBand = ctx.createBiquadFilter(); airBand.type = 'bandpass'; airBand.frequency.value = 650; airBand.Q.value = 0.7;
+  const airGain = ctx.createGain(); airGain.gain.value = 0.012;
+  windSrc.connect(airBand).connect(airGain).connect(musicBus);
+  const deep = [ctx.createOscillator(), ctx.createOscillator()], deepG = ctx.createGain(); deepG.gain.value = 0.5;
+  deep[0].frequency.value = SA / 2; deep[1].frequency.value = SA / 2 * 1.5 * 1.002;
+  for (const o of deep) o.connect(deepG); deepG.connect(layer.deep);
+
+  const next = { drone: 0, santoor: 0, flute: 0, birds: 0, leaves: 0 };
+  let droneString = 0;
   function schedule(until) {
-    if (!musicOn) return;
-    nextStep = Math.max(nextStep, ctx.currentTime + 0.05);
-    while (nextStep < until) { playStep(nextStep); step++; nextStep += STEP; }
+    const now = realtime ? ctx.currentTime : 0;
+    for (const k of Object.keys(next)) next[k] = Math.max(next[k], now + 0.05);
+    while (next.drone < until) {                              // Pa Sa' Sa' Sa: each string in turn, ~1.15 s apart
+      const t = next.drone, f = [SA * 0.75, SA, SA, SA / 2][droneString % 4];
+      tanpura(f, t, [-0.6, -0.15, 0.2, 0.6][droneString % 4]);
+      droneString++; next.drone += 1.12 + (droneString % 4 === 0 ? 0.5 : 0);
+    }
+    while (next.santoor < until) {
+      const t = next.santoor, sc = sceneAt(t);
+      if (sc.santoor > 0) {
+        if (rnd() < 0.22) { const top = 5 + Math.floor(rnd() * 4); for (let k = 0; k < 4; k++) santoor(top - k, 1, t + k * 0.16, 0.5 - k * 0.06, sc); }
+        else santoor(Math.floor(rnd() * 8), 1, t, 0.4 + rnd() * 0.3, sc);
+      }
+      next.santoor += (sc.santoor > 0.6 ? 1.1 : 1.9) + rnd() * 1.6;
+    }
+    while (next.flute < until) {
+      const t = next.flute, sc = sceneAt(t);
+      if (sc.flute > 0) { const ph = pick(PHRASES); bansuri(ph, t, sc); next.flute += ph.reduce((a, n) => a + n[2], 0) + 4 + rnd() * 6; }
+      else next.flute += 2;
+    }
+    while (next.birds < until) { const sc = sceneAt(next.birds); if (sc.birds > 0) bird(next.birds); next.birds += 1.4 + rnd() * 3.2; }
+    while (next.leaves < until) { const sc = sceneAt(next.leaves); if (sc.leaves > 0) rustle(next.leaves); next.leaves += 2.2 + rnd() * 3.5; }
   }
-
-  function scene({ chapter = 0, family = 0 } = {}, at) {
+  function blend(sc, t) { for (const k of Object.keys(layer)) layer[k].gain.setTargetAtTime(LAYER_GAIN[k] * sc[k], t, 1.2); }
+  function scene({ chapter = 0, family = 0 } = {}, when) {
     const key = chapter === 3 ? `e${Math.max(0, Math.min(2, family))}` : SCENES[chapter] ? chapter : 0;
     if (key === current) return;
     current = key;
-    timeline.push({ t: at ?? ctx.currentTime, key });
+    const t = when ?? ctx.currentTime;
+    timeline.push({ t, key });
+    blend(SCENES[key], t);
   }
 
-  // Air: filtered noise that rises with scroll speed.
-  const airSrc = ctx.createBufferSource(); airSrc.buffer = noise; airSrc.loop = true;
-  const airBand = ctx.createBiquadFilter(); airBand.type = 'bandpass'; airBand.frequency.value = 650; airBand.Q.value = 0.7;
-  const airGain = ctx.createGain(); airGain.gain.value = 0.012;
-  airSrc.connect(airBand).connect(airGain).connect(hallIn);
-
-  function music(on, at, fade = on ? 3 : 1.5) {               // fade: seconds to full level, or to silence
-    const t = at ?? ctx.currentTime;
+  function music(on, when, fade = on ? 3 : 1.5) {             // fade: seconds to full level, or to silence
+    const t = when ?? ctx.currentTime;
     if (on && !started) {
       started = true;
       if (current === null) scene({ chapter: 0 }, t);
-      airSrc.start(t); nextStep = t + 0.3; step = 0;
+      windSrc.start(t); windLfo.start(t); for (const o of deep) o.start(t);
+      for (const k of Object.keys(next)) next[k] = t + 0.3;
+      next.flute = t + 2.5;
     }
     musicOn = on;
     musicBus.gain.cancelScheduledValues(t);
@@ -277,42 +296,137 @@ export function createSoundEngine(ctx, { seed } = {}) {
     musicBus.gain.linearRampToValueAtTime(on ? 1 : 0, t + fade);
   }
 
-  if (realtime) setInterval(() => { if (musicOn && ctx.state === 'running') schedule(ctx.currentTime + 0.6); }, 150);
+  if (realtime) setInterval(() => { if (musicOn && ctx.state === 'running') schedule(ctx.currentTime + 0.8); }, 150);
+
+  // ------------------------------------------------------------------ cues
+  let lastHover = -1;
+  const cues = {
+    knock(x, t) { knock(bus(x, 0.3), 330 * (0.97 + rnd() * 0.06), 0.42, t); },
+    'knock-soft'(x, t) { knock(bus(x, 0.3), 270 * (0.97 + rnd() * 0.06), 0.28, t); },
+    hover(x, t) {                                            // a light santoor touch, high and quiet
+      if (t - lastHover < 0.09) return;
+      lastHover = t;
+      const src = ctx.createBufferSource(), g = ctx.createGain(); src.buffer = string(hz(pick([5, 6, 7, 8]), 1), 3.2, 0.62); g.gain.value = 0.16;
+      src.connect(g).connect(bus(x, 0.2)); src.start(t); src.stop(t + 1.2);
+    },
+    open(x, t) {
+      const out = bus(x, 0.35);
+      const src = ctx.createBufferSource(), g = ctx.createGain(); src.buffer = string(hz(0, 1)); g.gain.value = 0.42;
+      src.connect(g).connect(out); src.start(t); src.stop(t + 2.4);
+      burst(out, { dur: 0.42, freq: 700, to: 3200, q: 0.7, amp: 0.05, t, type: 'lowpass', attack: 0.08 });
+    },
+    reply(x, t) { const out = bus(x, 0.5); bell(out, hz(2, 2), 0.07, t, 1.6); bell(out, hz(4, 2), 0.06, t + 0.11, 1.8); },
+    send(x, t) {
+      const out = bus(x, 0.2);
+      partial(out, hz(0, 2), 0.08, 0.16, t, 'triangle'); partial(out, hz(3, 2), 0.08, 0.22, t + 0.07, 'triangle');
+    },
+    tick(x, t) {
+      const out = bus(x, 0.15);
+      partial(out, 1760, 0.12, 0.05, t); burst(out, { dur: 0.01, freq: 4200, amp: 0.1, t });
+    },
+    toggle(x, t) { bell(bus(x, 0.5), hz(0, 2), 0.08, t, 2.4); },
+    whoosh(x, t) { const out = bus(x, 0.5); burst(out, { dur: 1.1, freq: 300, to: 3600, q: 0.9, amp: 0.16, t, attack: 0.5 }); },
+  };
 
   // Film sound design, fired by the page as the scroll crosses each moment of the film (site.js FILM_CUES).
+  function sweep(t, dur, from, to, build) {                   // a source carried across the stereo field
+    const p = ctx.createStereoPanner(), r = ctx.createGain(); r.gain.value = 0.4;
+    p.pan.setValueAtTime(from, t); p.pan.linearRampToValueAtTime(to, t + dur);
+    p.connect(master); p.connect(r).connect(room);
+    build(p);
+  }
   Object.assign(cues, {
-    whoosh(x, t) { const out = bus(x, 0.5); burst(out, { dur: 1.1, freq: 300, to: 4200, q: 0.9, amp: 0.22, t, attack: 0.5 }); },
-    beam(x, t) {                                             // the beam lights: a deep boom and a rising cold shimmer
-      const out = bus(0.5, 0.6), o = ctx.createOscillator(), g = ctx.createGain();
-      o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(38, t + 1.4);
-      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
-      o.connect(g).connect(out); o.start(t); o.stop(t + 1.9);
-      burst(out, { dur: 1.6, freq: 2400, to: 7000, q: 4, amp: 0.05, t: t + 0.1, attack: 0.6 });
-      bronze(out, sl(3, 1), 0.06, t + 0.2, { decay: 2.4, ratio: 1.41, index: 3 });
+    leaves(x, t) { for (let k = 0; k < 3; k++) rustle(t + k * 0.5, 1.2); },     // the grove stirs around you
+    brush(x, t) {                                            // a culm passes close in front of the lens, right to left
+      sweep(t, 0.55, 0.85, -0.85, (out) => {
+        burst(out, { dur: 0.6, freq: 500, to: 2200, q: 0.8, amp: 0.2, t, attack: 0.25 });
+        for (let k = 0; k < 14; k++) burst(out, { dur: 0.03, freq: 3500 + rnd() * 3000, q: 1.5, amp: 0.1, t: t + 0.1 + k * 0.03 });
+      });
     },
-    split(x, t) {                                            // bamboo cracking open, then the gold inside rings
+    glass(x, t) {                                            // the glass cases: a soft ring of crystal, three notes
+      const out = bus(0.5, 0.8);
+      [[hz(4, 2), 0], [hz(2, 3), 0.18], [hz(0, 3), 0.36]].forEach(([f, d]) => {
+        for (const [r, a] of [[1, 0.05], [2.32, 0.018], [4.25, 0.008]]) partial(out, f * r, a, 2.6, t + d);
+      });
+    },
+    glint(x, t) {                                            // passing through the glass: a bright sweep, left to right
+      sweep(t, 0.7, -0.7, 0.7, (out) => {
+        burst(out, { dur: 0.75, freq: 1800, to: 9000, q: 3, amp: 0.12, t, attack: 0.3 });
+        partial(out, hz(0, 4), 0.03, 1.4, t + 0.25); partial(out, hz(2, 4), 0.025, 1.2, t + 0.32);
+      });
+    },
+    beam(x, t) {                                             // the cold light: a low swell under the drone
+      const out = bus(0.5, 0.8), o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = SA / 4;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.22, t + 1.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 4);
+      o.connect(g).connect(out); o.start(t); o.stop(t + 4.1);
+      burst(out, { dur: 2.4, freq: 2400, to: 5200, q: 6, amp: 0.025, t: t + 0.2, attack: 1.2 });
+    },
+    split(x, t) {                                            // the specimen opens: a dry crack, then a struck low string
       const out = bus(0.5, 0.45);
-      burst(out, { dur: 0.09, freq: 2600, to: 900, q: 0.7, amp: 0.55, t });
-      for (let k = 1; k < 5; k++) burst(out, { dur: 0.05, freq: 1800 + k * 300, q: 2, amp: 0.25 / k, t: t + k * 0.035 });
-      knock(out, 180, 0.5, t); knock(out, 120, 0.4, t + 0.03);
-      const o = ctx.createOscillator(), g = ctx.createGain(); o.frequency.setValueAtTime(55, t); o.frequency.exponentialRampToValueAtTime(32, t + 0.9);
-      g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2); o.connect(g).connect(out); o.start(t); o.stop(t + 1.25);
-      bronze(out, sl(2, 1), 0.07, t + 0.25, { decay: 2, index: 3 });
+      burst(out, { dur: 0.09, freq: 2600, to: 900, q: 0.7, amp: 0.4, t });
+      for (let k = 1; k < 5; k++) burst(out, { dur: 0.05, freq: 1800 + k * 300, q: 2, amp: 0.18 / k, t: t + k * 0.035 });
+      knock(out, 150, 0.35, t + 0.02);
+      const src = ctx.createBufferSource(), g = ctx.createGain(); src.buffer = string(hz(0, 0), 3.2, 0.5); g.gain.value = 0.5;
+      src.connect(g).connect(out); src.start(t + 0.18); src.stop(t + 3.3);
     },
-    fibre(x, t) {                                            // the strands swirl: a swept, circling rush with sparks
-      const out = bus(0.5, 0.5);
-      burst(out, { dur: 1.8, freq: 400, to: 5200, q: 3, amp: 0.2, t, attack: 0.6 });
-      burst(out, { dur: 1.6, freq: 5200, to: 700, q: 3, amp: 0.12, t: t + 0.4, attack: 0.5 });
-      for (let k = 0; k < 10; k++) burst(bus(rnd(), 0.4), { dur: 0.08, freq: 3000 + rnd() * 3000, q: 9, amp: 0.05, t: t + 0.3 + rnd() * 1.3 });
+    fibre(x, t) {                                            // the strands swirl around you: a silky rush that circles
+      const p = ctx.createStereoPanner(), lfo = ctx.createOscillator(), lg = ctx.createGain(), r = ctx.createGain();
+      lfo.frequency.value = 0.9; lg.gain.value = 0.8; lfo.connect(lg).connect(p.pan); lfo.start(t); lfo.stop(t + 2.6);
+      r.gain.value = 0.5; p.connect(master); p.connect(r).connect(room);
+      burst(p, { dur: 2.4, freq: 900, to: 4800, q: 2.5, amp: 0.16, t, attack: 0.8 });
+      burst(p, { dur: 2, freq: 4800, to: 1200, q: 2.5, amp: 0.08, t: t + 0.5, attack: 0.6 });
     },
-    close(x, t) { const out = bus(0.4, 0.5); burst(out, { dur: 0.8, freq: 1200, to: 300, q: 0.8, amp: 0.12, t, type: 'lowpass', attack: 0.2 }); },
-    dome(x, t) {                                             // the dome opens to daylight: a bright glassy bloom
+    yarn(x, t) {                                             // the yarn draws tight: a string pulled up into tune
+      const out = bus(0.4, 0.4), o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      o.type = 'sawtooth'; f.type = 'lowpass'; f.frequency.value = 1400;
+      o.frequency.setValueAtTime(hz(4, 0) * 0.9, t); o.frequency.exponentialRampToValueAtTime(hz(4, 0), t + 0.35);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.05, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+      o.connect(f).connect(g).connect(out); o.start(t); o.stop(t + 1.3);
+    },
+    bark(x, t) {                                             // the bark sheet: a dry, papery rustle, close
+      const out = bus(0.62, 0.15);
+      for (let k = 0; k < 22; k++) burst(out, { dur: 0.015 + rnd() * 0.03, freq: 1800 + rnd() * 3000, q: 0.9, amp: 0.12 * (1 - k / 22), t: t + k * 0.03 + rnd() * 0.02 });
+    },
+    dome(x, t) {                                             // the dome opens to daylight: air, birds, a bell
       const out = bus(0.5, 0.7);
-      burst(out, { dur: 1.4, freq: 600, to: 6000, q: 0.6, amp: 0.16, t, type: 'highpass', attack: 0.7 });
-      [0, 2, 3, 4, 1].forEach((d, k) => bronze(out, sl(d, 1), 0.045, t + 0.5 + k * 0.11, { decay: 2.2, index: 2 }));
-      gong(ROOT_HZ / 2, 0.14, t + 0.5, 5);
+      burst(out, { dur: 1.6, freq: 500, to: 5200, q: 0.6, amp: 0.12, t, type: 'highpass', attack: 0.8 });
+      for (let k = 0; k < 3; k++) bird(t + 0.4 + k * 0.5);
+      bell(out, hz(0, 2), 0.05, t + 0.6, 3);
     },
   });
+
+  // ------------------------------------------------------------------ the film's own sound
+  // loadFilm({ track, bed, map }): the soundtrack (the clips' audio cut as the picture is), the shimmer loop and the film
+  // map (film.json: each frame's time in the soundtrack). Until they arrive, or if they cannot, the generated sound
+  // stands in: nothing waits on them.
+  let film = null, spanUntil = 0;
+  const filmOut = ctx.createGain(); filmOut.gain.value = 0.9;
+  { const r = ctx.createGain(); r.gain.value = 0.18; filmOut.connect(master); filmOut.connect(r).connect(room); }
+  async function loadFilm({ track, bed, map }) {
+    const get = async (url) => ctx.decodeAudioData(await (await fetch(url)).arrayBuffer());
+    const [t, b, m] = await Promise.all([get(track), get(bed), fetch(map).then((r) => r.json())]);
+    film = { track: t, times: m.time };
+    const loop = ctx.createBufferSource(); loop.buffer = b; loop.loop = true;
+    loop.connect(layer.shimmer); loop.start(Math.max(ctx.currentTime, 0) + 0.05);
+    return true;
+  }
+  // plays the soundtrack from frame `from` to frame `to` over `seconds` (a flight through the film), or one moment
+  function span(from, to, seconds) {
+    if (!film || (realtime && ctx.state !== 'running')) return false;
+    const T = film.times, a = T[Math.max(0, Math.min(T.length - 1, from))], b = T[Math.max(0, Math.min(T.length - 1, to))];
+    const len = Math.abs(b - a);
+    if (len < 0.08 || b < a) return false; // backwards or standing still: the generated whoosh carries it
+    const t = ctx.currentTime + 0.01, src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = film.track;
+    src.playbackRate.value = Math.max(0.75, Math.min(1.35, len / seconds)); // follow the flight, within a natural range
+    const dur = len / src.playbackRate.value;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + 0.12);
+    g.gain.setValueAtTime(1, t + Math.max(0.12, dur - 0.25)); g.gain.linearRampToValueAtTime(0, t + dur);
+    src.connect(g).connect(filmOut); src.start(t, a, len); src.stop(t + dur + 0.05);
+    spanUntil = t + dur;
+    return true;
+  }
 
   const scratch = new Float32Array(analyser.fftSize);
   let air = 0;
@@ -321,10 +435,16 @@ export function createSoundEngine(ctx, { seed } = {}) {
     music,
     scene,
     schedule,
-    /** Registers fn({ at, x, y, v, chord }) for every gong and saron note; x, y in 0..1 across the view; chord names the scene. */
+    loadFilm,
+    /** A flight from frame `from` to frame `to` taking `seconds`: plays that stretch of the film's own sound. False if it
+     * cannot (not loaded, or not moving forward), so the page can use a generated cue instead. */
+    film(from, to, seconds) { return span(from, to, seconds); },
+    /** A moment crossed by scrolling: about a second of the film's own sound from that frame (none while a flight plays). */
+    moment(frame) { if (!film) return false; if (ctx.currentTime < spanUntil) return true; return span(frame, Math.min(film.times.length - 1, frame + 18), 1.0); },
+    /** Registers fn({ at, x, y, v, chord }) for every santoor and flute note; x, y in 0..1 across the view; chord names the scene. */
     onNote(fn) { listeners.push(fn); },
-    /** Lowers the score to a bed under the storyteller's voice (true), or brings it back (false). */
-    duck(v) { if (!musicOn) return; musicBus.gain.setTargetAtTime(v ? 0.28 : 1, ctx.currentTime, 0.35); },
+    /** Lowers the score to a bed under the narrator's voice (true), or brings it back (false). */
+    duck(v) { if (!musicOn) return; musicBus.gain.setTargetAtTime(v ? 0.32 : 1, ctx.currentTime, 0.35); },
     /** Scroll speed 0..1: the air grows louder and brighter with it. */
     motion(speed) {
       const v = Math.min(1, Math.max(0, speed));

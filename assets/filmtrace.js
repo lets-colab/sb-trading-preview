@@ -4,12 +4,12 @@
 // picture. As the visitor enters they draw themselves in while the 3D wireframe fades, then dissolve as the footage
 // brightens under them. Outside the handover nothing is drawn.
 //
-//   createFilmTrace(canvas, bytes, { set }) -> { size(width, height), draw(p) -> drew }
+//   createFilmTrace(canvas, bytes, { set, frames }) -> { size(width, height), draw(p) -> drew }
 //     bytes: trace.bin as an ArrayBuffer. set: 'd' (1280x720) or 'm' (405x720, x from 437.5 of the desktop frame).
+//     frames: the film's frame count (progress p shows frame round(p * (frames - 1))).
 //     p: the film's progress. canvas.dataset: frame (the traced frame drawn), want (the frame the film shows).
 //     Throws on a file it cannot read; the caller then simply goes without the handover.
 
-const FRAMES = 196; // the film's frame count: progress p shows frame round(p * 195)
 const IN = [0.028, 0.062], OUT = [0.085, 0.128]; // film progress: the lines draw in, then dissolve
 const clamp = (x) => Math.min(1, Math.max(0, x));
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
@@ -35,7 +35,7 @@ function parse(bytes) {
   return frames;
 }
 
-export function createFilmTrace(canvas, bytes, { set = 'd' } = {}) {
+export function createFilmTrace(canvas, bytes, { set = 'd', frames: FRAMES } = {}) {
   const g = canvas.getContext('2d', { willReadFrequently: true });
   if (!g) throw new Error('filmtrace: no 2D canvas context');
   const frames = parse(bytes);

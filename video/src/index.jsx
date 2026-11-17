@@ -98,7 +98,7 @@ const Open = () => {
         {a} <span style={{ color: c.fibre }}>{b}</span>
       </div>
       <div style={{ maxWidth: 900, marginTop: 40, font: `400 ${wide ? 34 : 38}px/1.45 ${text}`, color: c.mist, opacity: lede, transform: `translateY(${(1 - lede) * 20}px)` }}>
-        {line('Bamboo, banana fibre yarn, and banana bark and leaves, supplied to business buyers.')}
+        {line('Natural materials for business buyers.')}
       </div>
     </AbsoluteFill>
   );
@@ -164,9 +164,9 @@ const Film = () => {
       <AbsoluteFill style={{ opacity: fadeIn * fadeOut }}>
         <Ripples />
         <Sequence durationInFrames={96}><Open /></Sequence>
-        <Sequence from={96} durationInFrames={108}><Family fam={0} dur={108} title="Bamboo" lede="Poles, splits, ski poles and woven mats." chips={['Bamboo poles', 'Bamboo splits', 'Ski poles', 'Woven mats']} /></Sequence>
-        <Sequence from={204} durationInFrames={108}><Family fam={1} dur={108} title="Banana fibre yarn" lede="Banana fibre yarn in three grades, from fine banana silk to industrial yarn." chips={['Grade A: banana silk', 'Grade B: standard banana fibre yarn', 'Grade C: industrial banana fibre yarn']} /></Sequence>
-        <Sequence from={312} durationInFrames={96}><Family fam={2} dur={96} title="Banana bark and leaves" lede="Banana bark and banana leaves, the third family of the range." chips={['Banana bark', 'Banana leaves']} /></Sequence>
+        <Sequence from={96} durationInFrames={108}><Family fam={0} dur={108} title="Bamboo" lede="Everything SB Trading supplies begins as a living plant, in Bangladesh." chips={['Bamboo poles', 'Bamboo splits', 'Ski poles', 'Woven mats']} /></Sequence>
+        <Sequence from={204} durationInFrames={108}><Family fam={1} dur={108} title="Banana fibre yarn" lede="Watch the long fibres gather, and twist together into yarn." chips={['Grade A: banana silk', 'Grade B: standard banana fibre yarn', 'Grade C: industrial banana fibre yarn']} /></Sequence>
+        <Sequence from={312} durationInFrames={96}><Family fam={2} dur={96} title="Banana bark and leaves" lede="Beside the yarn, a sheet of dried banana bark, its veins still showing." chips={['Banana bark', 'Banana leaves']} /></Sequence>
         <Sequence from={408}><End /></Sequence>
       </AbsoluteFill>
       <div style={{ position: 'absolute', right: 40, bottom: 36, padding: '10px 18px', borderRadius: 999, background: c.glass, border: `1px solid ${c['line-2']}`, color: c.dim, font: `400 20px/1.2 ${text}` }}>{label}</div>
