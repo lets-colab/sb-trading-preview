@@ -115,6 +115,9 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   { // the film is a journey after hatom.com: a gate drawn in fine lines, then a clean picture where only rings on the
     // materials, one subtitle line and small edge labels sit over the footage. Its own page, so Sound starts off below.
     const q = await ctx.newPage();
+    const qErrors = []; // the journey's own page: an error here would otherwise go unreported
+    q.on('pageerror', (e) => qErrors.push(e.message));
+    q.on('console', (m) => { if (m.type() === 'error' && !/404/.test(m.text())) qErrors.push(m.text()); });
     // record each phase of the opening as it happens (a slow machine shows few frames; polling could miss one)
     await q.addInitScript(() => { window.__phases = []; new MutationObserver(() => { const c = document.querySelector('.gate-3d'); const ph = c?.dataset.phase, d = Number(c?.dataset.dist || 0);
       const last = window.__phases.at(-1); if (ph && (!last || last.phase !== ph)) window.__phases.push({ phase: ph, dist: d }); else if (last && ph === last.phase) last.max = Math.max(last.max || d, d); })
@@ -222,13 +225,30 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     check(Math.abs(inside.p - 0.407) < 0.004 && inside.idx === '03' && /Click to open/.test(inside.plate || '') && inside.rings === 1,
       `${name}: inside, a plate over the footage's own prompt says "Click to open", and no family ring repeats (${JSON.stringify(inside)})`);
     // the plate opens it: the camera flies through the opening to the fibres twisting into yarn
+    // a flight recorder for the longest flight: the scroll each frame and anything that could stop it (shown on a failure)
+    await q.evaluate(() => {
+      const t0 = performance.now(), log = window.__flight = { t0, ys: [], ev: [] }, H = () => document.getElementById('film').getBoundingClientRect();
+      const pOf = () => { const r = H(); return +(-r.top / (r.height - innerHeight)).toFixed(3); };
+      for (const n of ['wheel', 'keydown', 'pointerdown', 'focusin', 'hashchange', 'resize', 'visibilitychange', 'scrollend'])
+        addEventListener(n, (e) => log.ev.push(`${Math.round(performance.now() - t0)}ms ${n} ${e.target?.id || e.target?.className || ''} ${pOf()}`), { capture: true, passive: true });
+      const step = () => { const t = Math.round(performance.now() - t0); if (t > 15000) return; const y = pOf(), last = log.ys.at(-1);
+        if (!last || last[1] !== y) log.ys.push([t, y, document.documentElement.classList.contains('lenis-scrolling') ? 's' : '-']); requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
     await q.click('.spot.on.cover');
     await q.waitForFunction(() => document.querySelector('.hud-name').textContent === 'Fibre to yarn', null, { timeout: 8000 }).catch(() => {});
     // the longest flight in the film: a slow machine is still in the air after the usual pause, so wait for it to land
     await q.waitForFunction(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return Math.abs(-r.top / (r.height - innerHeight) - 0.727) < 0.004; }, null, { timeout: 12000 }).catch(() => {});
     await q.waitForTimeout(600);
     const yarn = { p: await prog(), rings: await q.evaluate(() => document.querySelectorAll('.spot.on').length) };
-    check(Math.abs(yarn.p - 0.727) < 0.004 && yarn.rings === 0, `${name}: opening it flies through the split to the fibres twisting into yarn, with no ring repeated (${JSON.stringify(yarn)})`);
+    const flight = Math.abs(yarn.p - 0.727) < 0.004 ? '' : ' flight: ' + JSON.stringify(await q.evaluate(() => ({ frames: window.__flight.ys.length, ys: window.__flight.ys.slice(0, 6).concat(window.__flight.ys.slice(-6)), ev: window.__flight.ev.slice(0, 12) })).catch((e) => String(e))) + ' errors: ' + JSON.stringify(qErrors.slice(0, 3));
+    check(Math.abs(yarn.p - 0.727) < 0.004 && yarn.rings === 0, `${name}: opening it flies through the split to the fibres twisting into yarn, with no ring repeated (${JSON.stringify(yarn)})${flight}`);
+    { // Explore's 3D studies (a module, a WebGL context, shader compiles) are heavy to start: they wait for the page to be
+      // still, so they never freeze the camera in the air (they begin to load as this flight nears Explore)
+      const when = await q.evaluate(() => { const L = window.__flight, landed = L.ys.find((y) => Math.abs(y[1] - 0.727) < 0.004)?.[0];
+        const r = performance.getEntriesByType('resource').find((e) => e.name.includes('/specimens.js')); return { landed, requested: r ? Math.round(r.startTime - L.t0) : null }; });
+      check(when.landed != null && (when.requested == null || when.requested >= when.landed), `${name}: the 3D studies do not start loading while the camera is in flight (${JSON.stringify(when)})`);
+    }
     // a click anywhere on the picture moves on
     const stage = await q.evaluate(() => { const r = document.querySelector('.film-stage').getBoundingClientRect(); return { x: r.width * 0.5, y: r.height * 0.2 }; });
     if (touch) await q.touchscreen.tap(stage.x, stage.y); else await q.mouse.click(stage.x, stage.y);
@@ -244,6 +264,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.waitForTimeout(2000);
     const out = await q.evaluate(() => ({ explore: Math.round(document.getElementById('explore').getBoundingClientRect().top), inFilm: document.documentElement.classList.contains('in-film') }));
     check(last === 'Continue to the materials' && Math.abs(out.explore) < 40 && !out.inFilm, `${name}: past the last chapter, "Continue to the materials" lands in Explore and stays there (${JSON.stringify({ last, ...out })})`);
+    check(qErrors.length === 0, `${name}: no page errors along the film's journey${qErrors.length ? ' - ' + qErrors.slice(0, 3).join(' | ') : ''}`);
     await q.close();
   }
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);

@@ -674,11 +674,22 @@ function tick(now = performance.now()) {
 // ------------------------------------------------------------------ start
 size(); dust.size();
 addEventListener('resize', () => { size(); dust.size(); gate3d?.size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
-addEventListener('scroll', () => { lastInput = performance.now(); }, { passive: true });
+let lastScrolled = 0;
+addEventListener('scroll', () => { lastInput = lastScrolled = performance.now(); }, { passive: true });
 if (fine && !reduced) addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; lastInput = performance.now(); }, { passive: true });
-// The 3D studies (shader compile, photographs, depth maps) load when Explore is within two screens, not at page load.
+// The 3D studies (shader compile, photographs, depth maps) load when Explore is within two screens, not at page load,
+// and only once the page is still: starting them stops the main thread for up to a second or more, so a camera flight
+// or a scroll in progress finishes first (Explore on screen loads at once; the photographs stand in until then).
+function whenStill(fn) {
+  const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1));
+  const check = () => {
+    if (performance.now() - lastScrolled > 400 || explore.getBoundingClientRect().top < innerHeight) idle(fn, { timeout: 1500 });
+    else setTimeout(check, 250);
+  };
+  check();
+}
 if ('IntersectionObserver' in window) {
-  const near = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { near.disconnect(); loadStudies(); } }, { rootMargin: '200% 0px' });
+  const near = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { near.disconnect(); whenStill(loadStudies); } }, { rootMargin: '200% 0px' });
   near.observe(explore);
 } else loadStudies();
 if (reduced) tick(); else loadFrames(); // with reduced motion the film is a poster: no frames are fetched
