@@ -224,7 +224,9 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     // the plate opens it: the camera flies through the opening to the fibres twisting into yarn
     await q.click('.spot.on.cover');
     await q.waitForFunction(() => document.querySelector('.hud-name').textContent === 'Fibre to yarn', null, { timeout: 8000 }).catch(() => {});
-    await q.waitForTimeout(2600);
+    // the longest flight in the film: a slow machine is still in the air after the usual pause, so wait for it to land
+    await q.waitForFunction(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return Math.abs(-r.top / (r.height - innerHeight) - 0.727) < 0.004; }, null, { timeout: 12000 }).catch(() => {});
+    await q.waitForTimeout(600);
     const yarn = { p: await prog(), rings: await q.evaluate(() => document.querySelectorAll('.spot.on').length) };
     check(Math.abs(yarn.p - 0.727) < 0.004 && yarn.rings === 0, `${name}: opening it flies through the split to the fibres twisting into yarn, with no ring repeated (${JSON.stringify(yarn)})`);
     // a click anywhere on the picture moves on
@@ -251,6 +253,10 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     // three) and shows its words as subtitles; pressing again stops it.
     const famY = (i) => p.evaluate((k) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * (k / 3 + 0.12)); }, i);
     await famY(2); await p.waitForTimeout(1800);
+    // with Sound on, arriving at a family tells its story once by itself; let that settle and stop it, so the presses
+    // below start from silence (on a slow machine it can begin just as the test arrives)
+    await p.waitForTimeout(800);
+    if (await p.evaluate(() => document.querySelector('#bark .story')?.getAttribute('aria-pressed') === 'true')) { await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(500); }
     const btn = await p.evaluate(() => { const b = document.querySelector('#bark .story'); return b && !b.hidden ? b.textContent.trim() : null; });
     await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(1500);
     const playing = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), cap: document.querySelector('.story-caption').textContent.trim(), shown: !document.querySelector('.story-caption').hidden, audio: !!window.__story && !window.__story.paused }));
