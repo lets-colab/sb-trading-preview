@@ -21,13 +21,19 @@ const pointer = [0, 0], target = [0, 0];
 let lastInput = 0; // the 3D studies draw only while the visitor scrolls or moves the pointer, then settle and stop
 
 // ------------------------------------------------------------------ sound (opt-in, generated in the browser)
-// Off until the visitor asks: the click creates the audio context (browsers require a gesture); sound.js loads then.
+// On by default (the owner, 18 Nov 2026), with Sound to switch it off; a visitor's "off" is remembered (localStorage
+// 'sb-sound'). Browsers allow audio only after a gesture, so the score starts at the visitor's first click, tap or key
+// anywhere on the page (that gesture creates the audio context; sound.js loads then). A press of Sound itself is a
+// choice, not a start: it switches.
 // With sound on, a generated score plays under the cues. Its chord follows the chapter, its air follows scroll speed,
 // and two visuals answer it: --audio (its live level) brightens the light, and each mallet note leaves a ripple of
 // light where it sounds. Reduced motion keeps the music but drops both visuals.
 const sound = (() => {
   const btn = $('#soundToggle'), hint = $('#soundHint'), fx = $('.score-fx');
   let actx = null, engine = null, on = false, hinted = false, scene = { chapter: 0, family: 0 }, raf = 0;
+  let want = true; // the visitor's choice: on unless they switched it off on this or an earlier visit
+  try { want = localStorage.getItem('sb-sound') !== 'off'; } catch { /* no storage: the default stands */ }
+  btn.setAttribute('aria-pressed', String(want));
   const guard = (fn) => { try { fn(); } catch (e) { console.error('sound stopped:', e); engine = null; actx?.suspend().catch(() => {}); } };
   root.dataset.score = 'off';
   function light() { // runs only while the score plays and the tab is visible
@@ -53,7 +59,7 @@ const sound = (() => {
     if (!raf) raf = requestAnimationFrame(light);
   }
   function set(v) {
-    on = v;
+    on = want = v;
     btn.setAttribute('aria-pressed', String(v));
     if (v && !actx) {
       const C = window.AudioContext || window.webkitAudioContext;
@@ -70,7 +76,7 @@ const sound = (() => {
     }
     if (!actx) return;
     if (v) { actx.resume().catch(() => {}); if (engine) { guard(() => engine.cue('toggle', 0.5)); start(); } }
-    if (v && !hinted) { hinted = true; hint.textContent = 'Sound on: a generated score and cues, best on headphones'; setTimeout(() => { hint.textContent = ''; }, 3600); }
+    if (v && !hinted) { hinted = true; hint.textContent = 'Sound on: a score, narration and cues, best on headphones. Press Sound to switch it off'; setTimeout(() => { hint.textContent = ''; }, 3600); }
     if (!v) {
       if (engine) guard(() => engine.music(false));
       document.dispatchEvent(new CustomEvent('sb:sound', { detail: false })); // the storyteller stops too
@@ -79,7 +85,14 @@ const sound = (() => {
       setTimeout(() => { if (!on && actx.state === 'running') actx.suspend().catch(() => {}); }, 1700); // after the fade
     }
   }
-  btn.addEventListener('click', () => set(!on));
+  btn.addEventListener('click', () => { set(!want); try { localStorage.setItem('sb-sound', want ? 'on' : 'off'); } catch { /* not remembered */ } });
+  // the first gesture anywhere else starts the sound the visitor has not switched off
+  const first = (e) => {
+    if (e.target?.closest?.('#soundToggle')) return; // a press of Sound is a choice, handled above
+    for (const t of ['pointerup', 'keydown']) removeEventListener(t, first, true);
+    if (want && !on) set(true);
+  };
+  for (const t of ['pointerup', 'keydown']) addEventListener(t, first, true);
   document.addEventListener('visibilitychange', () => {
     if (!actx || !on) return;
     (document.hidden ? actx.suspend() : actx.resume()).catch(() => {});
@@ -104,8 +117,8 @@ const sound = (() => {
     moment(frame) { let ok = false; if (on && engine?.moment) guard(() => { ok = engine.moment(frame); }); return ok; },
     /** True while the visitor has Sound on. */
     get playing() { return on; },
-    /** Turns Sound on (the gate's "Click to enter" is the visitor's gesture). */
-    enable() { if (!on) set(true); },
+    /** Starts the sound at a visitor's gesture (the gate's "Click to enter"), unless they switched it off. */
+    enable() { if (want && !on) set(true); },
     /** Lowers the score under the storyteller's voice, or brings it back. */
     duck(v) { if (on && engine?.duck) guard(() => engine.duck(v)); },
   };

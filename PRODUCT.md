@@ -29,4 +29,4 @@ Bold, cinematic, premium. Natural materials shown with the drama and craft usual
 5. **An honest assistant.** Rifat is clearly an AI, hands commitments to people, and degrades gracefully to a plain form when unavailable.
 
 ## Accessibility & Inclusion
-WCAG 2.2 AA. Every immersive layer (scroll film, 3D grove, sound, smooth scrolling) has a reduced-motion and no-JavaScript equivalent; sound is off until the visitor turns it on. Rifat's conversation must be keyboard operable, screen-reader announced (live region), and never the only route to an enquiry. Plain English for non-native readers; no information carried by colour alone.
+WCAG 2.2 AA. Every immersive layer (scroll film, 3D grove, sound, smooth scrolling) has a reduced-motion and no-JavaScript equivalent; sound is on by default (the owner, 18 Nov 2026) but never plays before the visitor's first click, tap or key, and the Sound switch turns it off at any time; "off" is remembered on later visits. Rifat's conversation must be keyboard operable, screen-reader announced (live region), and never the only route to an enquiry. Plain English for non-native readers; no information carried by colour alone.

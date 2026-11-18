@@ -59,7 +59,7 @@ async function journey(name, options, desktop) {
   if (desktop) {
     await p.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * (2 / 3 + 0.12)); });
     await p.waitForTimeout(3500); // the 3D specimens and their photographs load
-    await p.click('#soundToggle'); await p.waitForTimeout(800);
+    if (await p.evaluate(() => document.getElementById('soundToggle').getAttribute('aria-pressed')) !== 'true') await p.click('#soundToggle'); await p.waitForTimeout(800);
     await p.evaluate(() => document.querySelector('#bark .story')?.click()); await p.waitForTimeout(1200);
   }
   await p.evaluate(() => document.getElementById('p-bamboo-poles').click()); await p.waitForTimeout(1200);

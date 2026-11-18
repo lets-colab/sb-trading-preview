@@ -41,7 +41,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   p.on('response', (r) => { if (r.status() >= 400 && !r.url().endsWith('/api/rifat')) errors.push(`${r.status()} ${r.url()}`); });
   p.on('request', (r) => { const u = r.url(); if (!u.startsWith(ORIGIN) && !u.startsWith('data:') && !u.startsWith('blob:')) external.push(u); });
   await p.goto(ORIGIN + '/'); await p.waitForTimeout(3000);
-  check((await p.evaluate(() => window.__ac)) === 0, `${name}: no AudioContext before the Sound press`);
+  check((await p.evaluate(() => window.__ac)) === 0, `${name}: no AudioContext before the visitor's first gesture`);
   // the film names the source of the shot on screen (stock or generated), and never claims it as SB Trading's own
   const labelAt = async (x, want) => {
     await p.evaluate((q) => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * q); }, x);
@@ -285,8 +285,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const stopped = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), shown: !document.querySelector('.story-caption').hidden }));
     check(btn === 'Hear its story' && playing.pressed === 'true' && playing.shown && /banana plant/i.test(playing.cap) && playing.audio && stopped.pressed === 'false' && !stopped.shown,
       `${name}: "Hear its story" narrates banana bark and leaves with subtitles, and stops on a second press (${JSON.stringify({ btn, playing, stopped })})`);
-    { // switching Sound off also silences a story that Sound started (Codex finding on #18)
-      await p.click('#soundToggle'); await p.waitForTimeout(800);
+    { // switching Sound off also silences a story that Sound started (Codex finding on #18); Sound is on by default
+      if (await p.evaluate(() => document.getElementById('soundToggle').getAttribute('aria-pressed')) !== 'true') await p.click('#soundToggle'); await p.waitForTimeout(800);
       await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(800);
       const on = await p.evaluate(() => !!window.__story && !window.__story.paused);
       await p.click('#soundToggle'); await p.waitForTimeout(500);
@@ -608,8 +608,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const afterShift = await focused();
     check(backArrow === 'Next family: Banana fibre yarn' && backStory === 'Hear its story' && afterShift === 'Woven mats', `${name}: Shift+Tab returns through Bamboo's plinth arrow and story to its products (focus: ${backArrow} -> ${backStory} -> ${afterShift})`);
-    await p.click('#soundToggle'); await p.waitForTimeout(1200);
-    check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
+    await p.click('#soundToggle'); await p.waitForTimeout(1200); // switched off above: this turns it back on
+    check((await p.evaluate(() => window.__ac)) === 1, `${name}: one audio context, made at the visitor's first gesture and reused when Sound comes back on`);
     const playing = await p.waitForFunction(() => document.documentElement.dataset.score === 'playing', null, { timeout: 6000 }).then(() => true, () => false);
     check(playing, `${name}: pressing Sound starts the generated score`);
     const lit = await p.waitForFunction(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--audio')) > 0.05, null, { timeout: 8000 }).then(() => true, () => false);

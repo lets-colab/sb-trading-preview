@@ -56,7 +56,7 @@ const open = async (opts) => { const ctx = await browser.newContext(opts); const
   await p.keyboard.press('Escape');
   const closed = await p.evaluate(() => !document.getElementById('productSheet').open);
   check(opened && closed, `reduced motion: the drawer opens and closes at once, with no animation (opened still ${opened}, closed ${closed})`);
-  await p.click('#soundToggle');
+  if (await p.evaluate(() => document.getElementById('soundToggle').getAttribute('aria-pressed')) !== 'true') await p.click('#soundToggle'); // on by default: the clicks above already started it
   const playing = await p.waitForFunction(() => document.documentElement.dataset.score === 'playing', null, { timeout: 6000 }).then(() => true, () => false);
   await p.waitForTimeout(2500);
   const fx = await p.evaluate(() => ({ audio: getComputedStyle(document.documentElement).getPropertyValue('--audio').trim(), layer: getComputedStyle(document.querySelector('.score-fx')).display, ripples: document.querySelectorAll('.score-fx i').length }));

@@ -7,7 +7,7 @@
 4. Inspect current `index.html`, `site.js`, `assets/rifat.js`, `src/materials3d.js`, `src/rifat-fn.js` and `tests/smoke.mjs` before modifying.
 
 ## How Claude and Codex should work
-- One existing SB Trading site, not competing versions. Keep cinematic film, 3D studies, three families, nine products, Rifat guided mode, plain form, sound opt-in, and fallback paths.
+- One existing SB Trading site, not competing versions. Keep cinematic film, 3D studies, three families, nine products, Rifat guided mode, plain form, sound on by default with a Sound switch to turn it off (the owner's decision, 18 Nov 2026; it starts at the visitor's first gesture, and "off" is remembered), and fallback paths.
 - Compare the owner's original client brief with the current source; preserve the specified About Us / Products / Contact Us navigation and addressable product details unless the owner explicitly approves a deviation.
 - Use IGLOO-style originality and meaningful camera choreography, not the reference firm's assets or another client's branding.
 - Each patch: failing targeted test first → smallest correction → focused test → full build/smoke → paired desktop/mobile screenshots → review findings.
