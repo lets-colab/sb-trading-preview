@@ -108,7 +108,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.waitForFunction(() => Number(getComputedStyle(document.querySelector('.gate h1')).opacity) > 0.95, null, { timeout: 5000 }).catch(() => {});
     const after = await q.evaluate(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect();
       return { intro: document.documentElement.classList.contains('gate-intro'), phase: document.querySelector('.gate-3d')?.dataset.phase, title: Number(getComputedStyle(document.querySelector('.gate h1')).opacity), p: +(-r.top / (r.height - innerHeight)).toFixed(3), ac: window.__ac }; });
-    check(before && !after.intro && after.phase === 'grove' && after.title > 0.95 && after.p < 0.01 && !after.ac,
+    check(before && !after.intro && after.phase === 'grove' && after.title > 0.95 && after.p < 0.01, // with Sound on by default the click may start the sound; it must not enter the film
       `${name}: a ${touch ? 'tap' : 'click'} during the opening skips to the title and does not enter the film (${JSON.stringify({ before, ...after })})`);
     await q.close();
   }

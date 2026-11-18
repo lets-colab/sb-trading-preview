@@ -74,12 +74,12 @@ const sound = (() => {
         if (on) start();
       }).catch(() => { /* the page stays silent */ });
     }
+    if (!v) document.dispatchEvent(new CustomEvent('sb:sound', { detail: false })); // the storyteller stops too, started score or not
     if (!actx) return;
     if (v) { actx.resume().catch(() => {}); if (engine) { guard(() => engine.cue('toggle', 0.5)); start(); } }
     if (v && !hinted) { hinted = true; hint.textContent = 'Sound on: a score, narration and cues, best on headphones. Press Sound to switch it off'; setTimeout(() => { hint.textContent = ''; }, 3600); }
     if (!v) {
       if (engine) guard(() => engine.music(false));
-      document.dispatchEvent(new CustomEvent('sb:sound', { detail: false })); // the storyteller stops too
       root.dataset.score = 'off'; root.style.setProperty('--audio', '0');
       fx?.replaceChildren();
       setTimeout(() => { if (!on && actx.state === 'running') actx.suspend().catch(() => {}); }, 1700); // after the fade
