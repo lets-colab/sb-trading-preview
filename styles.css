@@ -696,7 +696,7 @@ html.light-top:not(.in-film) .top{background:#eef0ebf2}
   .brand{min-height:44px}
   .top .sound-toggle,.top .menu-toggle,.top>.btn-small{min-height:44px}
   .top .sound-toggle{min-width:44px;justify-content:center}
-  .product{min-height:44px}
+  .product,.rifat-restart{min-height:44px}
   .chapters a{min-height:44px}
   .chapters a:not(.on){min-width:44px;justify-content:center}
   .foot a{display:inline-block;padding-block:13px;margin-block:-13px}
