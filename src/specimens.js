@@ -20,7 +20,7 @@ const FAMILIES = [
   { cut: 'assets/img/cutout/fibre.webp?v=52e3b162', depth: 'assets/img/depth/banana-fibre-loose-depth.webp?v=b6b48b3a' },
   { cut: 'assets/img/cutout/leaves.webp?v=c82e6945', depth: 'assets/img/depth/banana-leaves-depth.webp?v=36c4dd84' },
 ];
-const CASE = { w: 2.5, h: 3.0, d: 1.6 }, PED = { w: 2.7, h: 1.1, d: 1.8 }, RELIEF = 0.75;
+const CASE = { w: 2.5, h: 3.0, d: 1.6 }, PED = { w: 2.7, h: 1.1, d: 1.8 }, RELIEF = 0.28; // gentle: more relief tore the cut-outs into shards (critique, 18 Nov)
 const FIT = { w: 3.1, h: CASE.h + PED.h + 0.25, cy: (CASE.h - PED.h) / 2 - 0.05 };
 
 function loadImage(src) {
@@ -93,8 +93,8 @@ export function createSpecimens(canvas, { low = false } = {}) {
     s.ready = Promise.all([loadImage(f.cut), loadImage(f.depth), loader.loadAsync(f.cut)]).then(([cut, depth, tex]) => {
       tex.colorSpace = SRGBColorSpace; tex.anisotropy = 4;
       const { geo, h } = specimenGeometry(cut, depth, low);
-      const mesh = new Mesh(geo, new MeshStandardMaterial({ map: tex, alphaTest: 0.42, roughness: 0.82, metalness: 0, side: DoubleSide }));
-      mesh.customDepthMaterial = new MeshDepthMaterial({ depthPacking: RGBADepthPacking, map: tex, alphaTest: 0.42 });
+      const mesh = new Mesh(geo, new MeshStandardMaterial({ map: tex, alphaTest: 0.2, roughness: 0.82, metalness: 0, side: DoubleSide }));
+      mesh.customDepthMaterial = new MeshDepthMaterial({ depthPacking: RGBADepthPacking, map: tex, alphaTest: 0.2 });
       mesh.castShadow = !low;
       mesh.position.y = base0 + h / 2 + 0.06;
       s.group.add(mesh);

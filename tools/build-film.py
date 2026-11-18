@@ -19,7 +19,7 @@ their place), the pavilion's misspelled drawn labels (after 1.95 s), the fibre m
 showroom (fibres over bamboo culms: the yarn is banana fibre, and bamboo is never shown becoming yarn) and the clips'
 AI-generated presenter. In the hall the drawn specimen card misspells its labels ("Banglies", "Dadoin"): it is
 blurred out frame by frame, as is the small "Macro" label; so are the dome's drawn labels ("01 Sambo", "Bamnoa"),
-readouts and edge panel.
+readouts and edge panel; so are the hall's "05mm" and ring prompt, and the studio shot's readout bar and ghost panel.
 
 No join is a cross-fade. Each is a camera move that carries the eye from one shot into the next:
   grove > showroom  a bamboo culm passes close in front of the lens (a defocused occluder) and the showroom is behind it
@@ -75,11 +75,39 @@ def dome_boxes(t):
     return [tuple(a + (b - a) * u for a, b in zip(s, e)) for s, e in DOME_LABELS]
 
 
+# the hall's painted readouts: "05mm" drifting right as the camera pushes in, and the ring's prompt "[hold or scroll to
+# split fibers]" (a gesture the page does not use): clip time -> box
+MM = [(0.4, (0.69, 0.27, 0.79, 0.36)), (1.2, (0.725, 0.245, 0.82, 0.33)), (2.0, (0.80, 0.18, 0.91, 0.28)),
+      (2.6, (0.86, 0.12, 0.99, 0.24))]
+PROMPT = (0.85, 1.55, (0.36, 0.455, 0.64, 0.525))  # once the specimen splits, its pieces hide what is left of it
+
+
+def along(keys, t):
+    if t < keys[0][0] or t > keys[-1][0]:
+        return None
+    for (ta, a), (tb, b) in zip(keys, keys[1:]):
+        if ta <= t <= tb:
+            u = (t - ta) / (tb - ta)
+            return tuple(x + (y - x) * u for x, y in zip(a, b))
+    return keys[-1][1]
+
+
 def hall_boxes(t):
     boxes = []
     c = card_at(t)
     if c: boxes.append(c)
     if MACRO[0] <= t <= MACRO[1]: boxes.append(MACRO[2])
+    m = along(MM, t)
+    if m: boxes.append(m)
+    if PROMPT[0] <= t <= PROMPT[1]: boxes.append(PROMPT[2])
+    return boxes
+
+
+def close_boxes(t):
+    """The studio shot opens with a painted readout bar ("RANJ-NOOSE", "OIF-01122") and a ghost spec panel: blurred."""
+    boxes = []
+    if t <= 14.3: boxes.append((0.0, 0.80, 0.74, 0.97))  # below the leaf's lower edge
+    if t <= 13.7: boxes.append((0.81, 0.10, 1.0, 0.84))
     return boxes
 
 
@@ -87,7 +115,7 @@ SHOTS = [  # name, clip, start, end (clip seconds), fps, boxes(clip time)
     ('grove', GROVE, 0.25, 1.95, 24, None),
     ('showroom', GROVE, 6.10, 8.10, 24, None),
     ('hall', HALL, 0.40, 4.30, 24, hall_boxes),
-    ('close', STUDIO, 13.0, 15.6, 12, None),
+    ('close', STUDIO, 13.0, 15.6, 12, close_boxes),
     ('dome', DOME, 10.35, 13.2, 12, dome_boxes),
 ]
 

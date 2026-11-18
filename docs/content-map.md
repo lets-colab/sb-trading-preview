@@ -14,10 +14,11 @@ restates it.
 | How to explore a family (tap for its story, hold for its products) | Chapter 2, the showroom's narration | Spoken once; the rings' labels name the gestures |
 | Each family's story | That family's ring on its glass case in the showroom | Spoken on a tap |
 | Each family's products | That family's glass board (hold its ring) | Spoken and listed on a hold |
-| What is inside (the specimen opens) | Chapter 3, inside the material | Spoken |
+| What comes free when the specimen opens (bamboo, bark and fibre, as on screen) | Chapter 3, a closer look | Spoken |
 | Banana fibre becomes yarn | Chapter 4, fibre to yarn (what is on screen); the fibre story (how and why) | Spoken |
-| Banana bark sheets | Chapter 5, bark and leaves (what is on screen); the bark story (uses) | Spoken |
-| Rifat, the AI assistant, helps ask for a quote | Chapter 6, the whole range | Spoken |
+| A dried leaf beside the yarn (what the generated footage shows; it is not called banana bark) | Chapter 5, a dried leaf | Spoken |
+| Banana bark and leaves: uses | The bark story | Spoken |
+| Rifat, the AI assistant, helps ask for a quote | Chapter 6, all together | Spoken |
 | Each product's photo, family, grade, origin and what is confirmed in a quotation | The spec drawer (Explore) | Shown |
 | What SB Trading is | About Us | Shown |
 | How ordering works | About Us, "How ordering works." | Shown |
