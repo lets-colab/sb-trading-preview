@@ -44,7 +44,10 @@ async function measure(p, name, where, sel, n = 0) {
 for (const [name, vp, mobile] of [['desktop', { width: 1440, height: 900 }, false], ['phone', { width: 390, height: 844 }, true]]) {
   const ctx = await b.newContext({ viewport: vp, isMobile: mobile, hasTouch: mobile });
   const p = await ctx.newPage();
-  await p.goto(O + '/', { waitUntil: 'load' }); await p.waitForTimeout(3500); // the gate's lines draw in
+  await p.goto(O + '/', { waitUntil: 'load' });
+  // the opening plays (banana fibres, the plant, the grove), then the title fades in over the grove
+  await p.waitForFunction(() => document.querySelector('.gate-3d') && !document.documentElement.classList.contains('gate-intro'), null, { timeout: 20000 }).catch(() => {});
+  await p.waitForTimeout(1600);
   for (const sel of ['.gate h1', '.gate h1 em', '.gate-meta', '.gate-label', '.gate-foot']) await measure(p, name, 'the gate', sel);
 
   const chapters = await p.evaluate(() => [...document.querySelectorAll('#film .beat[data-ch]')].map((b) => ({ key: b.dataset.ch, anchor: Number(b.dataset.anchor), text: b.querySelector('.say').textContent.trim() })));

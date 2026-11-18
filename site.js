@@ -1,4 +1,4 @@
-// SB Trading · Materials in Motion (client review draft).
+// SB Trading · From leaf to fibre (client review draft).
 // One loop reads the scroll position and drives: the film (WebP frames on a canvas, stages 01–03), the pinned
 // Explore stage (three families in arched windows, stage 04), the ordering fibre line, the chapter bar, and the
 // opt-in sound. Motion (motion.dev, MIT) runs reveals; Lenis (MIT) smooths wheel scrolling. Rifat (stage 05) lives
@@ -7,7 +7,7 @@ import { createRifat } from './assets/rifat.js?v=205e2f23';
 
 // Every file is loaded at a versioned address (?v= and a hash of its contents, kept current by tools/stamp.mjs), so a
 // returning visitor's cache can never pair this page with an old file. The film's frames share one tag for the folder.
-const FILM = 'assets/film/?v=c9d6c2ba', filmFile = (p) => FILM.replace('?', `${p}?`);
+const FILM = 'assets/film/?v=d0071510', filmFile = (p) => FILM.replace('?', `${p}?`);
 const root = document.documentElement;
 root.classList.add('js');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -59,9 +59,11 @@ const sound = (() => {
       const C = window.AudioContext || window.webkitAudioContext;
       if (!C) return;
       actx = new C({ latencyHint: 'interactive' });
-      import('./assets/sound.js?v=64c4a1d1').then((m) => {
+      import('./assets/sound.js?v=8802a143').then((m) => {
         engine = m.createSoundEngine(actx);
         engine.onNote(ripple);
+        // the film's own sound (the clips' audio, cut as the picture is): until it arrives the generated sound stands in
+        engine.loadFilm?.({ track: filmFile('sound.mp3'), bed: filmFile('bed.mp3'), map: filmFile('film.json') }).catch(() => {});
         guard(() => engine.cue('toggle', 0.5));
         if (on) start();
       }).catch(() => { /* the page stays silent */ });
@@ -96,6 +98,10 @@ const sound = (() => {
       if (on && engine) guard(() => engine.scene(scene));
     },
     motion(speed) { if (on && engine) guard(() => engine.motion(speed)); },
+    /** A flight through the film from frame `from` to `to`: its own sound, if loaded. True when handled. */
+    film(from, to, seconds) { let ok = false; if (on && engine?.film) guard(() => { ok = engine.film(from, to, seconds); }); return ok; },
+    /** A moment of the film crossed by scrolling: its own sound, if loaded. True when handled. */
+    moment(frame) { let ok = false; if (on && engine?.moment) guard(() => { ok = engine.moment(frame); }); return ok; },
     /** True while the visitor has Sound on. */
     get playing() { return on; },
     /** Turns Sound on (the gate's "Click to enter" is the visitor's gesture). */
@@ -106,17 +112,58 @@ const sound = (() => {
 })();
 
 // ------------------------------------------------------------------ film (stages 01–03)
-const FRAMES = 196; // tools/build-film.py (assets/film/film.json)
+const FRAMES = 217; // tools/build-film.py (assets/film/film.json)
 const SET = innerWidth / innerHeight < 0.9 ? 'm' : 'd';
 const film = $('#film'), canvas = $('.film-canvas'), ctx = canvas.getContext('2d');
 const frames = new Array(FRAMES);
 let shown = -1, filmP = 0;
 const gate = $('.gate', film);
 const filmBeats = gate ? [{ el: gate, at: gate.dataset.at.split(',').map(Number) }] : [];
+// the gate in live 3D (assets/gate3d.js): it opens on its own, from inside the banana's stem among its fibres, pulling
+// back to the plant and across to the bamboo grove, where the title fades in (once a visit; a click, tap, key or scroll
+// skips it, and the click that skips is not taken as "Click to enter"). At rest the grove turns toward the pointer and
+// the camera flies into it as the film begins. The line drawing in the HTML stays until it is ready, and with reduced motion.
+let gate3d = null, gate3dFailed = () => {}, filmTrace = null;
+if (gate && !reduced) {
+  let seen = false;
+  try { seen = sessionStorage.getItem('sb-opening') === '1'; sessionStorage.setItem('sb-opening', '1'); } catch { /* storage blocked: play it */ }
+  const intro = !seen && progressOf(film) < 0.01;
+  if (intro) root.classList.add('gate-intro');
+  const ended = () => root.classList.remove('gate-intro');
+  const cv = document.createElement('canvas');
+  cv.className = 'gate-3d'; cv.setAttribute('aria-hidden', 'true');
+  // if it cannot load, start or draw, it fails closed: the canvas goes, the line drawing and the title show at once,
+  // and the film runs on
+  gate3dFailed = () => { gate3d = null; cv.remove(); root.classList.remove('gate-live'); ended(); };
+  import('./assets/gate3d.js?v=ceca3f2a').then(({ createGate3D }) => {
+    gate.prepend(cv);
+    const g3 = createGate3D(cv, { low: !fine || innerWidth < 700 || (navigator.hardwareConcurrency || 8) < 4, intro, onIntroEnd: ended });
+    g3.size();
+    gate3d = g3;
+    root.classList.add('gate-live');
+  }).catch(gate3dFailed);
+  const skip = (e) => { if (!gate3d?.intro) return false; gate3d.skip(); return true; };
+  film.addEventListener('click', (e) => { if (skip()) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  for (const type of ['wheel', 'touchmove', 'keydown']) addEventListener(type, skip, { passive: true });
+  // the handover (assets/filmtrace.js): as the visitor enters, lines traced from the footage's own opening frames draw
+  // in over the film while the 3D grove fades, then dissolve as the footage brightens under them. Without it the
+  // grove simply crossfades into the footage.
+  const tcv = document.createElement('canvas');
+  tcv.className = 'film-trace'; tcv.setAttribute('aria-hidden', 'true');
+  Promise.all([import('./assets/filmtrace.js?v=deb0ef7f'), fetch(filmFile('trace.bin')).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`trace ${r.status}`))))])
+    .then(([{ createFilmTrace }, bytes]) => {
+      canvas.after(tcv);
+      const t = createFilmTrace(tcv, bytes, { set: SET, frames: FRAMES });
+      t.size(canvas.width, canvas.height);
+      filmTrace = t;
+    })
+    .catch(() => tcv.remove()); // the crossfade alone is the fallback
+}
 
 function size() {
   const dpr = Math.min(devicePixelRatio || 1, 1.5);
   canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  filmTrace?.size(canvas.width, canvas.height);
   shown = -1;
 }
 function nearest(i) {
@@ -175,13 +222,15 @@ function labelShot(i) { // i: the index of the loaded frame on the canvas (not t
   filmShot = shot;
   filmLabel.textContent = `This shot: ${shot.src}, not SB Trading's own.`;
 }
-// Film sound design (assets/sound.js), fired when scrolling forward crosses each moment: the cut from the grove into the
-// hall, the beam, the bamboo splitting, the fibre vortex, the close shot and the dome opening (frame numbers from
-// assets/film/film.json: grove 0, beam 41, close 139, dome 161). A jump past several moments plays none of them.
-const FILM_CUES = [[35, 'whoosh'], [42, 'beam'], [78, 'split'], [114, 'fibre'], [138, 'close'], [158, 'dome']];
+// Film sound design (assets/sound.js), fired when scrolling forward crosses each moment, on the frame it happens
+// (assets/film/film.json: grove 0, showroom 33, hall 74, close 160, dome 182): leaves stirring in the grove, the culm
+// brushing past the lens, the glass cases, the glint as the camera passes into the hall, the beam's low hum, the
+// specimen splitting, the fibres swirling, the yarn drawing tight, the bark sheet's dry rustle and the dome's open air.
+// A jump past several moments plays none of them.
+const FILM_CUES = [[22, 'leaves'], [35, 'brush'], [42, 'glass'], [76, 'glint'], [83, 'beam'], [101, 'split'], [126, 'fibre'], [161, 'yarn'], [170, 'bark'], [185, 'dome']];
 let cueFrame = -1;
 function filmCues(i) {
-  if (cueFrame >= 0 && i > cueFrame && i - cueFrame < 16) for (const [f, name] of FILM_CUES) if (cueFrame < f && i >= f) sound.cue(name);
+  if (cueFrame >= 0 && i > cueFrame && i - cueFrame < 16) for (const [f, name] of FILM_CUES) if (cueFrame < f && i >= f && !sound.moment(f)) sound.cue(name);
   cueFrame = i;
 }
 let heroO = 1; // the opening title's opacity: the dust is brightest in the grove's light shafts while it shows
@@ -235,13 +284,13 @@ const dust = (() => {
 const explore = $('#explore');
 const fams = $$('.fam', explore), ambient = $$('.ambient img', explore);
 let famActive = -1;
-// The storyteller (after hatom.com): each family's short history, narrated (assets/voice/, Kokoro voice "George", tools/narrate.py),
+// The storyteller (after hatom.com): each family's short history, narrated by "Moksh - Storyteller" (ElevenLabs, assets/voice/),
 // with its words as subtitles. "Hear its story" plays or stops it; with Sound on it also starts as the family comes on
 // stage, once per family. The score ducks under the voice. A family whose recording is not made yet shows no button.
 const STORIES = {
-  bamboo: { src: 'assets/voice/bamboo.mp3?v=a0432255', text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots. Dried and bundled, it leaves the grove as poles, splits and sections, ready to build with.' },
-  fibre: { src: 'assets/voice/fibre.mp3?v=282aae02', text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
-  bark: { src: 'assets/voice/bark.mp3?v=1fa864f6', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
+  bamboo: { src: 'assets/voice/bamboo.mp3?v=e373d9f4', text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots.' },
+  fibre: { src: 'assets/voice/fibre.mp3?v=16255d51', text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
+  bark: { src: 'assets/voice/bark.mp3?v=08edcb15', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
 };
 const storyCap = $('.story-caption'), storyBtns = $$('.story'), told = new Set();
 let storyNow = null;
@@ -299,21 +348,20 @@ storyBtns.forEach((b) => b.addEventListener('click', () => (storyNow?.btn === b 
 // a click on the picture, or "Click to continue", flies to the next, and past the last into Explore. When the film comes
 // to rest in a chapter it settles on that chapter's frame and the narrator speaks its line (the words always, the voice
 // with Sound on). Rings on the materials (SPOTS: where each sits in the chapter's frame, 0-1 of the desktop film; m: the
-// phone film's own place when the centre crop moves it) tell that material's story; the specimen's ring opens it.
+// phone film's own place when the centre crop moves it) tell that material's story; the plate in the hall opens it.
 const chapters = (() => {
   const hud = $('.hud', film), spotsEl = $('.spots', film), subtitle = $('.subtitle', film);
   const hudN = $('.hud-n', film), hudName = $('.hud-name', film), hudNext = $('.hud-next', film), enter = $('.gate-enter', film);
-  const NAMES = { grove: 'The grove', specimen: 'The specimen', split: 'Opened', fibre: 'Banana fibre', bark: 'Bark and leaves', dome: 'Together' };
+  const NAMES = { grove: 'The grove', showroom: 'The showroom', open: 'Inside', fibre: 'Fibre to yarn', bark: 'Bark and leaves', dome: 'The whole range' };
   const STORY_NAMES = { bamboo: 'Bamboo', fibre: 'Banana fibre', bark: 'Bark and leaves' };
+  // Each family's ring appears once, on its own glass case in the showroom (tap: its story; hold: its products). On the
+  // phone the centre crop shows the middle case: bamboo's and bark's rings are held at the screen's edges, toward their
+  // cases (edge), so every family is still there to tap and hold.
   const SPOTS = {
-    grove: [{ key: 'bamboo', x: 0.72, y: 0.40, m: [0.78, 0.32] }],
-    // the beam shot draws its own prompt across the specimen ("hold or scroll to split"): this plate sits over it with the
-    // site's own way in, so the footage never asks for a gesture the page does not use
-    specimen: [{ key: 'open', x: 0.5, y: 0.487, cover: 0.19, name: 'Open the specimen', label: 'Click to open' }],
-    split: [{ key: 'bamboo', x: 0.40, y: 0.56 }, { key: 'fibre', x: 0.57, y: 0.38 }, { key: 'bark', x: 0.19, y: 0.45 }],
-    fibre: [{ key: 'fibre', x: 0.64, y: 0.30, m: [0.72, 0.42] }],
-    bark: [{ key: 'fibre', x: 0.17, y: 0.48, name: 'Banana fibre yarn' }, { key: 'bark', x: 0.60, y: 0.46, m: [0.74, 0.44] }],
-    dome: [{ key: 'fibre', x: 0.18, y: 0.46, quiet: true }, { key: 'bark', x: 0.50, y: 0.68 }, { key: 'bamboo', x: 0.86, y: 0.42 }],
+    showroom: [{ key: 'bamboo', x: 0.22, y: 0.49, m: [0.1, 0.36], edge: true }, { key: 'fibre', x: 0.445, y: 0.49 }, { key: 'bark', x: 0.73, y: 0.46, m: [0.9, 0.62], side: 'right', edge: true }],
+    // the hall shot draws its own prompt across the specimen ("hold or scroll to split fibers"): this plate sits over it
+    // with the site's own way in, so the footage never asks for a gesture the page does not use
+    open: [{ key: 'open', x: 0.5, y: 0.48, cover: 0.19, name: 'Open it', label: 'Click to open' }],
   };
   const list = $$('.beat[data-ch]', film).map((el, k) => ({ k, key: el.dataset.ch, at: el.dataset.at.split(',').map(Number), anchor: Number(el.dataset.anchor),
     voice: el.dataset.voice || null, text: $('.say', el)?.textContent.trim() || '' }));
@@ -348,7 +396,7 @@ const chapters = (() => {
         if (storyNow?.btn === b) stopStory(); else playStory(d.key, { btn: b, cap: subtitle });
       });
       spotsEl.appendChild(b);
-      spots.push({ b, c, fx, fy, cover: d.cover ? d.cover * (SET === 'm' ? 1280 / 405 : 1) : 0 });
+      spots.push({ b, c, fx, fy, side: SET === 'm' ? null : d.side, edge: SET === 'm' && d.edge, cover: d.cover ? d.cover * (SET === 'm' ? 1280 / 405 : 1) : 0 });
     }
   }
   let current = -1, narrated = -1, flying = false, flyTimer = 0, lastScroll = 0, intent = 0, entered = false;
@@ -357,9 +405,9 @@ const chapters = (() => {
   // narrator reads DETAILS; it tilts with the pointer and closes as the hold ends. Words only until each is recorded.
   const HOLD_MS = 260, filmStage = $('.film-stage', film);
   const DETAILS = {
-    bamboo: { src: 'assets/voice/detail-bamboo.mp3?v=24b05525', say: 'Bamboo, from Bangladesh: poles, splits, ski poles and woven mats. Sizes and treatment are confirmed with your quotation.' },
-    fibre: { src: 'assets/voice/detail-fibre.mp3?v=72eb5126', say: 'Banana fibre yarn, from Bangladesh, in three grades: fine banana silk, standard yarn, and industrial yarn. Grades and quantities are confirmed with your quotation.' },
-    bark: { src: 'assets/voice/detail-bark.mp3?v=8bf32fdb', say: 'Banana bark and banana leaves, from Bangladesh: the third family of the range. Sizes and quantities are confirmed with your quotation.' },
+    bamboo: { src: 'assets/voice/detail-bamboo.mp3?v=3b5a794d', say: 'Bamboo: poles, splits, ski poles and woven mats.' },
+    fibre: { src: 'assets/voice/detail-fibre.mp3?v=b55b2880', say: 'Banana fibre yarn, in three grades: fine banana silk, standard yarn, and industrial yarn.' },
+    bark: { src: 'assets/voice/detail-bark.mp3?v=e54d05c9', say: 'Banana bark, and banana leaves.' },
   };
   const board = document.createElement('aside');
   board.className = 'board'; board.setAttribute('aria-hidden', 'true'); // the same facts are in Explore, and spoken
@@ -411,7 +459,8 @@ const chapters = (() => {
   const yOf = (p) => film.offsetTop + (film.offsetHeight - innerHeight) * p;
   function go(k) {
     if (k >= list.length) { if (storyNow?.cap === subtitle) stopStory(); flyTo(explore.offsetTop, 1.6); return; }
-    sound.cue('whoosh');
+    // the flight carries the film's own sound for the frames it crosses (a generated whoosh if it cannot)
+    if (!sound.film(Math.round(filmP * (FRAMES - 1)), Math.round(list[k].anchor * (FRAMES - 1)), 1.8)) sound.cue('whoosh');
     narrated = k; narrate(list[k]); // the narrator speaks as the camera moves, as the click is answered
     flyTo(yOf(list[k].anchor));
   }
@@ -430,10 +479,11 @@ const chapters = (() => {
   }
   function place(sp) {
     const W = innerWidth, H = innerHeight, s = Math.max(W / IW, H / IH);
-    const x = (W - IW * s) / 2 + sp.fx * IW * s, y = (H - IH * s) / 2 + sp.fy * IH * s;
+    let x = (W - IW * s) / 2 + sp.fx * IW * s; const y = (H - IH * s) / 2 + sp.fy * IH * s;
+    if (sp.edge) x = Math.min(W - 30, Math.max(30, x)); // held at the edge, toward a case just out of the phone's frame
     sp.b.style.setProperty('--x', `${x.toFixed(1)}px`); sp.b.style.setProperty('--y', `${y.toFixed(1)}px`);
     if (sp.cover) sp.b.style.setProperty('--w', `${Math.min(W - 32, sp.cover * IW * s).toFixed(0)}px`);
-    sp.b.classList.toggle('flip', x > W * 0.56);
+    sp.b.classList.toggle('flip', sp.side ? sp.side === 'left' : x > W * 0.56); // a label may keep to one side, clear of its neighbour
     return x > 20 && x < W - 20 && y > 70 && y < H - 120;
   }
   return {
@@ -542,6 +592,10 @@ function tick(now = performance.now()) {
   if (i !== shown) draw(i);
   if (!reduced) {
     beats(filmP); labelShot(drawnFrom); filmCues(i); chapters.update(now, p);
+    if (gate3d && !document.hidden) { // past the gate it clears once and rests
+      try { gate3d.draw(now, filmP, target); } catch { gate3dFailed(); } // a draw that throws must not stop the film's loop
+    }
+    if (filmTrace) { try { filmTrace.draw(filmP); } catch { $('.film-trace')?.remove(); filmTrace = null; } } // the same: no trace, no harm
     const fr0 = film.getBoundingClientRect();
     if (fr0.bottom > 0 && fr0.top < innerHeight && !document.hidden) dust.draw(now);
   }
@@ -582,14 +636,14 @@ function tick(now = performance.now()) {
   if (line) line.style.setProperty('--draw', draw01.toFixed(3));
   steps.forEach((li, k) => li.classList.toggle('lit', draw01 > 0.12 + k * 0.33));
 
-  // chapters: 01 Arrive, 02 Discover, 03 Transition (film), 04 Explore, 05 Enquire
+  // chapters: 01 Grove, 02 Showroom, 03 Inside (film), 04 Explore, 05 Enquire
   const mid = innerHeight / 2, fr = film.getBoundingClientRect(), er = explore.getBoundingClientRect();
   // header and chapter bar turn to ink while the lit showroom is behind them
   const lit = (er.bottom - er.top) > 0 && parseFloat(stage.style.getPropertyValue('--dark') || '0') < 0.5;
   root.classList.toggle('light-top', lit && er.top <= 0 && er.bottom > 72);
   root.classList.toggle('light-bottom', lit && er.top < innerHeight - 70 && er.bottom >= innerHeight);
   let c = 4;
-  if (fr.bottom > mid) c = p < 0.205 ? 0 : p < 0.5 ? 1 : 2; // the grove, the specimen in the beam, the materials
+  if (fr.bottom > mid) c = p < 0.17 ? 0 : p < 0.34 ? 1 : 2; // the grove, the showroom, inside the material
   else if (er.bottom > mid) c = 3;
   setChapter(c);
   root.classList.toggle('in-film', !reduced && fr.top <= 1 && fr.bottom >= innerHeight - 1); // the page's chrome steps back while the film fills the screen
@@ -619,12 +673,23 @@ function tick(now = performance.now()) {
 
 // ------------------------------------------------------------------ start
 size(); dust.size();
-addEventListener('resize', () => { size(); dust.size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
-addEventListener('scroll', () => { lastInput = performance.now(); }, { passive: true });
+addEventListener('resize', () => { size(); dust.size(); gate3d?.size(); sizeStudies(); lastInput = performance.now(); if (reduced) tick(); });
+let lastScrolled = 0;
+addEventListener('scroll', () => { lastInput = lastScrolled = performance.now(); }, { passive: true });
 if (fine && !reduced) addEventListener('pointermove', (e) => { target[0] = e.clientX / innerWidth - 0.5; target[1] = e.clientY / innerHeight - 0.5; lastInput = performance.now(); }, { passive: true });
-// The 3D studies (shader compile, photographs, depth maps) load when Explore is within two screens, not at page load.
+// The 3D studies (shader compile, photographs, depth maps) load when Explore is within two screens, not at page load,
+// and only once the page is still: starting them stops the main thread for up to a second or more, so a camera flight
+// or a scroll in progress finishes first (Explore on screen loads at once; the photographs stand in until then).
+function whenStill(fn) {
+  const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1));
+  const check = () => {
+    if (performance.now() - lastScrolled > 400 || explore.getBoundingClientRect().top < innerHeight) idle(fn, { timeout: 1500 });
+    else setTimeout(check, 250);
+  };
+  check();
+}
 if ('IntersectionObserver' in window) {
-  const near = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { near.disconnect(); loadStudies(); } }, { rootMargin: '200% 0px' });
+  const near = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { near.disconnect(); whenStill(loadStudies); } }, { rootMargin: '200% 0px' });
   near.observe(explore);
 } else loadStudies();
 if (reduced) tick(); else loadFrames(); // with reduced motion the film is a poster: no frames are fetched
@@ -638,10 +703,10 @@ if (fine && !reduced) {
     requestAnimationFrame(raf);
   }).catch(() => { /* native scrolling stays */ });
 }
-// Family cards at the end of the film and the plinth arrows land on that family inside the
+// The plinth arrows land on that family inside the
 // pinned Explore stage. From the keyboard the jump is instant and focus goes to the family's first product, so it is
 // never left on a link that has just been hidden.
-for (const a of $$('.fam-cards a, .plinth a[data-fam]')) {
+for (const a of $$('.plinth a[data-fam]')) {
   a.addEventListener('click', (e) => {
     if (reduced) return; // without the pinned stage the plain anchor is right
     e.preventDefault();

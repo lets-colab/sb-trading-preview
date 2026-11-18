@@ -1,6 +1,6 @@
 ---
 name: SB Trading
-description: Materials in Motion. A blue-hour showroom for bamboo, banana fibre yarn and banana bark and leaves.
+description: From leaf to fibre. A blue-hour showroom for bamboo, banana fibre yarn and banana bark and leaves.
 colors:
   blue: "#004a98"
   blue-glow: "#1d64b3"
@@ -281,7 +281,7 @@ All h1 to h3 use `text-wrap: balance`; paragraphs use `text-wrap: pretty`; `font
 
 A single scroll story in five chapters (Arrive, Discover, Transition, Explore, Enquire). Every section and both fixed bars are inset by the gutter token; html sets `scroll-padding-top: 88px` for the fixed header.
 
-- **Film (chapters 1 to 3):** a 640vh section with a sticky 100svh stage. Scroll position is the playhead of a canvas frame sequence. With motion nothing sits over the picture but the wireframe (after hatom.com): a gate drawn in fine lines (1.1px strokes, Cloud at 40%, Signal for the reticle), rings with leader lines and dark glass labels on the materials, one subtitle line (clamp(17px, 1.45vw, 21px), centred, 88px from the bottom over its own radial scrim) and 11px uppercase edge labels (chapter index, "Click to continue", the source label). `tests/contrast.mjs` holds every one of those lines at 4.5:1 or better against the brightest footage behind it.
+- **Film (chapters 1 to 3):** a 640vh section with a sticky 100svh stage. Scroll position is the playhead of a canvas frame sequence. With motion nothing sits over the picture but the wireframe (after hatom.com): a gate drawn in fine lines in live 3D (`assets/gate3d.js`: 1.05px lines over a soft 3.4px glow, Cloud for the plants and terrain, Fibre for the banana's fibres and the motes, Signal for the reticle; the opening travels from the fibres to the plant to the bamboo grove before the title "From leaf to fibre." fades in; entering, it gives way to lines traced from the footage itself, 1px Cloud warming to Fibre as they dissolve into the picture), rings with leader lines and dark glass labels on the materials, one subtitle line (clamp(17px, 1.45vw, 21px), centred, 88px from the bottom over its own radial scrim) and 11px uppercase edge labels (chapter index, "Click to continue", the source label). `tests/contrast.mjs` holds every one of those lines at 4.5:1 or better against the brightest footage behind it.
 - **Explore:** a 420vh section with one sticky 100svh stage holding three stacked families. Each family is a two-column grid (1.05fr text / 0.95fr arch, gap clamp(24px, 5vw, 80px)). At 820px and below the arch moves above the text at 38svh.
 - **Ordering:** max-width 1360px, three equal columns joined by a drawn fibre line; one column with a left rule at 820px and below.
 - **Enquire:** max-width 1120px; chat and ticket in a 1.5fr / 1fr grid, single column at 900px and below. Plain form rows are two columns, one at 640px and below.

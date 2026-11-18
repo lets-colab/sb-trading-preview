@@ -43,8 +43,10 @@ const open = async (opts) => { const ctx = await browser.newContext(opts); const
     beats: [...document.querySelectorAll('#film .beat')].every((b) => getComputedStyle(b).visibility === 'visible' && parseFloat(getComputedStyle(b).opacity) === 1),
     label: document.querySelector('.film-label').textContent.trim(),
     explore: getComputedStyle(document.getElementById('explore')).position,
+    gate3d: !!document.querySelector('.gate-3d') || document.documentElement.classList.contains('gate-live'),
   }));
   check(!s.motion, 'reduced motion: the page does not turn its motion layer on');
+  check(!s.gate3d, 'reduced motion: the opening stays the plain page, with no live 3D wireframe');
   check(p.__film === 0, `reduced motion: the film is a poster, so no film frames are downloaded (${p.__film} frame requests)`);
   check(s.poster && s.canvas === 'none' && s.beats, 'reduced motion: the film is a still poster with every caption visible');
   check(/^Film: generated footage, not SB Trading's own/.test(s.label), `reduced motion: the film label keeps its whole-film sentence (${s.label})`);
@@ -96,6 +98,9 @@ for (const [name, opts] of [['desktop 1440', { viewport: { width: 1440, height: 
   await scan('page top');
   await p.evaluate(() => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * 0.15); });
   await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {}); await p.waitForTimeout(1500);
+  // the header crossfades into its light showroom style (half a second, once the scroll lands); mid-fade its labels are
+  // part-transparent and read as low contrast, so scan once nothing in the header is still moving
+  await p.waitForFunction(() => document.querySelector('.top').getAnimations({ subtree: true }).every((a) => a.playState !== 'running'), null, { timeout: 10000 }).catch(() => {});
   await scan('Explore');
   await p.click('#bamboo.on .product >> nth=0');
   // scan once the drawer has finished arriving: mid-slide its text is part-transparent and reads as low contrast
@@ -107,6 +112,38 @@ for (const [name, opts] of [['desktop 1440', { viewport: { width: 1440, height: 
   await scan('Enquire (Rifat)');
   await p.click('#formToggle'); await p.waitForTimeout(600);
   await scan('plain form open');
+  await ctx.close();
+}
+
+// ---------------------------------------------------------------- 4. the opening fails closed
+// if the live 3D cannot start (here the browser gives its canvas no 2D context), the page falls back to the line
+// drawing with the title and "Click to enter" shown, and the film keeps running (Codex on #22)
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { const o = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (t, ...a) { return this.classList.contains('gate-3d') && t === '2d' ? null : o.call(this, t, ...a); }; });
+  const p = await ctx.newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
+  await p.goto(ORIGIN + '/'); await p.waitForTimeout(3000);
+  const s = await p.evaluate(() => ({ intro: document.documentElement.classList.contains('gate-intro'), live: document.documentElement.classList.contains('gate-live'), canvas: !!document.querySelector('.gate-3d'),
+    title: Number(getComputedStyle(document.querySelector('.gate h1')).opacity), enter: Number(getComputedStyle(document.querySelector('.gate .hero-actions')).opacity), art: Number(getComputedStyle(document.querySelector('.gate-art')).opacity) }));
+  await p.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * 0.16); });
+  const film = await p.waitForFunction(() => document.querySelector('.hud-name')?.textContent === 'The grove', null, { timeout: 15000 }).then(() => true, () => false);
+  check(!s.intro && !s.live && !s.canvas && s.title > 0.95 && s.enter > 0.95 && s.art > 0.95 && film && errors.length === 0,
+    `the opening fails closed: without a canvas it shows the line drawing, the title and "Click to enter", and the film runs (${JSON.stringify({ ...s, film, errors })})`);
+  await ctx.close();
+}
+
+// ---------------------------------------------------------------- 5. a slow device steps the opening's detail down
+// on a machine that renders slowly (here the CPU is slowed 20 times), the live 3D drops to its lightest detail within
+// seconds, however long each frame takes, so the page stays responsive (CI found frames over a second never counted)
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const p = await ctx.newPage();
+  const cdp = await ctx.newCDPSession(p); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 20 });
+  await p.goto(ORIGIN + '/');
+  const t0 = Date.now();
+  const dropped = await p.waitForFunction(() => document.querySelector('.gate-3d')?.dataset.level === '0', null, { timeout: 8000, polling: 250 }).then(() => true, () => false);
+  const level = await p.evaluate(() => document.querySelector('.gate-3d')?.dataset.level);
+  check(dropped, `a slow device: the opening drops to its lightest detail within 8 s (level ${level} after ${((Date.now() - t0) / 1000).toFixed(1)} s)`);
   await ctx.close();
 }
 

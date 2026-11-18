@@ -66,6 +66,24 @@ else {
   check(r.chords.length >= 2, `a chapter change moves the harmony (chords heard: ${r.chords.join(', ')})`);
   check(r.tail < -70, `switched off, the score falls silent (${f(r.tail)} dBFS)`);
 }
+// the film's own sound: the clips' audio cut as the picture is. A flight through the hall's opening plays that stretch
+// (the split is heard as it is seen); a move backwards is declined, so the page uses its generated whoosh instead; the
+// film map gives every frame a time, in order, within the soundtrack
+const fs2 = await p.evaluate(async () => {
+  const m = await import('/assets/sound.js');
+  const SR = 48000, oc = new OfflineAudioContext(2, SR * 4, SR), eng = m.createSoundEngine(oc, { seed: 7 });
+  const loaded = await eng.loadFilm({ track: '/assets/film/sound.mp3', bed: '/assets/film/bed.mp3', map: '/assets/film/film.json' }).then(() => true, () => false);
+  const map = await (await fetch('/assets/film/film.json')).json();
+  const forward = eng.film(74, 101, 1.8), backward = eng.film(101, 74, 1.8);
+  const buf = await oc.startRendering(), L = buf.getChannelData(0);
+  let s = 0; for (let i = 0; i < 1.8 * SR; i++) s += L[i] * L[i];
+  const track = await new OfflineAudioContext(2, 48000, 48000).decodeAudioData(await (await fetch('/assets/film/sound.mp3')).arrayBuffer());
+  return { loaded, forward, backward, rms: 10 * Math.log10(s / (1.8 * SR) + 1e-12), frames: map.frames, times: map.time.length, ordered: map.time.every((t, i, a) => i === 0 || t > a[i - 1]), last: map.time.at(-1), dur: track.duration };
+});
+const site = fs.readFileSync(path.join(ROOT, 'site.js'), 'utf8').match(/const FRAMES = (\d+);/)?.[1];
+check(fs2.loaded && fs2.forward && fs2.rms > -45 && !fs2.backward, `a flight through the film plays its own sound for the frames it crosses, and a move backwards is left to the generated cue (${JSON.stringify({ loaded: fs2.loaded, forward: fs2.forward, rms: +fs2.rms.toFixed(1), backward: fs2.backward })})`);
+check(fs2.times === fs2.frames && String(fs2.frames) === site && fs2.ordered && fs2.last < fs2.dur, `every film frame has its time in the soundtrack, in order, and the page knows the same frame count (${JSON.stringify({ frames: fs2.frames, times: fs2.times, site, last: fs2.last, dur: +fs2.dur.toFixed(2) })})`);
+
 await browser.close(); server.close();
 if (failures) { console.error(`${failures} score check(s) failed`); process.exit(1); }
 console.log('score: all passing');
