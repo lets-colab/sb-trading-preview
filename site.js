@@ -284,13 +284,13 @@ const dust = (() => {
 const explore = $('#explore');
 const fams = $$('.fam', explore), ambient = $$('.ambient img', explore);
 let famActive = -1;
-// The storyteller (after hatom.com): each family's short history, narrated (assets/voice/, Kokoro voice "George", tools/narrate.py),
+// The storyteller (after hatom.com): each family's short history, narrated by "Moksh - Storyteller" (ElevenLabs, assets/voice/),
 // with its words as subtitles. "Hear its story" plays or stops it; with Sound on it also starts as the family comes on
 // stage, once per family. The score ducks under the voice. A family whose recording is not made yet shows no button.
 const STORIES = {
-  bamboo: { src: 'assets/voice/bamboo.mp3?v=94e410d3', text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots. Dried and bundled, it is ready to build with.' },
-  fibre: { src: 'assets/voice/fibre.mp3?v=1ef2556f', text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
-  bark: { src: 'assets/voice/bark.mp3?v=0f914f89', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
+  bamboo: { src: 'assets/voice/bamboo.mp3?v=e373d9f4', text: 'In Bangladesh, bamboo has held up homes, bridges and boats for generations. It is a grass, not a tree, and some kinds can grow close to a metre in a single day. Cut it, and it grows back from the same roots.' },
+  fibre: { src: 'assets/voice/fibre.mp3?v=16255d51', text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
+  bark: { src: 'assets/voice/bark.mp3?v=08edcb15', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
 };
 const storyCap = $('.story-caption'), storyBtns = $$('.story'), told = new Set();
 let storyNow = null;
@@ -405,9 +405,9 @@ const chapters = (() => {
   // narrator reads DETAILS; it tilts with the pointer and closes as the hold ends. Words only until each is recorded.
   const HOLD_MS = 260, filmStage = $('.film-stage', film);
   const DETAILS = {
-    bamboo: { src: 'assets/voice/detail-bamboo.mp3?v=3f899773', say: 'Bamboo: poles, splits, ski poles and woven mats.' },
-    fibre: { src: 'assets/voice/detail-fibre.mp3?v=7d68f24a', say: 'Banana fibre yarn, in three grades: fine banana silk, standard yarn, and industrial yarn.' },
-    bark: { src: 'assets/voice/detail-bark.mp3?v=c00a03cd', say: 'Banana bark, and banana leaves.' },
+    bamboo: { src: 'assets/voice/detail-bamboo.mp3?v=3b5a794d', say: 'Bamboo: poles, splits, ski poles and woven mats.' },
+    fibre: { src: 'assets/voice/detail-fibre.mp3?v=b55b2880', say: 'Banana fibre yarn, in three grades: fine banana silk, standard yarn, and industrial yarn.' },
+    bark: { src: 'assets/voice/detail-bark.mp3?v=e54d05c9', say: 'Banana bark, and banana leaves.' },
   };
   const board = document.createElement('aside');
   board.className = 'board'; board.setAttribute('aria-hidden', 'true'); // the same facts are in Explore, and spoken
