@@ -18,8 +18,8 @@ restates it.
 | Banana fibre becomes yarn | Chapter 4, fibre to yarn (what is on screen); the fibre story (how and why) | Spoken |
 | A dried leaf beside the yarn (what the generated footage shows; it is not called banana bark) | Chapter 5, a dried leaf | Spoken |
 | Banana bark and leaves: uses | The bark story | Spoken |
-| Rifat, the AI assistant, helps ask for a quote | Chapter 6, all together | Spoken |
-| Each product's photo, family, grade, origin and what is confirmed in a quotation | The spec drawer (Explore) | Shown |
+| The materials together, as the generated film imagines them; Rifat, the AI assistant, helps ask for a quote | Chapter 6, all together | Spoken |
+| Each product's photo (or "Photograph to come from SB Trading" where there is none yet), family, grade, origin and what is confirmed in a quotation | The spec drawer (Explore) | Shown |
 | What SB Trading is | About Us | Shown |
 | How ordering works | About Us, "How ordering works." | Shown |
 | What is still to be confirmed (minimum orders, ports, terms, lead times, certifications) | About Us | Shown |
@@ -39,3 +39,10 @@ in the specimen chapter and in About Us, the end chapter's family cards (Explore
 repeated the product buttons under them, "from Bangladesh" and "confirmed with your quotation" in every glass board,
 chapter headings that repeated their narration word for word, the same three rings in four chapters, and the chapter bar's
 "Arrive / Discover / Transition" (now the journey's stops: Grove, Showroom, Inside, Explore, Enquire).
+
+## Removed (18 Nov 2026, critique)
+
+The gate's map coordinates; the glass board's "Sizes, grades and treatment are confirmed..." note (the drawer says it); the
+footage's own plinth labels ("03 / Banana bark" on a mixed case) and arrows, blurred; another product's photograph standing
+in for woven mats and banana bark. About's pending list now reads "ports of origin and export". The note that names and
+photographs are being confirmed is shown on phones too.

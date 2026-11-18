@@ -103,6 +103,17 @@ def hall_boxes(t):
     return boxes
 
 
+# the showroom's plinth fronts carry painted labels ("01 Bamboo", "02 / Banana fibre yarn", "03 / Banana bark" on a case
+# that holds bamboo, a yarn cone and bark) and arrow panels that copy the site's own: blurred (plain grey faces, so a
+# blur reads as nothing), not darkened
+PLINTHS = [(6.1, (0.14, 0.57, 0.88, 0.95)), (6.8, (0.09, 0.59, 0.92, 1.0)), (7.5, (0.0, 0.62, 0.98, 1.0)), (8.1, (0.07, 0.69, 1.0, 1.0))]
+
+
+def showroom_boxes(t):
+    b = along(PLINTHS, max(PLINTHS[0][0], min(PLINTHS[-1][0], t)))
+    return [b] if b else []
+
+
 def close_boxes(t):
     """The studio shot opens with a painted readout bar ("RANJ-NOOSE", "OIF-01122") and a ghost spec panel: blurred."""
     boxes = []
@@ -113,7 +124,7 @@ def close_boxes(t):
 
 SHOTS = [  # name, clip, start, end (clip seconds), fps, boxes(clip time)
     ('grove', GROVE, 0.25, 1.95, 24, None),
-    ('showroom', GROVE, 6.10, 8.10, 24, None),
+    ('showroom', GROVE, 6.10, 8.10, 24, showroom_boxes),
     ('hall', HALL, 0.40, 4.30, 24, hall_boxes),
     ('close', STUDIO, 13.0, 15.6, 12, close_boxes),
     ('dome', DOME, 10.35, 13.2, 12, dome_boxes),
@@ -291,7 +302,7 @@ with tempfile.TemporaryDirectory() as tmp:
         d = os.path.join(tmp, name); os.mkdir(d)
         seg = extract(clip, a, b, fps, d)
         clip_t = [a + i / fps for i in range(len(seg))]
-        if boxes: seg = [blur_out(im, boxes(t), 1.0 if name == 'dome' else 0.62) for im, t in zip(seg, clip_t)]
+        if boxes: seg = [blur_out(im, boxes(t), 1.0 if name in ('dome', 'showroom') else 0.62) for im, t in zip(seg, clip_t)]
         seg = [arr(im) for im in seg]
         if name == 'grove': culm = culm_from(seg[-1])
         sound = audio(clip, a, b)

@@ -7,7 +7,7 @@ import { createRifat } from './assets/rifat.js?v=0e796418';
 
 // Every file is loaded at a versioned address (?v= and a hash of its contents, kept current by tools/stamp.mjs), so a
 // returning visitor's cache can never pair this page with an old file. The film's frames share one tag for the folder.
-const FILM = 'assets/film/?v=9e5f63ab', filmFile = (p) => FILM.replace('?', `${p}?`);
+const FILM = 'assets/film/?v=200c539f', filmFile = (p) => FILM.replace('?', `${p}?`);
 const root = document.documentElement;
 root.classList.add('js');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -307,7 +307,7 @@ const STORIES = {
   fibre: { src: 'assets/voice/fibre.mp3?v=16255d51', text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
   bark: { src: 'assets/voice/bark.mp3?v=08edcb15', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
 };
-const storyCap = $('.story-caption'), storyBtns = $$('.story'), told = new Set();
+const storyCap = $('.story-caption'), storyBtns = $$('.story');
 let storyNow = null;
 storyBtns.forEach((b) => { b.hidden = !STORIES[b.dataset.story]?.src; });
 // One voice at a time: a family's story (a "Hear its story" button, or a ring on the film) or a chapter's narration.
@@ -351,7 +351,6 @@ function speak({ key, src, text, btn = null, cap = storyCap, whole = false }) {
 function playStory(key, { btn, cap } = {}) {
   const s = STORIES[key];
   if (!s?.src) return;
-  told.add(key);
   speak({ key, src: s.src, text: s.text, btn: btn ?? $(`.story[data-story="${key}"]`), cap: cap ?? storyCap });
 }
 document.addEventListener('sb:sound', (e) => { if (!e.detail) stopStory(); }); // Sound off silences the voice too
@@ -426,7 +425,7 @@ const chapters = (() => {
   };
   const board = document.createElement('aside');
   board.className = 'board'; board.setAttribute('aria-hidden', 'true'); // the same facts are in Explore, and spoken
-  board.innerHTML = '<div class="board-glass"><p class="board-kicker"></p><h3 class="board-title"></h3><ul class="board-list"></ul><p class="board-note">Sizes, grades and treatment are confirmed by SB Trading with your quotation.</p><p class="board-hint">Release to return</p></div>';
+  board.innerHTML = '<div class="board-glass"><p class="board-kicker"></p><h3 class="board-title"></h3><ul class="board-list"></ul><p class="board-hint">Release to return</p></div>';
   hud.appendChild(board);
   let held = null;
   function expand(sp, key) {
@@ -540,7 +539,7 @@ function setFamily(i) {
   ambient.forEach((img, k) => img.classList.toggle('on', k === i));
   const key = fams[i].id;
   if (storyNow && storyNow.key !== key) stopStory();
-  if (sound.playing && !told.has(key)) playStory(key);
+  // no story starts by itself here: past the film the page is quiet until the visitor asks ("Hear its story")
   sound.cue(forward ? 'knock' : 'knock-soft', fams[i].querySelector('.arch'));
 }
 
@@ -840,7 +839,10 @@ function showProduct(btn, { push = true } = {}) {
   if (busy) { busy.then(() => showProduct(btn, { push })); return; }
   sheetProduct = btn.textContent.trim();
   sheetFam = fams.indexOf(btn.closest('.fam'));
-  $('#sheetImg').src = btn.dataset.img;
+  // a product with no photograph of its own yet shows a plate saying so, never another product's photo
+  const none = btn.dataset.photo === 'none';
+  $('.sheet-img').classList.toggle('pending', none);
+  if (!none) $('#sheetImg').src = btn.dataset.img;
   $('#sheetImg').alt = `${btn.dataset.family} photograph`;
   $('#sheetFamily').textContent = btn.dataset.family;
   $('#sheetTitle').textContent = sheetProduct;
