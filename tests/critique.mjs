@@ -19,7 +19,7 @@ const server = http.createServer((q, r) => {
 });
 await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
 const ORIGIN = `http://127.0.0.1:${server.address().port}`;
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 let failures = 0;
 const check = (ok, msg) => { console.log(ok ? 'ok  ' : 'FAIL', msg); if (!ok) failures++; };
 
@@ -30,7 +30,11 @@ const open = async (viewport, touch) => {
   await p.waitForTimeout(800);
   return [ctx, p];
 };
-const famY = (p, k) => p.evaluate((k) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * (k / 3 + 0.12)); }, k);
+// the page scrolls smoothly (CSS scroll-behavior), so a script's jump is made instant, then waits for that family to be on stage
+const famY = async (p, k) => {
+  await p.evaluate((k) => { const e = document.getElementById('explore'); scrollTo({ top: e.offsetTop + (e.offsetHeight - innerHeight) * (k / 3 + 0.12), behavior: 'instant' }); }, k);
+  await p.waitForFunction((k) => document.querySelectorAll('.fam')[k]?.classList.contains('on'), k, { timeout: 15000 }).catch(() => {});
+};
 
 { // desktop
   const [ctx, p] = await open({ width: 1440, height: 900 }, false);
