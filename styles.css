@@ -608,10 +608,13 @@ html.in-film .top .sound-toggle,html.in-film .top .menu-toggle{background:transp
   .hud-next{bottom:52px}
   .hud-index{bottom:18px}
   .motion .film-label{bottom:14px;max-width:52vw}
-  .spot-line{width:44px}
-  .spot-tag{left:80px;top:-44px}
-  .spot.flip .spot-tag{right:80px}
-  .spot-name{font-size:18px}
+  /* phones: a ring's label is its name in a small pill beside it, so the cases behind stay visible; "Hear its story"
+     and "Hold for details" stay for screen readers, and the narrator and subtitle say tap and hold (the owner, 19 Nov) */
+  .spot-line{width:26px}
+  .spot-tag{left:58px;top:-30px;gap:0;padding:5px 11px;border-radius:var(--r-pill)}
+  .spot.flip .spot-tag{right:58px}
+  .spot-name{font-size:16px}
+  .spot .story-label,.spot-hold{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 }
 @media (prefers-reduced-motion:reduce){.gate-art .ln{animation:none;stroke-dashoffset:0}.gate-art .spin{animation:none;opacity:1}}
 
@@ -634,10 +637,10 @@ html.in-film .top .sound-toggle,html.in-film .top .menu-toggle{background:transp
 .explore .ambient img.on{opacity:0}
 /* the showroom stays inside the film's last room (the reference's gallery of lit cases), softly out of focus behind the
    family; a light wash keeps the text side readable */
-.explore .ambient::before{content:"";position:absolute;inset:-3%;background:url(assets/film/d/190.webp?v=200c539f) center/cover;filter:blur(5px) saturate(.95)}
+.explore .ambient::before{content:"";position:absolute;inset:-3%;background:url(assets/film/d/190.webp?v=add0995b) center/cover;filter:blur(5px) saturate(.95)}
 .explore .ambient::after{background:linear-gradient(90deg,#eef0ebf5 0%,#eef0ebd9 40%,#eef0eb40 78%,#eef0eb26 100%)}
 @media (max-width:820px){
-  .explore .ambient::before{background-image:url(assets/film/m/190.webp?v=200c539f)}
+  .explore .ambient::before{background-image:url(assets/film/m/190.webp?v=add0995b)}
   .explore .ambient::after{background:linear-gradient(0deg,#eef0ebf5 0%,#eef0ebe6 52%,#eef0eb66 100%)}
 }
 .dawn{position:absolute;inset:0;z-index:6;pointer-events:none;background:var(--ink-0);opacity:var(--dark,0)}

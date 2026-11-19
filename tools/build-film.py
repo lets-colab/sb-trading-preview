@@ -1,7 +1,7 @@
 """Build the scroll film: the owner's reference clips (generated footage) cut into one continuous journey.
 
 Usage: python3 -I tools/build-film.py <97f87dc2.mp4> <6daa857f.mp4> <43a4edb4.mp4> <fa9b5fd6.mp4>
-Writes assets/film/d/NNN.webp (1280x720), assets/film/m/NNN.webp (405x720 centre crop), assets/film/film.json
+Writes assets/film/d/NNN.webp (1280x720), assets/film/m/NNN.webp (the 405x720 centre crop, written at 810x1440), assets/film/film.json
 (frame count, where each shot starts, the frames each join spans, and each frame's time in the soundtrack) and the
 sound: assets/film/sound.mp3 (the clips' own audio, cut exactly as the picture, so every frame has its sound at a
 known time) and assets/film/bed.mp3 (a seamless loop of the clips' steady shimmer, all in C). Then run
@@ -339,8 +339,11 @@ for sub in ('d', 'm'):
 for i, a in enumerate(frames, 1):
     im = img(a)
     im.save(os.path.join(ROOT, 'assets/film/d', f'{i:03d}.webp'), quality=72, method=6)
+    # phones: the centre crop is 405 px of the clip, which a phone stretches about 2.5x; written at twice the size with a
+    # Lanczos resample and a light unsharp mask, it reads clearly instead of soft (the owner, 19 Nov 2026)
     x = (im.width - 405) // 2
-    im.crop((x, 0, x + 405, H)).save(os.path.join(ROOT, 'assets/film/m', f'{i:03d}.webp'), quality=72, method=6)
+    crop = im.crop((x, 0, x + 405, H)).resize((810, 2 * H), Image.LANCZOS).filter(ImageFilter.UnsharpMask(radius=1.6, percent=70, threshold=2))
+    crop.save(os.path.join(ROOT, 'assets/film/m', f'{i:03d}.webp'), quality=76, method=6)
 assert len(times) == len(frames), (len(times), len(frames))
 for i in range(1, len(times)): times[i] = max(times[i], round(times[i - 1] + 0.001, 4))  # strictly later, frame by frame
 mp3(track, os.path.join(ROOT, 'assets/film/sound.mp3'), 128)
