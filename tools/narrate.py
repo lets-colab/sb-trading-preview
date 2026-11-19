@@ -3,9 +3,9 @@
 #   python3 -m venv .venv && .venv/bin/pip install kokoro-onnx soundfile faster-whisper
 #   curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
 #   curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
-#   .venv/bin/python tools/narrate.py <dir with the two model files> . <scratch dir for .wav> hm_psi
-# The site's narrator is hm_psi (an Indian English male voice, en-gb phonemes, speed 0.9: every word heard back). The three
-# family stories are not recorded here: they are the ElevenLabs storyteller "Moksh" (story-*.wav is written for comparison only).
+#   .venv/bin/python tools/narrate.py <dir with the two model files> . <scratch dir for .wav> af_heart
+# The site's narrator is af_heart ("Heart"), the voice of the owner's approved sound preview (19 Nov 2026): every line,
+# chapters, hold-for-details and the three family stories, in one voice.
 # Reads the lines from the page itself (index.html: each chapter's .say; site.js: DETAILS and STORIES), writes
 # <scratch>/<name>.wav, prints for each how many of its words Whisper (base.en) heard back, then encode to
 # assets/voice/<name>.mp3 (48 kHz mono 64 kbps, mean -20 dB; stories as bamboo/fibre/bark.mp3) and run tools/stamp.mjs.
