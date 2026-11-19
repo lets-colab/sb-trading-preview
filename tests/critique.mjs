@@ -65,12 +65,19 @@ const famY = async (p, k) => {
   // a product with no photograph of its own shows a plate saying so, not another product's photo
   await famY(p, 0); await p.waitForTimeout(1200);
   await p.evaluate(() => document.getElementById('p-woven-mats').click()); await p.waitForTimeout(900);
-  const mats = await p.evaluate(() => ({ pending: document.querySelector('.sheet-img').classList.contains('pending'), text: document.querySelector('.sheet-img').textContent.trim(), img: getComputedStyle(document.getElementById('sheetImg')).display }));
+  const mats = await p.evaluate(() => {
+    const n = document.querySelector('.sheet-img-note'), fg = getComputedStyle(n).color.match(/[\d.]+/g).map(Number);
+    const lum = ([r, g, b]) => [r, g, b].map((v) => (v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4).reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+    // against each colour the plate is painted with (its stripes), the worst case counts
+    const bgs = (getComputedStyle(n.parentElement).backgroundImage.match(/rgba?\([^)]+\)/g) || ['rgb(255,255,255)']).map((c) => c.match(/[\d.]+/g).map(Number).slice(0, 3));
+    const ratio = (b) => { const L = [lum(fg.slice(0, 3)), lum(b)].sort((x, y) => y - x); return (L[0] + 0.05) / (L[1] + 0.05); };
+    return { pending: document.querySelector('.sheet-img').classList.contains('pending'), text: n.textContent.trim(), img: getComputedStyle(document.getElementById('sheetImg')).display, contrast: +Math.min(...bgs.map(ratio)).toFixed(2) };
+  });
   await p.keyboard.press('Escape'); await p.waitForTimeout(500);
   await p.evaluate(() => document.getElementById('p-bamboo-poles').click()); await p.waitForTimeout(900);
   const poles = await p.evaluate(() => ({ pending: document.querySelector('.sheet-img').classList.contains('pending'), src: document.getElementById('sheetImg').getAttribute('src') }));
   await p.keyboard.press('Escape');
-  check(mats.pending && /Photograph to come/.test(mats.text) && mats.img === 'none' && !poles.pending && /bamboo-poles/.test(poles.src),
+  check(mats.pending && /Photograph to come/.test(mats.text) && mats.contrast >= 4.5 && mats.img === 'none' && !poles.pending && /bamboo-poles/.test(poles.src),
     `woven mats shows "Photograph to come", bamboo poles its own photo (${JSON.stringify({ mats, poles })})`);
   // Rifat: his portrait in a quiet ring, without the sci-fi halo
   const ring = await p.evaluate(() => { const r = document.querySelector('.presence-ring'); return r ? { shadow: getComputedStyle(r).boxShadow, before: getComputedStyle(r, '::before').content } : null; });

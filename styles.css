@@ -350,9 +350,9 @@ html.at-end .chapters{opacity:0;pointer-events:none}
 @keyframes sheet-in{from{opacity:0;transform:translateY(24px) scale(.98)}}
 .sheet-img{position:relative;margin:0;min-height:100%;max-height:72svh;overflow:hidden}
 .sheet-img-note{display:none}
-.sheet-img.pending{display:grid;place-items:center;background:repeating-linear-gradient(135deg,#0a1a2c 0 14px,#0d1f33 14px 28px)}
+.sheet-img.pending{display:grid;place-items:center;background:repeating-linear-gradient(135deg,#e4e8e1 0 14px,#eef0eb 14px 28px)} /* the drawer is paper: a light plate */
 .sheet-img.pending img{display:none}
-.sheet-img.pending .sheet-img-note{display:block;margin:0;padding:10px 16px;border:1px solid var(--line);border-radius:var(--r-pill);font-size:14px;color:var(--mist)}
+.sheet-img.pending .sheet-img-note{display:block;margin:0;padding:10px 16px;border:1px solid var(--ink-line);border-radius:var(--r-pill);background:#ffffffb3;font-size:14px;color:var(--ink)}
 .sheet-img img{width:100%;height:100%;object-fit:cover}
 .sheet-body{padding:clamp(24px,4vw,44px);display:flex;flex-direction:column;justify-content:center}
 .sheet-body h3{font-size:clamp(32px,3.6vw,48px)}
