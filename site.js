@@ -7,7 +7,7 @@ import { createRifat } from './assets/rifat.js?v=0e796418';
 
 // Every file is loaded at a versioned address (?v= and a hash of its contents, kept current by tools/stamp.mjs), so a
 // returning visitor's cache can never pair this page with an old file. The film's frames share one tag for the folder.
-const FILM = 'assets/film/?v=200c539f', filmFile = (p) => FILM.replace('?', `${p}?`);
+const FILM = 'assets/film/?v=add0995b', filmFile = (p) => FILM.replace('?', `${p}?`);
 const root = document.documentElement;
 root.classList.add('js');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -91,6 +91,19 @@ const famY = async (p, k) => {
   check(note && note.display !== 'none' && note.onScreen, `on a phone, Products shows the note that names and photographs are being confirmed (${JSON.stringify(note)})`);
   await ctx.close();
 }
+{ // phone: the ring labels are compact, but the specimen's plate still says "Tap to open" (Codex on #24)
+  const [ctx, p] = await open({ width: 390, height: 844 }, true);
+  await p.tap('.gate-enter');
+  for (const name of ['The showroom', 'Inside']) {
+    await p.waitForFunction(() => document.querySelector('.hud-name')?.textContent !== '', null, { timeout: 15000 }).catch(() => {});
+    await p.waitForTimeout(2500); await p.tap('.hud-next');
+    await p.waitForFunction((n) => document.querySelector('.hud-name')?.textContent === n, name, { timeout: 15000 }).catch(() => {});
+  }
+  await p.waitForFunction(() => document.querySelector('.spot.on.cover'), null, { timeout: 15000 }).catch(() => {});
+  const plate = await p.evaluate(() => { const l = document.querySelector('.spot.on.cover .story-label'), r = l?.getBoundingClientRect(); return l && { text: l.textContent, w: Math.round(r.width), h: Math.round(r.height) }; });
+  check(plate && /Tap to open/.test(plate.text) && plate.w > 40 && plate.h > 8, `on a phone the specimen's plate shows "Tap to open" (${JSON.stringify(plate)})`);
+  await ctx.close();
+}
 await browser.close(); server.close();
 console.log(failures ? `\n${failures} failing` : '\nall passing');
 process.exit(failures ? 1 : 0);

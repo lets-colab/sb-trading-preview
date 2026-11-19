@@ -18,7 +18,7 @@ let failures = 0;
 // measures the element matched by sel (the n-th, visible) against what is behind it
 async function measure(p, name, where, sel, n = 0) {
   const box = await p.evaluate(([s, k]) => {
-    const el = [...document.querySelectorAll(s)].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; })[k];
+    const el = [...document.querySelectorAll(s)].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 1 && r.height > 1 && getComputedStyle(e).visibility !== 'hidden'; })[k]; // a 1px box is text kept for screen readers only, not shown
     if (!el) return null;
     document.querySelectorAll('[data-measure]').forEach((e) => e.removeAttribute('data-measure'));
     el.setAttribute('data-measure', '');
