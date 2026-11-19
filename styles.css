@@ -614,7 +614,7 @@ html.in-film .top .sound-toggle,html.in-film .top .menu-toggle{background:transp
   .spot-tag{left:58px;top:-30px;gap:0;padding:5px 11px;border-radius:var(--r-pill)}
   .spot.flip .spot-tag{right:58px}
   .spot-name{font-size:16px}
-  .spot .story-label,.spot-hold{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .spot:not(.cover) .story-label,.spot-hold{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap} /* the specimen's plate keeps "Tap to open" */
 }
 @media (prefers-reduced-motion:reduce){.gate-art .ln{animation:none;stroke-dashoffset:0}.gate-art .spin{animation:none;opacity:1}}
 
