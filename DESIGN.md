@@ -179,7 +179,7 @@ The token block below is the source of truth and mirrors styles.css `:root` exac
 
 ```css
 /* tokens: parsed by tests/tokens.mjs; one custom property per line */
---blue: #004a98;            /* Brand Blue from the proposal palette; declared, not referenced by any rule (reserve) */
+--blue: #004a98;            /* Brand Blue: the accent on the light grounds only (Explore's paper gallery and the white drawer), where fibre on paper is too faint */
 --blue-glow: #1d64b3;       /* brighter Brand Blue for glow; declared, not referenced (reserve) */
 --ink-0: #051222;           /* page ground; html/body background; text on fibre fills; skip link text, sheet close fill */
 --ink: #081c31;             /* Deep Ink step 1; declared, not referenced (reserve) */
@@ -201,7 +201,7 @@ The token block below is the source of truth and mirrors styles.css `:root` exac
 --ink-dim: #081c31b8;        /* secondary text on the showroom (Deep Ink at 72%; 6.3:1 on wall) */
 --ink-line: #081c3124;       /* hairline on the showroom: chips, plinth, arrows */
 --error: #a8261c;            /* field errors on light surfaces (the spec drawer's quote form); 6.5:1 on paper over wall */
---signal: #5fd3e0;    /* thin overlay lines on the film (the gate's reticle, the rings, "Hear its story"), after the owner's beam reference; never text on light grounds */
+--signal: #5fd3e0;    /* thin overlay lines on the film (the rings and their leader lines, "Hear its story"), after the owner's beam reference; never text on light grounds */
 --display: "Gloock",Georgia,serif;                      /* display family: h1 to h3, card and step titles */
 --text: "Schibsted Grotesk",system-ui,sans-serif;       /* text family: body, UI, labels */
 --ease: cubic-bezier(.16,1,.3,1);       /* default easing: expo-out for state changes and entrances */
@@ -237,17 +237,17 @@ Token count: 28 (16 colour, 2 font family, 2 easing, 1 spacing, 4 radius, 3 z-in
 |---|---|---|---|
 | cloud on ink-0 | 17.60:1 | pass | pass |
 | dim on ink-0 | 8.28:1 | pass | pass |
-| faint on ink-0 | 3.90:1 | **fail** | pass |
+| faint on ink-0 | 6.05:1 | pass | pass |
 | ink-0 on fibre | 10.46:1 | pass | pass |
 | cloud on Rifat bubble `#13355a` | 11.66:1 | pass | pass |
 | error text `#f6b8a6` on ink-0 | 11.04:1 | pass | pass |
 | dim on ink-2 | 6.91:1 | pass | pass |
-| faint on ink-2 | 3.61:1 | **fail** | pass |
+| faint on ink-2 | 5.24:1 | pass | pass |
 
-faint passes only for large text and non-text UI. In the shipped build it also sets small readable text (film and study disclosure labels at 12px, the explore note at 13px, ticket field names and empty values at 15px, inactive chapter links at 12px). That is recorded as drift, not as permission.
+faint (Mist at 60%) passes AA for body text on the dusk grounds (6.05:1 on ink-0, 5.24:1 on ink-2, 4.97:1 on the ticket), measured on 18 Nov 2026; earlier figures (3.90:1) were for a lighter alpha. It stays the quietest voice: disclosure labels, inactive chapters, empty ticket values.
 
 ### Named Rules
-**The One Warm Voice Rule.** fibre is the only accent. Anything actionable, active or emphasised is fibre or sits on fibre; there is no second accent hue.
+**The One Warm Voice Rule.** On the dusk grounds fibre is the only accent: anything actionable, active or emphasised is fibre or sits on fibre. On the light grounds (Explore's gallery, the drawer) Brand Blue takes that role, because fibre on paper is too faint; the two never share a surface. Signal cyan is for thin lines over the film only.
 
 **The Ink-on-Fibre Rule.** Text on a fibre fill is always ink-0, never cloud.
 
@@ -285,7 +285,7 @@ A single scroll story in five chapters (Arrive, Discover, Transition, Explore, E
 - **Explore:** a 420vh section with one sticky 100svh stage holding three stacked families. Each family is a two-column grid (1.05fr text / 0.95fr arch, gap clamp(24px, 5vw, 80px)). At 820px and below the arch moves above the text at 38svh.
 - **Ordering:** max-width 1360px, three equal columns joined by a drawn fibre line; one column with a left rule at 820px and below.
 - **Enquire:** max-width 1120px; chat and ticket in a 1.5fr / 1fr grid, single column at 900px and below. Plain form rows are two columns, one at 640px and below.
-- **Breakpoints observed:** 900px (header menu, Rifat stack), 820px (explore and steps stack), 720px (chapter bar condenses), 700px (sheet stacks), 640px (family cards, form rows, messages), 520px (sound label hidden).
+- **Breakpoints observed:** 900px (header menu, Rifat stack), 820px (explore and steps stack), 720px (chapter bar condenses), 700px (sheet stacks), 640px (form rows, messages), 520px (sound label hidden).
 - **Layers:** skip link 60, header 40, chapter bar 38 (z tokens). The chapter bar fades out once the visitor is within 15% of a viewport from the end (`at-end`).
 
 ## Elevation & Depth
@@ -294,11 +294,10 @@ Depth is atmospheric: translucent ink over the ground, background blur, and long
 
 ### Shadow Vocabulary
 - **Deep float** (`box-shadow: 0 40px 120px #000a, 0 0 0 1px #d7be9326`): the arch window; the chat panel uses `0 40px 120px #0008`.
-- **Card float** (`box-shadow: 0 20px 60px #0007, inset 0 1px 0 #ffffff1f`): family cards, with `backdrop-filter: blur(14px)`.
 - **Dropdown** (`box-shadow: 0 24px 60px #0009`): mobile nav panel.
 - **Accent lift** (`box-shadow: 0 12px 32px #d7be9333`): primary button hover only.
 - **Fibre glow** (`box-shadow: 0 0 0 8px #d7be931f, 0 0 32px #d7be9366`): lit ordering node; the orb uses a scaled fibre glow.
-- **Blur steps:** 14px (family cards), 12px (chat panel), 10px (sheet backdrop), 46px on the ambient explore photographs.
+- **Blur steps:** 12px (chat panel), 10px (sheet backdrop), 46px on the ambient explore photographs.
 
 ### Named Rules
 **The Glass Over Ink Rule.** A floating panel is ink glass plus blur plus a hairline, never an opaque light card.
@@ -316,7 +315,7 @@ Fixed, transparent-to-ink gradient (`#051222d9` to transparent), padding 14px gu
 - **Brand mark:** the derived light mark at 38px height with a soft drop shadow, plus "SB Trading" in grotesk 600 16px; the name hides at 900px and below. The light mark is pending owner approval.
 - **Nav:** the client brief's three links, About Us, Products, Contact Us (`tests/copy.mjs` holds them); pill links, min-height 44px, 500 15px, dim; hover cloud on `#dbeaf614`.
 - **Menu toggle (900px and below):** bordered pill (line hairline, `#05122299`), toggles `aria-expanded`. The nav becomes an ink-2 dropdown panel (r-md, line border, dropdown shadow) with 48px cloud links; hidden only when JS is on and it is not `open`. Escape closes and returns focus.
-- **Sound toggle:** bordered pill with four 2px bars. `aria-pressed="true"` turns the border fibre and animates the bars in fibre (1.1s ease-in-out, staggered 0.18s). Label hides at 520px and below. Sound is off until pressed; the status hint below it is an ink-2 pill that hides when empty.
+- **Sound toggle:** bordered pill with four 2px bars. `aria-pressed="true"` turns the border fibre and animates the bars in fibre (1.1s ease-in-out, staggered 0.18s). Label hides at 520px and below. Sound is on by default (the owner, 18 Nov 2026): it starts at the visitor's first click, tap or key, and a visitor's "off" is remembered; the status hint below it is an ink-2 pill that hides when empty.
 - **Ask Rifat:** small primary button with the extra-small orb.
 
 ### Buttons
@@ -330,9 +329,6 @@ Fixed, transparent-to-ink gradient (`#051222d9` to transparent), padding 14px gu
 ### Chips
 - **Product chip:** pill, min-height 46px (40px on phones), line border, `#05122266` fill, cloud 500 15px, with a fibre "+" after the label. Hover: fibre fill, ink-0 text, lift -2px, "+" turns 90deg. Opens the product sheet.
 - **Reply chip (Rifat):** pill, min-height 40px, 14px, line border, `#05122266`; hover fibre fill, ink-0 text (0.25s). Sits in a horizontally scrolling row with a right-edge fade mask; the row hides when empty.
-
-### Family cards
-Three glass cards in the last film beat (3 columns, 1 column at 640px and below as 64px rows). Ink glass gradient, `#dbeaf633` border, 14px blur, card-float shadow, r-md. Photograph masked in from the right at 62% width. Title in Gloock. Hover: lift -4px, fibre border, photo scales 1.06 (0.8s), arrow disc fills fibre.
 
 ### Arch window
 The explore image frame (see Shapes). Two stacked photographs per family cross-fade with scroll progress t. Motion states, set by site.js:
@@ -397,9 +393,9 @@ Under each family's arch in Explore: a glass pill (glass, 12px blur, line border
 - **Do** label generated, stock or unconfirmed media and product facts in place, as the film and study labels do.
 
 ### Don't:
-- **Don't** set readable small text in faint; it measures 3.90:1 on the ground.
+- **Don't** set text a buyer must act on in faint: it passes AA but reads as secondary.
 - **Don't** italicise or synthesise Gloock.
-- **Don't** introduce a second accent hue or fill surfaces with Brand Blue; blue lives in the ground glow.
+- **Don't** put fibre and Brand Blue on the same surface, or fill large surfaces with Brand Blue; on dusk grounds blue lives only in the ground glow.
 - **Don't** use hard or offset shadows; depth here is soft and atmospheric.
 - **Don't** recolour or redraw the SB Trading logo or mark; the light knockout is the only derivative and awaits owner approval.
 

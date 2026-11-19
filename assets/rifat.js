@@ -11,7 +11,7 @@ export const PRODUCTS = [
   'Grade A: banana silk', 'Grade B: standard banana fibre yarn', 'Grade C: industrial banana fibre yarn',
   'Banana bark', 'Banana leaves', 'Not sure yet',
 ];
-const LABELS = { products: 'Products', quantity: 'Quantity', country: 'Deliver to', name: 'Name', email: 'Email', company: 'Company', notes: 'Requirements' };
+const LABELS = { products: 'Products', quantity: 'Quantity', country: 'Deliver to', name: 'Name', email: 'Email', company: 'Company', notes: 'Requirements', questions: 'Questions for the team' };
 const REQUIRED = ['products', 'country', 'name', 'email'];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const STEPS = [
@@ -195,7 +195,7 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
   async function guide(text) {
     if (/^send on whatsapp$/i.test(text)) { if (number && isReady(enquiry)) { wa.click(); return rifatSays('WhatsApp is opening with your enquiry filled in. Send it there, and SB Trading’s team replies on WhatsApp.'); } }
     if (/^copy enquiry$/i.test(text)) { await copy(); return rifatSays('Copied. Paste it into an email or message to SB Trading.', ['Change something']); }
-    if (/^change something$/i.test(text)) { changing = null; adding = false; return rifatSays('What would you like to change?', Object.values(LABELS)); }
+    if (/^change something$/i.test(text)) { changing = null; adding = false; return rifatSays('What would you like to change?', Object.entries(LABELS).filter(([k]) => k !== 'questions').map(([, v]) => v)); }
     if (/^add another product$/i.test(text)) {
       adding = true;
       const rest = PRODUCTS.filter((p) => p !== 'Not sure yet' && !(enquiry.products || []).includes(p));
@@ -214,7 +214,9 @@ export function createRifat({ root, whatsapp = '', cue = () => {}, reduced = fal
     const step = changing ? STEPS.find((s) => s.key === changing) : nextStep();
     if (!step) return askNext();
     if (TEAM_ONLY.test(text) && /\?|^(what|how|can|do|is|are)\b/i.test(text)) {
-      return askNext('SB Trading’s team confirms prices, minimum orders, shipping, lead times and certifications with the quotation, so I can’t answer that myself. I can make sure your question reaches them. ');
+      // the promise is kept: the question goes into the enquiry the team receives
+      merge({ questions: [enquiry.questions, text.trim().slice(0, 300)].filter(Boolean).join(' · ').slice(0, 600) });
+      return askNext('SB Trading’s team confirms prices, minimum orders, shipping, lead times and certifications with the quotation, so I can’t answer that myself. I’ve added your question to the enquiry for the team. ');
     }
     // a question, not an answer: reply from the knowledge base, then return to the step (never file it as a field)
     if (/\?\s*$|^(what|how|who|why|where|when|which|do|does|can|could|is|are|tell me)\b/i.test(text) && step.key !== 'notes') {

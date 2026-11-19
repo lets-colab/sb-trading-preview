@@ -25,7 +25,7 @@ A cinematic scroll story for SB Trading (bamboo, banana fibre yarn, banana bark 
 ## Hard rules (the owner's constraints; keep them)
 1. **No invented company facts.** Names, grades, specs, prices, lead times, origin, minimum order, certifications and contact details come from SB Trading only. Anything unconfirmed is shown as "to be confirmed", never made up. (The early AI drafts invented tensile grades, HS codes, "100% certified" and a $200 price; none of that is used.)
 2. **Real photographs only for products.** There is no photo of banana bark or woven mats yet; the rows say so. Label any generated or illustrative image as such.
-3. **Sound is opt-in** (no autoplay). Every immersive layer (film, 3D, sound, smooth scroll) must have a reduced-motion and no-JavaScript path.
+3. **Sound is on by default, with a Sound switch to turn it off** (the owner, 18 Nov 2026). It starts at the visitor's first click, tap or key (browsers allow no earlier audio), and a visitor's "off" is remembered (`localStorage` `sb-sound`; `tests/sound-default.mjs`). Every immersive layer (film, 3D, sound, smooth scroll) must have a reduced-motion and no-JavaScript path.
 4. **Self-hosted only:** no CDNs, fonts or analytics from third parties.
 5. **WCAG 2.2 AA.** No logo or wordmark redrawing. `assets/img/sb-logo*.webp` / `sb-mark*.webp` are the owner's original file with only the white background removed; `-light` is the same mark knocked out to Cloud White for dark grounds (derived, awaiting owner approval). Never recolour or redraw beyond that.
 6. Do not deploy to a new place, add paid services or keys, or change DNS without the owner's approval. Never put secrets in the repo or in chat.
@@ -40,7 +40,7 @@ assets/rifat.js       Rifat on the page: AI mode (calls /api/rifat) or labelled 
 src/rifat-fn.js       Pages Function source (Anthropic TypeScript SDK) -> functions/api/rifat.js (generated, committed; edit the source)
 src/materials3d.js    3D studies (three.js r187)        -> assets/materials3d.js
 src/smooth.js         Lenis re-export                   -> assets/vendor/smooth.js
-assets/sound.js       opt-in sound (lazy-loaded on the Sound press): tanpura/santoor/bansuri score in Bhupali on C, the film's own sound (sound.mp3, bed.mp3, film.json times), generated fallbacks (FILM_CUES in site.js), tactile cues
+assets/sound.js       sound, on by default (lazy-loaded at the visitor's first gesture): tanpura/santoor/bansuri score in Bhupali on C, the film's own sound (sound.mp3, bed.mp3, film.json times), generated fallbacks (FILM_CUES in site.js), tactile cues
 assets/img/cutout/    3D specimen cut-outs (tools/build-cutouts.py); src/specimens.js -> assets/vendor/specimens.js (three.js 0.186.0, MIT)
 assets/film/{d,m}/    217 WebP frames built by tools/build-film.py from the four reference clips (97f87dc2 grove and showroom, 6daa857f hall/split/vortex, 43a4edb4 yarn and bark, fa9b5fd6 dome), joined by camera moves, with the soundtrack cut to match; film.json holds shot starts and the specimen-card track. The drawn card (misspelt) is blurred out; the page lays the real card over it. Clips' drawn drawers/forms and AI presenter are not used. Do NOT use gemini_generated_video_9f29a4ec (owner withdrew it).
 assets/img/           five real product photographs + logo variants (see rule 5)
@@ -60,7 +60,7 @@ docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions
 ## Commands
 ```bash
 npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
-CHROMIUM_PATH=<chrome> npm test                          # 336 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast of every line over the film, accessibility (axe), version tags, smoke on desktop + phone (incl. the gate, chapters, rings, film label, dust, spec drawer)
+CHROMIUM_PATH=<chrome> npm test                          # 363 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast of every line over the film, accessibility (axe), version tags, smoke on desktop + phone (incl. the gate, chapters, rings, film label, dust, spec drawer)
 node tools/stamp.mjs                                      # after changing any file the page loads: renews its ?v= version tag (npm run build runs it; npm test fails while a tag is stale)
 node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector: 10 findings, all documented intent
 cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)

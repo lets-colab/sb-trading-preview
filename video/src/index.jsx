@@ -166,7 +166,7 @@ const Film = () => {
         <Sequence durationInFrames={96}><Open /></Sequence>
         <Sequence from={96} durationInFrames={108}><Family fam={0} dur={108} title="Bamboo" lede="Everything SB Trading supplies begins as a living plant, in Bangladesh." chips={['Bamboo poles', 'Bamboo splits', 'Ski poles', 'Woven mats']} /></Sequence>
         <Sequence from={204} durationInFrames={108}><Family fam={1} dur={108} title="Banana fibre yarn" lede="Watch the long fibres gather, and twist together into yarn." chips={['Grade A: banana silk', 'Grade B: standard banana fibre yarn', 'Grade C: industrial banana fibre yarn']} /></Sequence>
-        <Sequence from={312} durationInFrames={96}><Family fam={2} dur={96} title="Banana bark and leaves" lede="Beside the yarn, a sheet of dried banana bark, its veins still showing." chips={['Banana bark', 'Banana leaves']} /></Sequence>
+        <Sequence from={312} durationInFrames={96}><Family fam={2} dur={96} title="Banana bark and leaves" lede="Beside the yarn, a dried leaf, its fine veins catching the light." chips={['Banana bark', 'Banana leaves']} /></Sequence>
         <Sequence from={408}><End /></Sequence>
       </AbsoluteFill>
       <div style={{ position: 'absolute', right: 40, bottom: 36, padding: '10px 18px', borderRadius: 999, background: c.glass, border: `1px solid ${c['line-2']}`, color: c.dim, font: `400 20px/1.2 ${text}` }}>{label}</div>

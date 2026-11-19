@@ -41,7 +41,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   p.on('response', (r) => { if (r.status() >= 400 && !r.url().endsWith('/api/rifat')) errors.push(`${r.status()} ${r.url()}`); });
   p.on('request', (r) => { const u = r.url(); if (!u.startsWith(ORIGIN) && !u.startsWith('data:') && !u.startsWith('blob:')) external.push(u); });
   await p.goto(ORIGIN + '/'); await p.waitForTimeout(3000);
-  check((await p.evaluate(() => window.__ac)) === 0, `${name}: no AudioContext before the Sound press`);
+  check((await p.evaluate(() => window.__ac)) === 0, `${name}: no AudioContext before the visitor's first gesture`);
   // the film names the source of the shot on screen (stock or generated), and never claims it as SB Trading's own
   const labelAt = async (x, want) => {
     await p.evaluate((q) => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * q); }, x);
@@ -108,7 +108,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.waitForFunction(() => Number(getComputedStyle(document.querySelector('.gate h1')).opacity) > 0.95, null, { timeout: 5000 }).catch(() => {});
     const after = await q.evaluate(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect();
       return { intro: document.documentElement.classList.contains('gate-intro'), phase: document.querySelector('.gate-3d')?.dataset.phase, title: Number(getComputedStyle(document.querySelector('.gate h1')).opacity), p: +(-r.top / (r.height - innerHeight)).toFixed(3), ac: window.__ac }; });
-    check(before && !after.intro && after.phase === 'grove' && after.title > 0.95 && after.p < 0.01 && !after.ac,
+    check(before && !after.intro && after.phase === 'grove' && after.title > 0.95 && after.p < 0.01, // with Sound on by default the click may start the sound; it must not enter the film
       `${name}: a ${touch ? 'tap' : 'click'} during the opening skips to the title and does not enter the film (${JSON.stringify({ before, ...after })})`);
     await q.close();
   }
@@ -151,7 +151,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
         hiddenStops: [...document.querySelectorAll('#film .beat[data-ch] a[href], #film .beat[data-ch] button')].filter((el) => el.getClientRects().length > 0 && !el.closest('[inert]')).map((el) => el.textContent.trim()) };
     });
     check(gate.hiddenStops.length === 0, `${name}: no link or button hidden in the film's chapters is a keyboard stop (${JSON.stringify(gate.hiddenStops)})`);
-    check(gate.title === 'From leaf to fibre.' && gate.enter === 'Click to enter' && gate.lines > 40 && gate.drawn === gate.lines && gate.foot,
+    check(gate.title === 'From leaf to fibre.' && gate.enter === (touch ? 'Tap to enter' : 'Click to enter') && gate.lines > 40 && gate.drawn === gate.lines && gate.foot,
       `${name}: the film opens on a gate drawn in fine lines, with its title and "Click to enter" (${JSON.stringify({ title: gate.title, enter: gate.enter, lines: gate.lines, drawn: gate.drawn })})`);
     { // the gate is live 3D: a wireframe drawn every frame (counted on the canvas), turning toward the pointer
       const lit = () => q.evaluate(() => { const c = document.querySelector('.gate-3d'); if (!c) return { live: false };
@@ -207,6 +207,21 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       check(held.on && held.title === 'Bamboo' && ['Bamboo poles', 'Bamboo splits', 'Ski poles', 'Woven mats'].every((p) => held.items.includes(p)) && !flat(held.zoom) && /^Bamboo: poles, splits/.test(held.sub) && held.others === 0,
         `${name}: holding the bamboo ring leans the scene in and fades in a glass board with bamboo's products as the narrator reads them (${JSON.stringify(held)})`);
       check(!gone.on && flat(gone.zoom) && !gone.sub && !gone.story, `${name}: letting go returns the scene, and the release is not taken as a tap (${JSON.stringify(gone)})`);
+      // every case holds its own board, not only bamboo: banana fibre yarn and bark too, each with its products, no error
+      const boards = [];
+      for (const [key, title, count] of [['fibre', 'Banana fibre yarn', 3], ['bark', 'Banana bark and leaves', 2]]) {
+        const at = await q.evaluate((k) => { const r = document.querySelector(`.spot.on[data-key="${k}"]`)?.getBoundingClientRect(); return r && { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, key);
+        if (!at) { boards.push({ key, ring: false }); continue; }
+        const errs = qErrors.length;
+        if (touch) await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: at.x, y: at.y }] }); else { await q.mouse.move(at.x, at.y); await q.mouse.down(); }
+        await q.waitForTimeout(1400);
+        const got = await q.evaluate(() => { const b = document.querySelector('.board'); return { on: !!b?.classList.contains('on'), title: b?.querySelector('.board-title')?.textContent, items: b?.querySelectorAll('.board-list li').length || 0 }; });
+        if (touch) await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); else await q.mouse.up();
+        await q.waitForTimeout(1400);
+        await q.waitForFunction(() => /^(none|matrix\(1, 0, 0, 1, 0, 0\))$/.test(getComputedStyle(document.querySelector('.film-canvas')).transform), null, { timeout: 5000 }).catch(() => {});
+        boards.push({ key, ...got, ok: got.on && got.title === title && got.items === count && qErrors.length === errs });
+      }
+      check(boards.length === 2 && boards.every((x) => x.ok), `${name}: holding the banana fibre and bark rings opens their own boards too, with no error (${JSON.stringify(boards)})`);
     }
     // a ring tells that material's story, with its words as the subtitle; pressing again stops it
     await q.click('.spot.on[data-key="bamboo"]');
@@ -222,7 +237,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.waitForTimeout(2600);
     const inside = await q.evaluate(() => { const s = document.querySelector('.spot.on'); return { idx: document.querySelector('.hud-n').textContent, plate: s?.classList.contains('cover') && s.textContent.trim(), rings: document.querySelectorAll('.spot.on').length }; });
     inside.p = await prog();
-    check(Math.abs(inside.p - 0.407) < 0.004 && inside.idx === '03' && /Click to open/.test(inside.plate || '') && inside.rings === 1,
+    check(Math.abs(inside.p - 0.407) < 0.004 && inside.idx === '03' && new RegExp(`${touch ? 'Tap' : 'Click'} to open`).test(inside.plate || '') && inside.rings === 1,
       `${name}: inside, a plate over the footage's own prompt says "Click to open", and no family ring repeats (${JSON.stringify(inside)})`);
     // the plate opens it: the camera flies through the opening to the fibres twisting into yarn
     // a flight recorder for the longest flight: the scroll each frame and anything that could stop it (shown on a failure)
@@ -252,11 +267,11 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     // a click anywhere on the picture moves on
     const stage = await q.evaluate(() => { const r = document.querySelector('.film-stage').getBoundingClientRect(); return { x: r.width * 0.5, y: r.height * 0.2 }; });
     if (touch) await q.touchscreen.tap(stage.x, stage.y); else await q.mouse.click(stage.x, stage.y);
-    await q.waitForFunction(() => document.querySelector('.hud-name').textContent === 'Bark and leaves', null, { timeout: 8000 }).catch(() => {});
+    await q.waitForFunction(() => document.querySelector('.hud-name').textContent === 'A dried leaf', null, { timeout: 8000 }).catch(() => {});
     await q.waitForTimeout(2600);
     check(Math.abs((await prog()) - 0.787) < 0.004, `${name}: a click on the picture flies to the next chapter (${await prog()})`);
     // after the last chapter, "Continue to the materials" leaves the film for Explore, and stays there
-    for (const ch of ['The whole range']) { await q.click('.hud-next'); await q.waitForFunction((c) => document.querySelector('.hud-name').textContent === c, ch, { timeout: 8000 }).catch(() => {}); await q.waitForTimeout(2600); }
+    for (const ch of ['All together']) { await q.click('.hud-next'); await q.waitForFunction((c) => document.querySelector('.hud-name').textContent === c, ch, { timeout: 8000 }).catch(() => {}); await q.waitForTimeout(2600); }
     const last = await q.evaluate(() => document.querySelector('.hud-next').textContent.trim());
     await q.click('.hud-next');
     // the flight takes 1.6 s; a slow machine takes longer, so wait (up to 12 s) for it to land, then check it stays
@@ -285,8 +300,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const stopped = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), shown: !document.querySelector('.story-caption').hidden }));
     check(btn === 'Hear its story' && playing.pressed === 'true' && playing.shown && /banana plant/i.test(playing.cap) && playing.audio && stopped.pressed === 'false' && !stopped.shown,
       `${name}: "Hear its story" narrates banana bark and leaves with subtitles, and stops on a second press (${JSON.stringify({ btn, playing, stopped })})`);
-    { // switching Sound off also silences a story that Sound started (Codex finding on #18)
-      await p.click('#soundToggle'); await p.waitForTimeout(800);
+    { // switching Sound off also silences a story that Sound started (Codex finding on #18); Sound is on by default
+      if (await p.evaluate(() => document.getElementById('soundToggle').getAttribute('aria-pressed')) !== 'true') await p.click('#soundToggle'); await p.waitForTimeout(800);
       await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(800);
       const on = await p.evaluate(() => !!window.__story && !window.__story.paused);
       await p.click('#soundToggle'); await p.waitForTimeout(500);
@@ -503,6 +518,13 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const said = (await p.textContent('#rifatLog')).slice(before);
     check(/three steps/i.test(said) && /quotation/i.test(said), `${name}: in guided mode Rifat answers "How does ordering work?" from its knowledge base (${said.slice(0, 90).replace(/\s+/g, ' ')})`);
   }
+  { // a question only the team can answer is not dropped: Rifat files it in the enquiry for the team, and says so
+    const before = (await p.textContent('#rifatLog')).length;
+    await say('What is the price per tonne?');
+    const said = (await p.textContent('#rifatLog')).slice(before), t = await p.textContent('#ticketList');
+    check(/added your question to the enquiry/i.test(said) && /Questions for the team/.test(t) && /price per tonne/i.test(t),
+      `${name}: a price question goes into the enquiry for the team, and Rifat says so (${said.slice(0, 120).replace(/\s+/g, ' ')} | ${t.replace(/\s+/g, ' ').slice(0, 160)})`);
+  }
   await say('5 tonnes'); await say('Japan'); await say('Test Buyer'); await say('not-an-email');
   check(/doesn.t look like an email/.test(await p.textContent('#rifatLog')), `${name}: Rifat rejects a malformed email`);
   await say('buyer@example.com'); await say('Skip'); await say('Nothing else');
@@ -521,6 +543,16 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   check((await p.evaluate(() => document.querySelectorAll('.err:not(:empty)').length)) >= 3, `${name}: empty required fields show inline errors`);
   check((await p.textContent('#summary')) === '', `${name}: an invalid form prepares nothing`);
   check((await p.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, `${name}: no horizontal overflow`);
+  { // past the film the header is solid, so the page's text never shows through it (critique, 18 Nov 2026)
+    const top = await p.evaluate(() => ({ inFilm: document.documentElement.classList.contains('in-film'), bg: getComputedStyle(document.querySelector('.top')).backgroundColor }));
+    const alpha = Number((top.bg.match(/rgba?\(([^)]+)\)/)?.[1].split(',')[3] ?? 1));
+    check(!top.inFilm && alpha >= 0.9, `${name}: past the film the header has a solid background (${JSON.stringify(top)})`);
+  }
+  if (touch) { // touch screens: every control people tap is at least 44px tall
+    const small = await p.evaluate(() => [...document.querySelectorAll('.top .brand, .top .sound-toggle, .top .menu-toggle, .top>.btn-small, .product, .foot a, .rifat-restart')]
+      .filter((e) => e.getClientRects().length && e.getBoundingClientRect().height < 44).map((e) => `${e.className || e.tagName}:${Math.round(e.getBoundingClientRect().height)}`));
+    check(small.length === 0, `${name}: header controls, products, footer links and "Start again" are at least 44px tall (${JSON.stringify(small)})`);
+  }
 
   if (!touch) {
     check(await p.evaluate(() => document.documentElement.classList.contains('has-3d')), `${name}: the 3D studies load`);
@@ -608,8 +640,8 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const afterShift = await focused();
     check(backArrow === 'Next family: Banana fibre yarn' && backStory === 'Hear its story' && afterShift === 'Woven mats', `${name}: Shift+Tab returns through Bamboo's plinth arrow and story to its products (focus: ${backArrow} -> ${backStory} -> ${afterShift})`);
-    await p.click('#soundToggle'); await p.waitForTimeout(1200);
-    check((await p.evaluate(() => window.__ac)) === 1, `${name}: pressing Sound creates the audio context`);
+    await p.click('#soundToggle'); await p.waitForTimeout(1200); // switched off above: this turns it back on
+    check((await p.evaluate(() => window.__ac)) === 1, `${name}: one audio context, made at the visitor's first gesture and reused when Sound comes back on`);
     const playing = await p.waitForFunction(() => document.documentElement.dataset.score === 'playing', null, { timeout: 6000 }).then(() => true, () => false);
     check(playing, `${name}: pressing Sound starts the generated score`);
     const lit = await p.waitForFunction(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--audio')) > 0.05, null, { timeout: 8000 }).then(() => true, () => false);

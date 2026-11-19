@@ -19,7 +19,7 @@ their place), the pavilion's misspelled drawn labels (after 1.95 s), the fibre m
 showroom (fibres over bamboo culms: the yarn is banana fibre, and bamboo is never shown becoming yarn) and the clips'
 AI-generated presenter. In the hall the drawn specimen card misspells its labels ("Banglies", "Dadoin"): it is
 blurred out frame by frame, as is the small "Macro" label; so are the dome's drawn labels ("01 Sambo", "Bamnoa"),
-readouts and edge panel.
+readouts and edge panel; so are the hall's "05mm" and ring prompt, and the studio shot's readout bar and ghost panel.
 
 No join is a cross-fade. Each is a camera move that carries the eye from one shot into the next:
   grove > showroom  a bamboo culm passes close in front of the lens (a defocused occluder) and the showroom is behind it
@@ -75,19 +75,58 @@ def dome_boxes(t):
     return [tuple(a + (b - a) * u for a, b in zip(s, e)) for s, e in DOME_LABELS]
 
 
+# the hall's painted readouts: "05mm" drifting right as the camera pushes in, and the ring's prompt "[hold or scroll to
+# split fibers]" (a gesture the page does not use): clip time -> box
+MM = [(0.4, (0.69, 0.27, 0.79, 0.36)), (1.2, (0.725, 0.245, 0.82, 0.33)), (2.0, (0.80, 0.18, 0.91, 0.28)),
+      (2.6, (0.86, 0.12, 0.99, 0.24))]
+PROMPT = (0.85, 1.55, (0.36, 0.455, 0.64, 0.525))  # once the specimen splits, its pieces hide what is left of it
+
+
+def along(keys, t):
+    if t < keys[0][0] or t > keys[-1][0]:
+        return None
+    for (ta, a), (tb, b) in zip(keys, keys[1:]):
+        if ta <= t <= tb:
+            u = (t - ta) / (tb - ta)
+            return tuple(x + (y - x) * u for x, y in zip(a, b))
+    return keys[-1][1]
+
+
 def hall_boxes(t):
     boxes = []
     c = card_at(t)
     if c: boxes.append(c)
     if MACRO[0] <= t <= MACRO[1]: boxes.append(MACRO[2])
+    m = along(MM, t)
+    if m: boxes.append(m)
+    if PROMPT[0] <= t <= PROMPT[1]: boxes.append(PROMPT[2])
+    return boxes
+
+
+# the showroom's plinth fronts carry painted labels ("01 Bamboo", "02 / Banana fibre yarn", "03 / Banana bark" on a case
+# that holds bamboo, a yarn cone and bark) and arrow panels that copy the site's own: blurred (plain grey faces, so a
+# blur reads as nothing), not darkened
+PLINTHS = [(6.1, (0.14, 0.57, 0.88, 0.95)), (6.8, (0.09, 0.59, 0.92, 1.0)), (7.5, (0.0, 0.62, 0.98, 1.0)), (8.1, (0.07, 0.69, 1.0, 1.0))]
+
+
+def showroom_boxes(t):
+    b = along(PLINTHS, max(PLINTHS[0][0], min(PLINTHS[-1][0], t)))
+    return [b] if b else []
+
+
+def close_boxes(t):
+    """The studio shot opens with a painted readout bar ("RANJ-NOOSE", "OIF-01122") and a ghost spec panel: blurred."""
+    boxes = []
+    if t <= 14.3: boxes.append((0.0, 0.80, 0.74, 0.97))  # below the leaf's lower edge
+    if t <= 13.7: boxes.append((0.81, 0.10, 1.0, 0.84))
     return boxes
 
 
 SHOTS = [  # name, clip, start, end (clip seconds), fps, boxes(clip time)
     ('grove', GROVE, 0.25, 1.95, 24, None),
-    ('showroom', GROVE, 6.10, 8.10, 24, None),
+    ('showroom', GROVE, 6.10, 8.10, 24, showroom_boxes),
     ('hall', HALL, 0.40, 4.30, 24, hall_boxes),
-    ('close', STUDIO, 13.0, 15.6, 12, None),
+    ('close', STUDIO, 13.0, 15.6, 12, close_boxes),
     ('dome', DOME, 10.35, 13.2, 12, dome_boxes),
 ]
 
@@ -263,7 +302,7 @@ with tempfile.TemporaryDirectory() as tmp:
         d = os.path.join(tmp, name); os.mkdir(d)
         seg = extract(clip, a, b, fps, d)
         clip_t = [a + i / fps for i in range(len(seg))]
-        if boxes: seg = [blur_out(im, boxes(t), 1.0 if name == 'dome' else 0.62) for im, t in zip(seg, clip_t)]
+        if boxes: seg = [blur_out(im, boxes(t), 1.0 if name in ('dome', 'showroom') else 0.62) for im, t in zip(seg, clip_t)]
         seg = [arr(im) for im in seg]
         if name == 'grove': culm = culm_from(seg[-1])
         sound = audio(clip, a, b)

@@ -3,15 +3,16 @@
 // Explore stage (three families in arched windows, stage 04), the ordering fibre line, the chapter bar, and the
 // opt-in sound. Motion (motion.dev, MIT) runs reveals; Lenis (MIT) smooths wheel scrolling. Rifat (stage 05) lives
 // in assets/rifat.js. All content is in the HTML: without JavaScript, or with reduced motion, it reads as a document.
-import { createRifat } from './assets/rifat.js?v=205e2f23';
+import { createRifat } from './assets/rifat.js?v=0e796418';
 
 // Every file is loaded at a versioned address (?v= and a hash of its contents, kept current by tools/stamp.mjs), so a
 // returning visitor's cache can never pair this page with an old file. The film's frames share one tag for the folder.
-const FILM = 'assets/film/?v=d0071510', filmFile = (p) => FILM.replace('?', `${p}?`);
+const FILM = 'assets/film/?v=200c539f', filmFile = (p) => FILM.replace('?', `${p}?`);
 const root = document.documentElement;
 root.classList.add('js');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const fine = matchMedia('(pointer: fine)').matches;
+const VERB = matchMedia('(pointer: coarse)').matches ? 'Tap' : 'Click'; // the film's prompts name the gesture the visitor has
 if (!reduced) root.classList.add('motion');
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -21,13 +22,20 @@ const pointer = [0, 0], target = [0, 0];
 let lastInput = 0; // the 3D studies draw only while the visitor scrolls or moves the pointer, then settle and stop
 
 // ------------------------------------------------------------------ sound (opt-in, generated in the browser)
-// Off until the visitor asks: the click creates the audio context (browsers require a gesture); sound.js loads then.
+// On by default (the owner, 18 Nov 2026), with Sound to switch it off; a visitor's "off" is remembered (localStorage
+// 'sb-sound'). Browsers allow audio only after a gesture, so the score starts at the visitor's first click, tap or key
+// anywhere on the page (that gesture creates the audio context; sound.js loads then). A press of Sound itself is a
+// choice, not a start: it switches.
 // With sound on, a generated score plays under the cues. Its chord follows the chapter, its air follows scroll speed,
 // and two visuals answer it: --audio (its live level) brightens the light, and each mallet note leaves a ripple of
 // light where it sounds. Reduced motion keeps the music but drops both visuals.
+{ const g = document.querySelector('.gate-label'); if (g) g.textContent = `${VERB} to enter`; const n = document.querySelector('.hud-next'); if (n) n.textContent = `${VERB} to continue`; }
 const sound = (() => {
   const btn = $('#soundToggle'), hint = $('#soundHint'), fx = $('.score-fx');
   let actx = null, engine = null, on = false, hinted = false, scene = { chapter: 0, family: 0 }, raf = 0;
+  let want = true; // the visitor's choice: on unless they switched it off on this or an earlier visit
+  try { want = localStorage.getItem('sb-sound') !== 'off'; } catch { /* no storage: the default stands */ }
+  btn.setAttribute('aria-pressed', String(want));
   const guard = (fn) => { try { fn(); } catch (e) { console.error('sound stopped:', e); engine = null; actx?.suspend().catch(() => {}); } };
   root.dataset.score = 'off';
   function light() { // runs only while the score plays and the tab is visible
@@ -53,7 +61,7 @@ const sound = (() => {
     if (!raf) raf = requestAnimationFrame(light);
   }
   function set(v) {
-    on = v;
+    on = want = v;
     btn.setAttribute('aria-pressed', String(v));
     if (v && !actx) {
       const C = window.AudioContext || window.webkitAudioContext;
@@ -68,18 +76,25 @@ const sound = (() => {
         if (on) start();
       }).catch(() => { /* the page stays silent */ });
     }
+    if (!v) document.dispatchEvent(new CustomEvent('sb:sound', { detail: false })); // the storyteller stops too, started score or not
     if (!actx) return;
     if (v) { actx.resume().catch(() => {}); if (engine) { guard(() => engine.cue('toggle', 0.5)); start(); } }
-    if (v && !hinted) { hinted = true; hint.textContent = 'Sound on: a generated score and cues, best on headphones'; setTimeout(() => { hint.textContent = ''; }, 3600); }
+    if (v && !hinted) { hinted = true; hint.textContent = 'Sound on: a score, narration and cues, best on headphones. Press Sound to switch it off'; setTimeout(() => { hint.textContent = ''; }, 3600); }
     if (!v) {
       if (engine) guard(() => engine.music(false));
-      document.dispatchEvent(new CustomEvent('sb:sound', { detail: false })); // the storyteller stops too
       root.dataset.score = 'off'; root.style.setProperty('--audio', '0');
       fx?.replaceChildren();
       setTimeout(() => { if (!on && actx.state === 'running') actx.suspend().catch(() => {}); }, 1700); // after the fade
     }
   }
-  btn.addEventListener('click', () => set(!on));
+  btn.addEventListener('click', () => { set(!want); try { localStorage.setItem('sb-sound', want ? 'on' : 'off'); } catch { /* not remembered */ } });
+  // the first gesture anywhere else starts the sound the visitor has not switched off
+  const first = (e) => {
+    if (e.target?.closest?.('#soundToggle')) return; // a press of Sound is a choice, handled above
+    for (const t of ['pointerup', 'keydown']) removeEventListener(t, first, true);
+    if (want && !on) set(true);
+  };
+  for (const t of ['pointerup', 'keydown']) addEventListener(t, first, true);
   document.addEventListener('visibilitychange', () => {
     if (!actx || !on) return;
     (document.hidden ? actx.suspend() : actx.resume()).catch(() => {});
@@ -104,8 +119,8 @@ const sound = (() => {
     moment(frame) { let ok = false; if (on && engine?.moment) guard(() => { ok = engine.moment(frame); }); return ok; },
     /** True while the visitor has Sound on. */
     get playing() { return on; },
-    /** Turns Sound on (the gate's "Click to enter" is the visitor's gesture). */
-    enable() { if (!on) set(true); },
+    /** Starts the sound at a visitor's gesture (the gate's "Click to enter"), unless they switched it off. */
+    enable() { if (want && !on) set(true); },
     /** Lowers the score under the storyteller's voice, or brings it back. */
     duck(v) { if (on && engine?.duck) guard(() => engine.duck(v)); },
   };
@@ -292,7 +307,7 @@ const STORIES = {
   fibre: { src: 'assets/voice/fibre.mp3?v=16255d51', text: 'A banana plant fruits only once. After the harvest, its stem, layer upon layer of sheaths, is usually left to rot. Yet inside those sheaths run long, strong fibres. Weavers across Asia have drawn them out for centuries; in Okinawa, banana-fibre cloth has been prized for hundreds of years. Stripped, washed and dried, the fibre is spun into yarn, grown from what would have been waste.' },
   bark: { src: 'assets/voice/bark.mp3?v=08edcb15', text: 'Nothing of the banana plant goes to waste. Its broad leaves have served as plates and wrapping across South Asia for generations: clean, cool, and returned to the soil after use. The dried outer sheath of the stem, its bark, becomes sheets for craft, packaging and handmade paper.' },
 };
-const storyCap = $('.story-caption'), storyBtns = $$('.story'), told = new Set();
+const storyCap = $('.story-caption'), storyBtns = $$('.story');
 let storyNow = null;
 storyBtns.forEach((b) => { b.hidden = !STORIES[b.dataset.story]?.src; });
 // One voice at a time: a family's story (a "Hear its story" button, or a ring on the film) or a chapter's narration.
@@ -336,7 +351,6 @@ function speak({ key, src, text, btn = null, cap = storyCap, whole = false }) {
 function playStory(key, { btn, cap } = {}) {
   const s = STORIES[key];
   if (!s?.src) return;
-  told.add(key);
   speak({ key, src: s.src, text: s.text, btn: btn ?? $(`.story[data-story="${key}"]`), cap: cap ?? storyCap });
 }
 document.addEventListener('sb:sound', (e) => { if (!e.detail) stopStory(); }); // Sound off silences the voice too
@@ -352,7 +366,7 @@ storyBtns.forEach((b) => b.addEventListener('click', () => (storyNow?.btn === b 
 const chapters = (() => {
   const hud = $('.hud', film), spotsEl = $('.spots', film), subtitle = $('.subtitle', film);
   const hudN = $('.hud-n', film), hudName = $('.hud-name', film), hudNext = $('.hud-next', film), enter = $('.gate-enter', film);
-  const NAMES = { grove: 'The grove', showroom: 'The showroom', open: 'Inside', fibre: 'Fibre to yarn', bark: 'Bark and leaves', dome: 'The whole range' };
+  const NAMES = { grove: 'The grove', showroom: 'The showroom', open: 'Inside', fibre: 'Fibre to yarn', bark: 'A dried leaf', dome: 'All together' };
   const STORY_NAMES = { bamboo: 'Bamboo', fibre: 'Banana fibre', bark: 'Bark and leaves' };
   // Each family's ring appears once, on its own glass case in the showroom (tap: its story; hold: its products). On the
   // phone the centre crop shows the middle case: bamboo's and bark's rings are held at the screen's edges, toward their
@@ -361,7 +375,7 @@ const chapters = (() => {
     showroom: [{ key: 'bamboo', x: 0.22, y: 0.49, m: [0.1, 0.36], edge: true }, { key: 'fibre', x: 0.445, y: 0.49 }, { key: 'bark', x: 0.73, y: 0.46, m: [0.9, 0.62], side: 'right', edge: true }],
     // the hall shot draws its own prompt across the specimen ("hold or scroll to split fibers"): this plate sits over it
     // with the site's own way in, so the footage never asks for a gesture the page does not use
-    open: [{ key: 'open', x: 0.5, y: 0.48, cover: 0.19, name: 'Open it', label: 'Click to open' }],
+    open: [{ key: 'open', x: 0.5, y: 0.48, cover: 0.19, name: 'Open it', label: `${VERB} to open` }],
   };
   const list = $$('.beat[data-ch]', film).map((el, k) => ({ k, key: el.dataset.ch, at: el.dataset.at.split(',').map(Number), anchor: Number(el.dataset.anchor),
     voice: el.dataset.voice || null, text: $('.say', el)?.textContent.trim() || '' }));
@@ -411,15 +425,16 @@ const chapters = (() => {
   };
   const board = document.createElement('aside');
   board.className = 'board'; board.setAttribute('aria-hidden', 'true'); // the same facts are in Explore, and spoken
-  board.innerHTML = '<div class="board-glass"><p class="board-kicker"></p><h3 class="board-title"></h3><p class="board-lede"></p><ul class="board-list"></ul><p class="board-note">Sizes, grades and treatment are confirmed by SB Trading with your quotation.</p><p class="board-hint">Release to return</p></div>';
+  board.innerHTML = '<div class="board-glass"><p class="board-kicker"></p><h3 class="board-title"></h3><ul class="board-list"></ul><p class="board-hint">Release to return</p></div>';
   hud.appendChild(board);
   let held = null;
   function expand(sp, key) {
     if (!sp || !sp.b.classList.contains('on')) return;
     const fam = $(`#${key}`, explore), products = $$('.product', fam).map((x) => x.textContent.trim());
-    $('.board-kicker', board).textContent = `Origin Bangladesh · ${products.length} products`;
+    // the board names the family and lists its products; origin and the next step live in their own homes
+    // (docs/content-map.md), and not every family has a lede, so the board reads none
+    $('.board-kicker', board).textContent = `${products.length} products`;
     $('.board-title', board).textContent = $('h3', fam).textContent.trim();
-    $('.board-lede', board).textContent = ($('.fam-lede', fam).textContent.match(/^[^.]+\./) || [''])[0];
     $('.board-list', board).replaceChildren(...products.map((t) => Object.assign(document.createElement('li'), { textContent: t })));
     const W = innerWidth, H = innerHeight, bw = Math.min(420, W - 32);
     const x = parseFloat(sp.b.style.getPropertyValue('--x')), y = parseFloat(sp.b.style.getPropertyValue('--y'));
@@ -491,12 +506,12 @@ const chapters = (() => {
     /** Called every frame while the film is on screen: chapter index, rings, narration and the settle onto a chapter. */
     update(now, p) {
       const k = at(filmP), live = filmP >= list[0].at[0] - 0.01;
-      hud.classList.toggle('live', live);
+      hud.classList.toggle('live', live); root.classList.toggle('film-live', live); // Ask Rifat returns once the chapters begin
       if (gate) { gate.style.setProperty('--gx', target[0].toFixed(3)); gate.style.setProperty('--gy', target[1].toFixed(3)); }
       if (k !== current) {
         current = k;
         if (k >= 0) { hudN.textContent = String(k + 1).padStart(2, '0'); hudName.textContent = NAMES[list[k].key]; }
-        hudNext.textContent = k === list.length - 1 ? 'Continue to the materials' : 'Click to continue';
+        hudNext.textContent = k === list.length - 1 ? 'Continue to the materials' : `${VERB} to continue`;
         if (k < 0 && storyNow?.cap === subtitle) stopStory();
       }
       for (const sp of spots) {
@@ -524,7 +539,7 @@ function setFamily(i) {
   ambient.forEach((img, k) => img.classList.toggle('on', k === i));
   const key = fams[i].id;
   if (storyNow && storyNow.key !== key) stopStory();
-  if (sound.playing && !told.has(key)) playStory(key);
+  // no story starts by itself here: past the film the page is quiet until the visitor asks ("Hear its story")
   sound.cue(forward ? 'knock' : 'knock-soft', fams[i].querySelector('.arch'));
 }
 
@@ -561,7 +576,7 @@ async function loadStudies() {
     const dbg = probe.getExtension('WEBGL_debug_renderer_info');
     const soft = /swiftshader|llvmpipe|software/i.test(dbg ? String(probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '');
     probe.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
-    const { createSpecimens } = await import('./assets/vendor/specimens.js?v=3798b600');
+    const { createSpecimens } = await import('./assets/vendor/specimens.js?v=df90ccbf');
     studies = createSpecimens(studiesCanvas, { low: soft || innerWidth < 820 });
     sizeStudies();
     studiesCanvas.addEventListener('webglcontextlost', () => { studies = null; root.classList.replace('has-3d', 'no-3d'); }); // the photographs come back
@@ -824,7 +839,10 @@ function showProduct(btn, { push = true } = {}) {
   if (busy) { busy.then(() => showProduct(btn, { push })); return; }
   sheetProduct = btn.textContent.trim();
   sheetFam = fams.indexOf(btn.closest('.fam'));
-  $('#sheetImg').src = btn.dataset.img;
+  // a product with no photograph of its own yet shows a plate saying so, never another product's photo
+  const none = btn.dataset.photo === 'none';
+  $('.sheet-img').classList.toggle('pending', none);
+  if (!none) $('#sheetImg').src = btn.dataset.img;
   $('#sheetImg').alt = `${btn.dataset.family} photograph`;
   $('#sheetFamily').textContent = btn.dataset.family;
   $('#sheetTitle').textContent = sheetProduct;
