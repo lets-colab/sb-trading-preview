@@ -24,6 +24,7 @@ restates it.
 | How ordering works | About Us, "How ordering works." | Shown |
 | What is still to be confirmed (minimum orders, ports, terms, lead times, certifications) | About Us | Shown |
 | Rifat is AI; prices and lead times come from the team | Enquire (Ask Rifat) | Shown |
+| A container packed with bamboo: SB Trading's own photograph, behind the order section, credited in a line under the lede | Enquire (Ask Rifat) | Shown |
 | The footage is generated, not SB Trading's stock | The film label (each shot) and the footer | Shown (a truth label: kept on the surface it describes) |
 
 ## Deliberate second homes (a visitor on the direct path)

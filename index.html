@@ -10,7 +10,7 @@
 <link rel="icon" href="assets/img/sb-mark.webp?v=76915d71" type="image/webp">
 <link rel="preload" href="assets/vendor/fonts/gloock-latin-400-normal.woff2?v=9389ada8" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/vendor/fonts/schibsted-grotesk-latin-wght-normal.woff2?v=4c8b93f4" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=61a01de8">
+<link rel="stylesheet" href="styles.css?v=f9190b15">
 <noscript><style>.sound-toggle,.menu-toggle,.chapters,.rifat,.form-toggle{display:none!important}</style></noscript>
 </head>
 <!-- data-whatsapp: SB Trading's WhatsApp number, international format, digits only (+880 1878-707910, given by the owner on 10 Nov 2026). Empty disables the WhatsApp hand-off. -->
@@ -152,6 +152,11 @@
 
   <!-- 05 Enquire: Rifat -->
   <section class="enquire" id="enquire" aria-labelledby="h-enquire">
+    <!-- Rifat's own photograph (SB Trading, 20 Nov 2026), cropped to the open door; the credit line below describes it -->
+    <picture class="enq-photo" aria-hidden="true">
+      <source media="(max-width:900px)" srcset="assets/img/container-720.webp?v=dbf02b9f">
+      <img src="assets/img/container-1120.webp?v=8762e249" alt="" width="1120" height="2389" loading="lazy" decoding="async">
+    </picture>
     <div class="enq-head">
       <figure class="presence">
         <span class="presence-ring" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -160,6 +165,7 @@
       </figure>
       <h2 id="h-enquire">Ask <em>Rifat.</em></h2>
       <p class="lede">Rifat is SB Trading's AI assistant. Tell Rifat what you need: it answers questions about the range, prepares your enquiry and hands it to SB Trading's team on WhatsApp. Prices, stock and lead times come from the team, not from Rifat.</p>
+      <p class="photo-credit">Behind Rifat: a container packed with bamboo. Photograph from SB Trading.</p>
     </div>
 
     <div class="rifat" id="rifat" data-mode="guide">
