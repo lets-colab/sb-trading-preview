@@ -93,8 +93,11 @@ export function createSpecimens(canvas, { low = false } = {}) {
     s.ready = Promise.all([loadImage(f.cut), loadImage(f.depth), loader.loadAsync(f.cut)]).then(([cut, depth, tex]) => {
       tex.colorSpace = SRGBColorSpace; tex.anisotropy = 4;
       const { geo, h } = specimenGeometry(cut, depth, low);
-      const mesh = new Mesh(geo, new MeshStandardMaterial({ map: tex, alphaTest: 0.2, roughness: 0.82, metalness: 0, side: DoubleSide }));
-      mesh.customDepthMaterial = new MeshDepthMaterial({ depthPacking: RGBADepthPacking, map: tex, alphaTest: 0.2 });
+      // the cut-out's soft edge is drawn see-through, as the photo fades (soft), not cut at a threshold into a torn,
+      // jagged rim (the owner's phone, 20 Nov 2026); its shadow keeps only the solid core
+      const mesh = new Mesh(geo, new MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.03, roughness: 0.82, metalness: 0, side: DoubleSide }));
+      mesh.material.userData.soft = true;
+      mesh.customDepthMaterial = new MeshDepthMaterial({ depthPacking: RGBADepthPacking, map: tex, alphaTest: 0.5 });
       mesh.castShadow = !low;
       mesh.position.y = base0 + h / 2 + 0.06;
       s.group.add(mesh);
@@ -136,7 +139,7 @@ export function createSpecimens(canvas, { low = false } = {}) {
       s.group.scale.setScalar(0.6 + 0.4 * s.scale);
       s.group.position.y = (1 - s.scale) * -0.8;
       s.group.rotation.set(cur.rx, cur.ry, 0);
-      s.group.traverse((o) => { if (o.material && 'opacity' in o.material) { o.material.transparent = s.scale < 1; o.material.opacity = s.scale; } });
+      s.group.traverse((o) => { if (o.material && 'opacity' in o.material) { o.material.transparent = !!o.material.userData.soft || s.scale < 1; o.material.opacity = s.scale; } });
     }
     const ph = now / 1000;
     const p = motesGeo.attributes.position;

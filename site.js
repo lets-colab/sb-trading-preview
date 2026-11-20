@@ -309,8 +309,10 @@ const STORIES = {
 };
 const storyCap = $('.story-caption'), storyBtns = $$('.story');
 let storyNow = null;
-storyBtns.forEach((b) => { b.hidden = !STORIES[b.dataset.story]?.src; });
-// One voice at a time: a family's story (a "Hear its story" button, or a ring on the film) or a chapter's narration.
+// The film tells each family's story on its ring, so Explore's "Hear its story" shows only when the film's rings are
+// not there (reduced motion: the film is a still poster), never twice (the owner, 20 Nov 2026)
+storyBtns.forEach((b) => { b.hidden = !STORIES[b.dataset.story]?.src || !reduced; });
+// One voice at a time: a family's story (a ring on the film, or Explore's "Hear its story" when the film is still) or a chapter's narration.
 // Its words show as subtitles in the caption it is given (Explore's, or the film's one line). Without a recording, or
 // for a chapter while Sound is off, the words alone are shown at a reading pace.
 function stopStory() {
@@ -368,9 +370,10 @@ const chapters = (() => {
   const hudN = $('.hud-n', film), hudName = $('.hud-name', film), hudNext = $('.hud-next', film), enter = $('.gate-enter', film);
   const NAMES = { grove: 'The grove', showroom: 'The showroom', open: 'Inside', fibre: 'Fibre to yarn', bark: 'A dried leaf', dome: 'All together' };
   const STORY_NAMES = { bamboo: 'Bamboo', fibre: 'Banana fibre', bark: 'Bark and leaves' };
-  // Each family's ring appears once, on its own glass case in the showroom (tap: its story; hold: its products). On the
-  // phone the centre crop shows the middle case: bamboo's and bark's rings are held at the screen's edges, toward their
-  // cases (edge), so every family is still there to tap and hold.
+  // Each family's ring appears once, on its own glass case in the showroom; a tap plays its story. The film tells and
+  // Explore lists (the owner, 20 Nov 2026): products are listed once, in Explore, not on the rings. On the phone the
+  // centre crop shows the middle case: bamboo's and bark's rings are kept at the screen's edges, toward their cases
+  // (edge), so every family is still there to tap.
   const SPOTS = {
     showroom: [{ key: 'bamboo', x: 0.22, y: 0.49, m: [0.1, 0.36], edge: true }, { key: 'fibre', x: 0.445, y: 0.49 }, { key: 'bark', x: 0.73, y: 0.46, m: [0.9, 0.62], side: 'right', edge: true }],
     // the hall shot draws its own prompt across the specimen ("hold or scroll to split fibers"): this plate sits over it
@@ -390,21 +393,10 @@ const chapters = (() => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = d.cover ? 'spot cover' : 'spot'; b.dataset.key = d.key; b.dataset.ch = c.key; b.tabIndex = -1;
       if (d.key !== 'open') b.setAttribute('aria-pressed', 'false');
-      b.innerHTML = `<span class="spot-ring" aria-hidden="true"></span><span class="spot-line" aria-hidden="true"></span><span class="spot-tag"><b class="spot-name${d.quiet || d.cover ? ' sr' : ''}">${d.name || STORY_NAMES[d.key]}</b><span class="story-label">${d.label || 'Hear its story'}</span>${d.key === 'open' ? '' : '<span class="spot-hold">Hold for details</span>'}</span>`;
+      b.innerHTML = `<span class="spot-ring" aria-hidden="true"></span><span class="spot-line" aria-hidden="true"></span><span class="spot-tag"><b class="spot-name${d.quiet || d.cover ? ' sr' : ''}">${d.name || STORY_NAMES[d.key]}</b><span class="story-label">${d.label || 'Hear its story'}</span></span>`;
       b.addEventListener('pointerenter', () => sound.cue('hover', b));
-      if (d.key !== 'open') { // press and hold: the scene leans in and the glass board opens; letting go closes it
-        let timer = 0;
-        const start = () => { clearTimeout(timer); timer = setTimeout(() => expand(spots.find((x) => x.b === b), d.key), HOLD_MS); };
-        const end = () => { clearTimeout(timer); if (held?.b === b) { collapse(); b.dataset.swallow = '1'; } };
-        b.addEventListener('pointerdown', (e) => { if (e.button > 0) return; b.setPointerCapture?.(e.pointerId); start(); });
-        for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, end);
-        b.addEventListener('keydown', (e) => { if (e.key === ' ' && !e.repeat) start(); });
-        b.addEventListener('keyup', (e) => { if (e.key === ' ') { const was = held?.b === b; end(); if (was) e.preventDefault(); } });
-        b.addEventListener('contextmenu', (e) => e.preventDefault()); // a long touch is a hold, not the browser's menu
-      }
       b.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (b.dataset.swallow) { delete b.dataset.swallow; return; } // the release after a hold is not a tap
         if (d.key === 'open') { go(c.k + 1); return; }
         sound.cue('open', b);
         if (storyNow?.btn === b) stopStory(); else playStory(d.key, { btn: b, cap: subtitle });
@@ -414,52 +406,6 @@ const chapters = (() => {
     }
   }
   let current = -1, narrated = -1, flying = false, flyTimer = 0, lastScroll = 0, intent = 0, entered = false;
-  // The glass board: holding a ring leans the scene in on that material (the canvas scales about the ring) and a tilted
-  // pane of smoked glass fades in beside it with the family's products, read from Explore's own markup, while the
-  // narrator reads DETAILS; it tilts with the pointer and closes as the hold ends. Words only until each is recorded.
-  const HOLD_MS = 260, filmStage = $('.film-stage', film);
-  const DETAILS = {
-    bamboo: { src: 'assets/voice/detail-bamboo.mp3?v=3f899773', say: 'Bamboo: poles, splits, ski poles and woven mats.' },
-    fibre: { src: 'assets/voice/detail-fibre.mp3?v=7d68f24a', say: 'Banana fibre yarn, in three grades: fine banana silk, standard yarn, and industrial yarn.' },
-    bark: { src: 'assets/voice/detail-bark.mp3?v=c00a03cd', say: 'Banana bark, and banana leaves.' },
-  };
-  const board = document.createElement('aside');
-  board.className = 'board'; board.setAttribute('aria-hidden', 'true'); // the same facts are in Explore, and spoken
-  board.innerHTML = '<div class="board-glass"><p class="board-kicker"></p><h3 class="board-title"></h3><ul class="board-list"></ul><p class="board-hint">Release to return</p></div>';
-  hud.appendChild(board);
-  let held = null;
-  function expand(sp, key) {
-    if (!sp || !sp.b.classList.contains('on')) return;
-    const fam = $(`#${key}`, explore), products = $$('.product', fam).map((x) => x.textContent.trim());
-    // the board names the family and lists its products; origin and the next step live in their own homes
-    // (docs/content-map.md), and not every family has a lede, so the board reads none
-    $('.board-kicker', board).textContent = `${products.length} products`;
-    $('.board-title', board).textContent = $('h3', fam).textContent.trim();
-    $('.board-list', board).replaceChildren(...products.map((t) => Object.assign(document.createElement('li'), { textContent: t })));
-    const W = innerWidth, H = innerHeight, bw = Math.min(420, W - 32);
-    const x = parseFloat(sp.b.style.getPropertyValue('--x')), y = parseFloat(sp.b.style.getPropertyValue('--y'));
-    const left = W < 700 ? (W - bw) / 2 : x < W / 2 ? Math.min(x + 120, W - bw - 32) : Math.max(32, x - 120 - bw);
-    const top = W < 700 ? 84 : clamp(y - 190, 84, H - 470);
-    board.style.setProperty('--bw', `${bw}px`); board.style.setProperty('--bx', `${left.toFixed(0)}px`); board.style.setProperty('--by', `${top.toFixed(0)}px`);
-    board.style.setProperty('--ry', `${x < W / 2 ? -12 : 12}deg`); board.style.setProperty('--rx', '4deg');
-    canvas.style.transformOrigin = `${x.toFixed(0)}px ${y.toFixed(0)}px`;
-    filmStage.style.setProperty('--zx', `${x.toFixed(0)}px`); filmStage.style.setProperty('--zy', `${y.toFixed(0)}px`);
-    filmStage.classList.add('expanded'); sp.b.classList.add('held'); board.classList.add('on');
-    held = sp;
-    sound.cue('open', sp.b);
-    speak({ key: `detail:${key}`, src: (sound.playing && DETAILS[key].src) || null, text: DETAILS[key].say, cap: subtitle, whole: true });
-  }
-  function collapse() {
-    if (!held) return;
-    held.b.classList.remove('held'); held = null;
-    filmStage.classList.remove('expanded'); board.classList.remove('on');
-    if (String(storyNow?.key).startsWith('detail:')) stopStory();
-  }
-  addEventListener('pointermove', (e) => { // the pane tilts with the pointer while it is held
-    if (!held) return;
-    const r = board.getBoundingClientRect(), dx = (e.clientX - (r.left + r.width / 2)) / innerWidth, dy = (e.clientY - (r.top + r.height / 2)) / innerHeight;
-    board.style.setProperty('--ry', `${clamp(dx * 40, -16, 16).toFixed(1)}deg`); board.style.setProperty('--rx', `${clamp(-dy * 24, -10, 10).toFixed(1)}deg`);
-  }, { passive: true });
   addEventListener('scroll', () => { lastScroll = performance.now(); }, { passive: true });
   // only the visitor's own scrolling (wheel, touch, keys) settles onto a chapter; a link, an anchor or a script's
   // scroll is left where it lands
@@ -550,7 +496,7 @@ explore.addEventListener('keydown', (e) => {
   if (e.key !== 'Tab' || reduced) return;
   const fam = e.target.closest('.fam');
   if (!fam) return;
-  const stops = (f) => $$('.product, .story:not([hidden]), .plinth a', f); // each family's tab stops: its products, its story, then its plinth arrows
+  const stops = (f) => $$('.product, .story:not([hidden]), .plinth a', f); // each family's tab stops: its products, its story (if shown), then its plinth arrows
   const i = Number(fam.dataset.i), list = stops(fam);
   const to = e.shiftKey ? (e.target === list[0] ? i - 1 : -1) : (e.target === list.at(-1) ? i + 1 : -1);
   if (to < 0 || to >= fams.length) return;
@@ -576,7 +522,7 @@ async function loadStudies() {
     const dbg = probe.getExtension('WEBGL_debug_renderer_info');
     const soft = /swiftshader|llvmpipe|software/i.test(dbg ? String(probe.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '');
     probe.getExtension('WEBGL_lose_context')?.loseContext(); // browsers cap live contexts; release the probe
-    const { createSpecimens } = await import('./assets/vendor/specimens.js?v=df90ccbf');
+    const { createSpecimens } = await import('./assets/vendor/specimens.js?v=587fa6a5');
     studies = createSpecimens(studiesCanvas, { low: soft || innerWidth < 820 });
     sizeStudies();
     studiesCanvas.addEventListener('webglcontextlost', () => { studies = null; root.classList.replace('has-3d', 'no-3d'); }); // the photographs come back

@@ -61,7 +61,9 @@ async function journey(name, options, desktop) {
     await p.waitForTimeout(3500); // the 3D specimens and their photographs load
     await p.keyboard.press('Tab'); // the visitor's first gesture starts the sound (on by default)
     await p.waitForFunction(() => document.documentElement.dataset.score === 'playing', null, { timeout: 8000 }).catch(() => {});
-    await p.evaluate(() => document.querySelector('#bark .story')?.click()); await p.waitForTimeout(1200);
+    // a story is told only in the film now: back to the showroom, and the bark ring tells its story (bark.mp3)
+    await film(0.32); await p.waitForTimeout(1500);
+    await p.evaluate(() => document.querySelector('.spot.on[data-key="bark"]')?.click()); await p.waitForTimeout(1200);
   }
   await p.evaluate(() => document.getElementById('p-bamboo-poles').click()); await p.waitForTimeout(1200);
   const files = [...seen].filter((u) => u !== '/' && !u.startsWith('/api/'));
