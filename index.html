@@ -10,7 +10,7 @@
 <link rel="icon" href="assets/img/sb-mark.webp?v=76915d71" type="image/webp">
 <link rel="preload" href="assets/vendor/fonts/gloock-latin-400-normal.woff2?v=9389ada8" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/vendor/fonts/schibsted-grotesk-latin-wght-normal.woff2?v=4c8b93f4" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=61a01de8">
+<link rel="stylesheet" href="styles.css?v=8f166d32">
 <noscript><style>.sound-toggle,.menu-toggle,.chapters,.rifat,.form-toggle{display:none!important}</style></noscript>
 </head>
 <!-- data-whatsapp: SB Trading's WhatsApp number, international format, digits only (+880 1878-707910, given by the owner on 10 Nov 2026). Empty disables the WhatsApp hand-off. -->
@@ -62,7 +62,7 @@
            the rest of the page does not repeat; the heading names the scene. With motion the headings are read by screen
            readers and the lines are spoken; without motion they are captions. -->
       <div class="beat" data-at="0.1,0.17" data-ch="grove" data-anchor="0.125" data-voice="assets/voice/ch-grove.mp3?v=4f93e3c4"><h2>The grove</h2><p class="say">Everything SB Trading supplies begins as a living plant, in Bangladesh.</p></div>
-      <div class="beat" data-at="0.17,0.34" data-ch="showroom" data-anchor="0.2315" data-voice="assets/voice/ch-showroom.mp3?v=1b40b951"><h2>The showroom</h2><p class="say">Behind the glass, nine products in three families: bamboo, banana fibre yarn, and banana bark and leaves.<span class="say-howto"> Tap a case to hear its story. Press and hold to see what it holds.</span></p></div>
+      <div class="beat" data-at="0.17,0.34" data-ch="showroom" data-anchor="0.2315" data-voice="assets/voice/ch-showroom.mp3?v=850f45d0"><h2>The showroom</h2><p class="say">Behind the glass, nine products in three families: bamboo, banana fibre yarn, and banana bark and leaves.<span class="say-howto"> Tap a case to hear its story.</span></p></div>
       <div class="beat" data-at="0.34,0.55" data-ch="open" data-anchor="0.407" data-voice="assets/voice/ch-open.mp3?v=2c9adf9b"><h2>A closer look</h2><p class="say">Step into the light, and look closer. Open it, and the materials come free: bamboo, bark and fibre.</p></div>
       <div class="beat" data-at="0.55,0.76" data-ch="fibre" data-anchor="0.727" data-voice="assets/voice/ch-fibre.mp3?v=a727f9a1"><h2>Fibre to yarn</h2><p class="say">Watch the long fibres gather, and twist together into yarn.</p></div>
       <div class="beat" data-at="0.76,0.87" data-ch="bark" data-anchor="0.787" data-voice="assets/voice/ch-bark.mp3?v=fc83ca12"><h2>A dried leaf</h2><p class="say">Beside the yarn, a dried leaf, its fine veins catching the light.</p></div>
@@ -152,6 +152,11 @@
 
   <!-- 05 Enquire: Rifat -->
   <section class="enquire" id="enquire" aria-labelledby="h-enquire">
+    <!-- Rifat's own photograph (SB Trading, 20 Nov 2026), cropped to the open door; the credit line below describes it -->
+    <picture class="enq-photo" aria-hidden="true">
+      <source media="(max-width:900px)" srcset="assets/img/container-720.webp?v=dbf02b9f">
+      <img src="assets/img/container-1120.webp?v=8762e249" alt="" width="1120" height="2389" loading="lazy" decoding="async">
+    </picture>
     <div class="enq-head">
       <figure class="presence">
         <span class="presence-ring" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -160,6 +165,7 @@
       </figure>
       <h2 id="h-enquire">Ask <em>Rifat.</em></h2>
       <p class="lede">Rifat is SB Trading's AI assistant. Tell Rifat what you need: it answers questions about the range, prepares your enquiry and hands it to SB Trading's team on WhatsApp. Prices, stock and lead times come from the team, not from Rifat.</p>
+      <p class="photo-credit">Behind Rifat: a container packed with bamboo. Photograph from SB Trading.</p>
     </div>
 
     <div class="rifat" id="rifat" data-mode="guide">
@@ -279,6 +285,6 @@
 </footer>
 
 <script src="assets/vendor/motion.js?v=cbaccc5c" defer></script>
-<script src="site.js?v=778fac90" type="module"></script>
+<script src="site.js?v=1cdbd6dd" type="module"></script>
 </body>
 </html>

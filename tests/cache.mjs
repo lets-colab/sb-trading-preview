@@ -61,7 +61,20 @@ async function journey(name, options, desktop) {
     await p.waitForTimeout(3500); // the 3D specimens and their photographs load
     await p.keyboard.press('Tab'); // the visitor's first gesture starts the sound (on by default)
     await p.waitForFunction(() => document.documentElement.dataset.score === 'playing', null, { timeout: 8000 }).catch(() => {});
-    await p.evaluate(() => document.querySelector('#bark .story')?.click()); await p.waitForTimeout(1200);
+    { // a story is told on the film's rings (Explore lists the products): a visitor enters the film, goes on to the
+      // showroom and taps the bark ring, which tells its story (bark.mp3), in the same browser as the journey above
+      const q = await ctx.newPage();
+      q.on('request', (r) => { if (r.url().startsWith(ORIGIN)) seen.add(r.url().slice(ORIGIN.length)); });
+      await q.goto(ORIGIN + '/');
+      await q.waitForFunction(() => !document.documentElement.classList.contains('gate-intro'), null, { timeout: 40000 }).catch(() => {});
+      await q.click('.gate-enter');
+      await q.waitForFunction(() => document.querySelector('.hud-name')?.textContent === 'The grove', null, { timeout: 20000 }).catch(() => {});
+      await q.click('.hud-next');
+      await q.waitForFunction(() => document.querySelector('.hud-name')?.textContent === 'The showroom', null, { timeout: 10000 }).catch(() => {});
+      await q.waitForTimeout(2600);
+      await q.click('.spot.on[data-key="bark"]', { timeout: 10000 }).catch(() => {}); await q.waitForTimeout(1500);
+      await q.close();
+    }
   }
   await p.evaluate(() => document.getElementById('p-bamboo-poles').click()); await p.waitForTimeout(1200);
   const files = [...seen].filter((u) => u !== '/' && !u.startsWith('/api/'));

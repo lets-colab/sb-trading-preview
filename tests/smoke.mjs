@@ -188,40 +188,26 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     room.p = await prog();
     check(Math.abs(room.p - 0.2315) < 0.004 && room.idx === '02' && /^Behind the glass, nine products in three families/.test(room.sub) && ['Bamboo', 'Banana fibre', 'Bark and leaves'].every((w) => room.rings.includes(w)) && room.rings.length === 3 && room.tabbable,
       `${name}: "Click to continue" rests on the showroom, the products behind glass, a ring on each family's case, reachable by keyboard only while shown (${JSON.stringify(room)})`);
-    { // press and hold on a ring: the scene leans in on that material and a 3D glass board with its products fades in
-      // while the narrator reads them; letting go returns the scene (and is not taken as a tap)
-      const ring = await q.evaluate(() => { const r = document.querySelector('.spot.on[data-key="bamboo"]').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
-      const cdp = touch ? await ctx.newCDPSession(q) : null;
-      const press = async (down) => {
-        if (touch) await cdp.send('Input.dispatchTouchEvent', { type: down ? 'touchStart' : 'touchEnd', touchPoints: down ? [{ x: ring.x, y: ring.y }] : [] });
-        else { await q.mouse.move(ring.x, ring.y); if (down) await q.mouse.down(); else await q.mouse.up(); }
-      };
-      await press(true); await q.waitForTimeout(1400);
-      const held = await q.evaluate(() => { const b = document.querySelector('.board'); return { on: !!b?.classList.contains('on'), title: b?.querySelector('.board-title')?.textContent, items: [...(b?.querySelectorAll('.board-list li') || [])].map((li) => li.textContent),
-        zoom: getComputedStyle(document.querySelector('.film-canvas')).transform, sub: document.querySelector('.subtitle').textContent.trim(), others: [...document.querySelectorAll('.spot.on:not(.held)')].filter((s) => getComputedStyle(s).visibility === 'visible').length }; });
-      await press(false); await q.waitForTimeout(1400);
-      // the scene eases back over its transition; a slow machine is still finishing it, so wait (up to 5 s) for it to rest
-      await q.waitForFunction(() => /^(none|matrix\(1, 0, 0, 1, 0, 0\))$/.test(getComputedStyle(document.querySelector('.film-canvas')).transform), null, { timeout: 5000 }).catch(() => {});
-      const gone = await q.evaluate(() => ({ on: !!document.querySelector('.board')?.classList.contains('on'), zoom: getComputedStyle(document.querySelector('.film-canvas')).transform, sub: document.querySelector('.subtitle').classList.contains('on'), story: !!window.__story && !window.__story.paused }));
-      const flat = (m) => m === 'none' || m === 'matrix(1, 0, 0, 1, 0, 0)';
-      check(held.on && held.title === 'Bamboo' && ['Bamboo poles', 'Bamboo splits', 'Ski poles', 'Woven mats'].every((p) => held.items.includes(p)) && !flat(held.zoom) && /^Bamboo: poles, splits/.test(held.sub) && held.others === 0,
-        `${name}: holding the bamboo ring leans the scene in and fades in a glass board with bamboo's products as the narrator reads them (${JSON.stringify(held)})`);
-      check(!gone.on && flat(gone.zoom) && !gone.sub && !gone.story, `${name}: letting go returns the scene, and the release is not taken as a tap (${JSON.stringify(gone)})`);
-      // every case holds its own board, not only bamboo: banana fibre yarn and bark too, each with its products, no error
-      const boards = [];
-      for (const [key, title, count] of [['fibre', 'Banana fibre yarn', 3], ['bark', 'Banana bark and leaves', 2]]) {
-        const at = await q.evaluate((k) => { const r = document.querySelector(`.spot.on[data-key="${k}"]`)?.getBoundingClientRect(); return r && { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, key);
-        if (!at) { boards.push({ key, ring: false }); continue; }
+    { // every case's ring tells its own story, from its own recording, with its own subtitles; the stories are told
+      // here only (Explore lists the products and has no story button: the owner, 20 Nov 2026)
+      const told = [];
+      for (const [key, words] of [['fibre', /banana plant fruits only once/i], ['bark', /Nothing of the banana plant goes to waste/i]]) {
+        const sel = `.spot.on[data-key="${key}"]`;
+        if (!(await q.$(sel))) { told.push({ key, ring: false }); continue; }
         const errs = qErrors.length;
-        if (touch) await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: at.x, y: at.y }] }); else { await q.mouse.move(at.x, at.y); await q.mouse.down(); }
-        await q.waitForTimeout(1400);
-        const got = await q.evaluate(() => { const b = document.querySelector('.board'); return { on: !!b?.classList.contains('on'), title: b?.querySelector('.board-title')?.textContent, items: b?.querySelectorAll('.board-list li').length || 0 }; });
-        if (touch) await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); else await q.mouse.up();
-        await q.waitForTimeout(1400);
-        await q.waitForFunction(() => /^(none|matrix\(1, 0, 0, 1, 0, 0\))$/.test(getComputedStyle(document.querySelector('.film-canvas')).transform), null, { timeout: 5000 }).catch(() => {});
-        boards.push({ key, ...got, ok: got.on && got.title === title && got.items === count && qErrors.length === errs });
+        await q.click(sel); await q.waitForTimeout(1200);
+        const st = await q.evaluate((sel) => ({ pressed: document.querySelector(sel).getAttribute('aria-pressed'), sub: document.querySelector('.subtitle').textContent.trim(), src: window.__story?.src || '', audio: !!window.__story && !window.__story.paused }), sel);
+        await q.click(sel); await q.waitForTimeout(400);
+        told.push({ key, sub: st.sub.slice(0, 40), ok: st.pressed === 'true' && words.test(st.sub) && st.audio && st.src.includes(`/voice/${key}.mp3`) && qErrors.length === errs });
       }
-      check(boards.length === 2 && boards.every((x) => x.ok), `${name}: holding the banana fibre and bark rings opens their own boards too, with no error (${JSON.stringify(boards)})`);
+      check(told.length === 2 && told.every((t) => t.ok), `${name}: the banana fibre and bark rings each tell their own story from their own recording, with subtitles (${JSON.stringify(told)})`);
+      // switching Sound off also silences a story that is playing (Codex finding on #18); Sound is on by default
+      await q.click('.spot.on[data-key="bamboo"]'); await q.waitForTimeout(800);
+      const on = await q.evaluate(() => !!window.__story && !window.__story.paused);
+      await q.click('#soundToggle'); await q.waitForTimeout(500);
+      const off = await q.evaluate(() => ({ playing: !!window.__story && !window.__story.paused, pressed: document.querySelector('.spot.on[data-key="bamboo"]').getAttribute('aria-pressed') }));
+      await q.click('#soundToggle'); await q.waitForTimeout(500);
+      check(on && !off.playing && off.pressed === 'false', `${name}: switching Sound off stops a ring's story too (${JSON.stringify({ on, off })})`);
     }
     // a ring tells that material's story, with its words as the subtitle; pressing again stops it
     await q.click('.spot.on[data-key="bamboo"]');
@@ -285,43 +271,6 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
   await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
   const toExplore = async (q) => { await p.evaluate((x) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * x); }, q); await p.waitForTimeout(1800); };
 
-  { // the storyteller: every family offers "Hear its story"; pressing it plays that family's narration (one voice for all
-    // three) and shows its words as subtitles; pressing again stops it.
-    const famY = (i) => p.evaluate((k) => { const e = document.getElementById('explore'); scrollTo(0, e.offsetTop + (e.offsetHeight - innerHeight) * (k / 3 + 0.12)); }, i);
-    await famY(2); await p.waitForTimeout(1800);
-    // with Sound on, arriving at a family tells its story once by itself; let that settle and stop it, so the presses
-    // below start from silence (on a slow machine it can begin just as the test arrives)
-    await p.waitForTimeout(800);
-    if (await p.evaluate(() => document.querySelector('#bark .story')?.getAttribute('aria-pressed') === 'true')) { await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(500); }
-    const btn = await p.evaluate(() => { const b = document.querySelector('#bark .story'); return b && !b.hidden ? b.textContent.trim() : null; });
-    await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(1500);
-    const playing = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), cap: document.querySelector('.story-caption').textContent.trim(), shown: !document.querySelector('.story-caption').hidden, audio: !!window.__story && !window.__story.paused }));
-    await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(400);
-    const stopped = await p.evaluate(() => ({ pressed: document.querySelector('#bark .story').getAttribute('aria-pressed'), shown: !document.querySelector('.story-caption').hidden }));
-    check(btn === 'Hear its story' && playing.pressed === 'true' && playing.shown && /banana plant/i.test(playing.cap) && playing.audio && stopped.pressed === 'false' && !stopped.shown,
-      `${name}: "Hear its story" narrates banana bark and leaves with subtitles, and stops on a second press (${JSON.stringify({ btn, playing, stopped })})`);
-    { // switching Sound off also silences a story that Sound started (Codex finding on #18); Sound is on by default
-      if (await p.evaluate(() => document.getElementById('soundToggle').getAttribute('aria-pressed')) !== 'true') await p.click('#soundToggle'); await p.waitForTimeout(800);
-      await p.evaluate(() => document.querySelector('#bark .story').click()); await p.waitForTimeout(800);
-      const on = await p.evaluate(() => !!window.__story && !window.__story.paused);
-      await p.click('#soundToggle'); await p.waitForTimeout(500);
-      const off = await p.evaluate(() => ({ playing: !!window.__story && !window.__story.paused, pressed: document.querySelector('#bark .story').getAttribute('aria-pressed') }));
-      check(on && !off.playing && off.pressed === 'false', `${name}: switching Sound off stops the storyteller too (${JSON.stringify({ on, off })})`);
-    }
-    { // bamboo and banana fibre tell their own stories too, each from its own recording, with its own subtitles
-      const told = [];
-      for (const [i, fam, words] of [[0, 'bamboo', /bamboo has held up homes/i], [1, 'fibre', /banana plant fruits only once/i]]) {
-        await famY(i); await p.waitForTimeout(1800);
-        const offered = await p.evaluate((f) => { const b = document.querySelector(`#${f} .story`); return !!b && !b.hidden; }, fam);
-        await p.evaluate((f) => document.querySelector(`#${f} .story`)?.click(), fam); await p.waitForTimeout(1200);
-        const s = await p.evaluate(() => ({ cap: document.querySelector('.story-caption').textContent.trim(), audio: !!window.__story && !window.__story.paused, src: window.__story?.src || '' }));
-        await p.evaluate((f) => document.querySelector(`#${f} .story`)?.click(), fam); await p.waitForTimeout(300);
-        told.push({ fam, offered, cap: s.cap.slice(0, 40), audio: s.audio, own: s.src.includes(`/voice/${fam}.mp3`), ok: offered && words.test(s.cap) && s.audio && s.src.includes(`/voice/${fam}.mp3`) });
-      }
-      check(told.every((t) => t.ok), `${name}: bamboo and banana fibre each tell their own story, with subtitles (${JSON.stringify(told)})`);
-    }
-    await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(600);
-  }
   // product sheet -> Rifat
   await toExplore(0.15);
   // every product has its own link: opening one sets the address and the page title; Back closes it, Forward reopens it
@@ -616,31 +565,28 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       check(frames <= 3, `${name}: at 1 frame a second, the 3D comes to rest within 3 frames of the last input (${frames} frames)`);
       await q.close();
     }
-    // keyboard reaches every family: Tab past the last bamboo product reaches its story, the plinth's next arrow, then
-    // the first fibre product, and back the same way
+    // keyboard reaches every family: Tab past the last bamboo product reaches the plinth's next arrow, then the first
+    // fibre product, and back the same way (Explore has no story stop: the stories are told in the film)
     // wait until the Bamboo family is the live one (an inert family cannot take focus), then focus its last product
     await toExplore(0.15); await p.waitForSelector('#bamboo.on', { timeout: 10000 }).catch(() => {});
     await p.focus('#bamboo .product >> nth=3');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const focused = () => p.evaluate(() => document.activeElement?.textContent.trim() || document.activeElement?.tagName);
-    await p.keyboard.press('Tab'); // past the products, to the family's story
-    const toStory = await focused();
-    await p.keyboard.press('Tab'); // then the plinth's next arrow
+    await p.keyboard.press('Tab'); // past the products, to the plinth's next arrow
     const toArrow = await p.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
     await p.keyboard.press('Tab');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Grade A: banana silk', null, { timeout: 5000 }).catch(() => {});
     const afterTab = await focused();
-    check(toStory === 'Hear its story' && toArrow === 'Next family: Banana fibre yarn' && afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products to its story, the plinth's next arrow, then into the fibre products (focus: ${toStory} -> ${toArrow} -> ${afterTab})`);
+    check(toArrow === 'Next family: Banana fibre yarn' && afterTab === 'Grade A: banana silk', `${name}: Tab moves from the bamboo products to the plinth's next arrow, then into the fibre products (focus: ${toArrow} -> ${afterTab})`);
     await p.keyboard.press('Shift+Tab'); // back to Bamboo's plinth arrow, then its last product
     await p.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Next family: Banana fibre yarn', null, { timeout: 5000 }).catch(() => {});
     const backArrow = await p.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
     await p.keyboard.press('Shift+Tab');
-    const backStory = await focused();
-    await p.keyboard.press('Shift+Tab');
     await p.waitForFunction(() => document.activeElement?.textContent.trim() === 'Woven mats', null, { timeout: 5000 }).catch(() => {});
     const afterShift = await focused();
-    check(backArrow === 'Next family: Banana fibre yarn' && backStory === 'Hear its story' && afterShift === 'Woven mats', `${name}: Shift+Tab returns through Bamboo's plinth arrow and story to its products (focus: ${backArrow} -> ${backStory} -> ${afterShift})`);
-    await p.click('#soundToggle'); await p.waitForTimeout(1200); // switched off above: this turns it back on
+    check(backArrow === 'Next family: Banana fibre yarn' && afterShift === 'Woven mats', `${name}: Shift+Tab returns through Bamboo's plinth arrow to its products (focus: ${backArrow} -> ${afterShift})`);
+    if (await p.evaluate(() => document.getElementById('soundToggle').getAttribute('aria-pressed')) === 'true') { await p.click('#soundToggle'); await p.waitForTimeout(600); }
+    await p.click('#soundToggle'); await p.waitForTimeout(1200); // Sound off, then this turns it back on
     check((await p.evaluate(() => window.__ac)) === 1, `${name}: one audio context, made at the visitor's first gesture and reused when Sound comes back on`);
     const playing = await p.waitForFunction(() => document.documentElement.dataset.score === 'playing', null, { timeout: 6000 }).then(() => true, () => false);
     check(playing, `${name}: pressing Sound starts the generated score`);

@@ -147,7 +147,7 @@ html:not(.js) .beat,html:not(.motion) .beat{position:relative;left:auto;right:au
 html:not(.js) .film-label,html:not(.motion) .film-label{position:relative;right:auto;bottom:auto}
 
 /* ------------------------------------------------------------ 04 explore: pinned stage, arched windows */
-.explore{position:relative;height:420vh}
+.explore{position:relative;height:300vh} /* a quick shelf: about one screen per family (the owner, 20 Nov 2026) */
 .explore-stage{position:sticky;top:0;height:100svh;overflow:hidden;isolation:isolate}
 .ambient{position:absolute;inset:0;z-index:-1}
 .ambient img{position:absolute;inset:-12%;width:124%;height:124%;object-fit:cover;filter:blur(46px) saturate(1.25) brightness(.42);opacity:0;transition:opacity 1.2s var(--ease)}
@@ -235,6 +235,21 @@ html:not(.js) .product::after{content:": " attr(data-note);font-size:14px;color:
 .enquire{position:relative;padding:clamp(80px,12vh,140px) var(--gutter) 120px;
   background:radial-gradient(60% 50% at 50% 30%,#0f3d6e66,transparent 70%),radial-gradient(40% 30% at 70% 70%,#d7be9314,transparent 70%)}
 .enq-head{max-width:1120px;margin:0 auto 48px}
+/* SB Trading's own photograph behind the order: a container door, darkened into the dusk ground so text keeps its contrast */
+.enquire>:not(.enq-photo){position:relative;z-index:1}
+/* the edges fade out through a mask (not into a flat colour), so the section's own glow shows through with no seam */
+.enq-photo{position:absolute;z-index:0;top:0;right:0;width:min(48vw,700px);height:min(100%,1500px);pointer-events:none;overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 46%),linear-gradient(180deg,transparent,#000 20%,#000 62%,transparent);-webkit-mask-composite:source-in;
+  mask-image:linear-gradient(90deg,transparent,#000 46%),linear-gradient(180deg,transparent,#000 20%,#000 62%,transparent);mask-composite:intersect}
+.enq-photo img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 60%;filter:brightness(.66) saturate(.82)}
+.enq-photo::after{content:"";position:absolute;inset:0;background:#05122240}
+.ticket{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.photo-credit{margin:14px 0 0;font-size:14px;color:var(--dim)}
+@media (max-width:900px){
+  .enq-photo{left:0;width:auto;height:min(118svh,980px);-webkit-mask-image:linear-gradient(180deg,transparent,#000 12%,#000 60%,transparent);mask-image:linear-gradient(180deg,transparent,#000 12%,#000 60%,transparent)}
+  .enq-photo img{object-position:50% 58%;filter:brightness(.6) saturate(.8)}
+  .enq-photo::after{background:#051222b8}
+}
 /* Rifat appears: his portrait standing in a cyan ring, labelled AI; the ring spins faster while he answers */
 .presence{position:relative;justify-self:center;width:clamp(170px,22vw,260px);aspect-ratio:300/357;margin:0 0 18px}
 .presence img{position:relative;z-index:1;display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 18px 40px #000a);-webkit-mask-image:linear-gradient(#000 74%,transparent 98%);mask-image:linear-gradient(#000 74%,transparent 98%)}
@@ -444,7 +459,7 @@ html.at-end .tray{opacity:0;pointer-events:none;transform:translateY(12px)}
   .fam-lede{margin-top:12px;font-size:15px}
   .products{gap:8px;margin-top:16px}
   .product{min-height:40px;padding:0 14px;font-size:14px}
-  .explore-note{bottom:14px;right:var(--gutter);font-size:12px;line-height:1.4} /* the truth note stays on phones, below the stage */
+  .explore-note{bottom:92px;right:var(--gutter);font-size:12px;line-height:1.4} /* the truth note stays on phones, below the shelf and above the chapter bar */
   .study-label{display:none} /* the note above says the same on a phone */
   .film-label{bottom:64px;left:var(--gutter);right:auto}
   .beat{bottom:clamp(92px,14vh,140px)}
@@ -568,31 +583,9 @@ html:not(.motion) .film .say{position:static;width:auto;height:auto;overflow:vis
 .spot.cover .spot-tag{position:absolute;inset:0;display:grid;place-items:center;padding:0;border:1px solid #5fd3e080;border-radius:var(--r-pill);background:#06121ff2;box-shadow:0 0 22px #5fd3e033,inset 0 0 0 1px #5fd3e014;text-shadow:none}
 .spot.cover:hover .spot-tag,.spot.cover:focus-visible .spot-tag{border-color:var(--signal);box-shadow:0 0 28px #5fd3e059}
 .spot.cover:focus-visible .spot-tag{outline:2px solid var(--signal);outline-offset:4px}
-/* press and hold a ring: the scene leans in on that material and a pane of smoked glass opens beside it */
-.spot{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-.spot-hold{font:600 10px/1.4 var(--text);letter-spacing:.18em;text-transform:uppercase;color:var(--mist)}
+.spot{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .motion .film-canvas{transition:transform .9s var(--ease)}
-.film-stage.expanded .film-canvas{transform:scale(1.14)}
 .film-trace{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.film-stage::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(circle at var(--zx,50%) var(--zy,50%),#05122200 18%,#051222b8 78%);opacity:0;transition:opacity .8s var(--ease)}
-.film-stage.expanded::after{opacity:1}
-.film-stage.expanded .spot.on:not(.held){opacity:0;visibility:hidden}
-.film-stage.expanded .hud-next,.film-stage.expanded .hud-index{opacity:.25}
-.spot.held .spot-ring{transform:scale(1.25);transition:transform .5s var(--ease)}
-.spot.held .spot-tag,.spot.held .spot-line{opacity:0;transition:opacity .3s var(--ease)}
-.board{position:absolute;left:0;top:0;z-index:6;width:var(--bw,420px);perspective:1300px;pointer-events:none;opacity:0;visibility:hidden;transform:translate(var(--bx,0),var(--by,0));transition:opacity .45s var(--ease),visibility 0s .45s}
-.board.on{opacity:1;visibility:visible;transition:opacity .5s var(--ease)}
-.board-glass{position:relative;padding:26px 28px 22px;transform-style:preserve-3d;transform:rotateY(var(--ry,-12deg)) rotateX(var(--rx,4deg)) translateZ(-140px) scale(.88);transition:transform .9s var(--ease)}
-.board.on .board-glass{transform:rotateY(var(--ry,-12deg)) rotateX(var(--rx,4deg)) translateZ(0) scale(1)}
-.board-glass::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:var(--r-md);border:1px solid #ffffff3d;background:linear-gradient(150deg,#ffffff29 0%,#0c2440d1 20%,#06121fe0 64%,#5fd3e021 100%);-webkit-backdrop-filter:blur(26px) saturate(1.5);backdrop-filter:blur(26px) saturate(1.5);box-shadow:0 46px 100px #000c,inset 0 1px 0 #ffffffbf,inset 1px 0 0 #ffffff2e,inset 0 0 48px #5fd3e014}
-.board-glass::after{content:"";position:absolute;inset:0;border-radius:var(--r-md);pointer-events:none;background:linear-gradient(115deg,#ffffff00 32%,#ffffff17 46%,#ffffff00 60%);transform:translateZ(2px)}
-.board-kicker{margin:0;font:600 11px/1.4 var(--text);letter-spacing:.2em;text-transform:uppercase;color:var(--signal);transform:translateZ(22px)}
-.board-title{margin:10px 0 0;font:400 clamp(30px,2.6vw,40px)/1 var(--display);color:var(--cloud);transform:translateZ(52px)}
-.board-list{display:grid;gap:9px;margin:18px 0 0;padding:16px 0 0;border-top:1px solid #ffffff24;list-style:none;transform:translateZ(28px)}
-.board-list li{display:flex;align-items:center;gap:12px;font-size:15px;color:var(--cloud)}
-.board-list li::before{content:"";width:7px;height:7px;flex:none;border-radius:50%;border:1px solid var(--signal);box-shadow:0 0 8px #5fd3e080}
-.board-hint{margin:14px 0 0;font:600 10px/1 var(--text);letter-spacing:.2em;text-transform:uppercase;color:var(--mist);transform:translateZ(12px)}
-@media (max-width:640px){.board-glass{padding:20px 20px 18px}.board-title{font-size:28px}}
 /* with motion the film's source label is a small line at the edge of the picture */
 .motion .film-label{left:auto;right:var(--gutter);bottom:24px;max-width:min(44vw,420px);padding:0;background:none;font:600 10px/1.5 var(--text);letter-spacing:.12em;text-transform:uppercase;text-align:right;color:var(--mist);text-shadow:0 0 10px #051222}
 /* while the film fills the screen the page's chrome steps back: the chapter bar leaves, the header keeps its marks */
@@ -609,12 +602,12 @@ html.in-film .top .sound-toggle,html.in-film .top .menu-toggle{background:transp
   .hud-index{bottom:18px}
   .motion .film-label{bottom:14px;max-width:52vw}
   /* phones: a ring's label is its name in a small pill beside it, so the cases behind stay visible; "Hear its story"
-     and "Hold for details" stay for screen readers, and the narrator and subtitle say tap and hold (the owner, 19 Nov) */
+     stays for screen readers, and the narrator and subtitle say tap (the owner, 19 Nov) */
   .spot-line{width:26px}
   .spot-tag{left:58px;top:-30px;gap:0;padding:5px 11px;border-radius:var(--r-pill)}
   .spot.flip .spot-tag{right:58px}
   .spot-name{font-size:16px}
-  .spot:not(.cover) .story-label,.spot-hold{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap} /* the specimen's plate keeps "Tap to open" */
+  .spot:not(.cover) .story-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap} /* the specimen's plate keeps "Tap to open" */
 }
 @media (prefers-reduced-motion:reduce){.gate-art .ln{animation:none;stroke-dashoffset:0}.gate-art .spin{animation:none;opacity:1}}
 

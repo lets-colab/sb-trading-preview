@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node tests/tokens.mjs && node tests/copy.mjs && node tests/film-sync.mjs && node tests/rifat-ai.mjs && node tests/rifat-gemini.mjs && node tests/score.mjs && node tests/sound-default.mjs && node tests/critique.mjs && node tests/contrast.mjs && node tests/access.mjs && node tests/cache.mjs && node tests/smoke.mjs"
+    "test": "node tests/tokens.mjs && node tests/copy.mjs && node tests/film-sync.mjs && node tests/rifat-ai.mjs && node tests/rifat-gemini.mjs && node tests/score.mjs && node tests/sound-default.mjs && node tests/critique.mjs && node tests/enquire-photo.mjs && node tests/no-repeat.mjs && node tests/contrast.mjs && node tests/access.mjs && node tests/cache.mjs && node tests/smoke.mjs"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "1.7.0",

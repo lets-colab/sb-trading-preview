@@ -11,9 +11,9 @@ restates it.
 | The name and the idea: "From leaf to fibre." | The gate (opening title) | Shown |
 | Origin: Bangladesh | Chapter 1, the grove: "Everything SB Trading supplies begins as a living plant, in Bangladesh." | Spoken and subtitled (the gate's small coordinates are decoration) |
 | Three families, nine products, and their names | Chapter 2, the showroom: "Behind the glass, nine products in three families: bamboo, banana fibre yarn, and banana bark and leaves." | Spoken and subtitled, once |
-| How to explore a family (tap for its story, hold for its products) | Chapter 2, the showroom's narration | Spoken once; the rings' labels name the gestures |
+| How to explore a family (tap for its story) | Chapter 2, the showroom's narration | Spoken once; the rings' labels name the gesture |
 | Each family's story | That family's ring on its glass case in the showroom | Spoken on a tap |
-| Each family's products | That family's glass board (hold its ring) | Spoken and listed on a hold |
+| Each family's products | Explore, the shelf (the film tells, Explore lists: the owner, 20 Nov 2026) | Shown |
 | What comes free when the specimen opens (bamboo, bark and fibre, as on screen) | Chapter 3, a closer look | Spoken |
 | Banana fibre becomes yarn | Chapter 4, fibre to yarn (what is on screen); the fibre story (how and why) | Spoken |
 | A dried leaf beside the yarn (what the generated footage shows; it is not called banana bark) | Chapter 5, a dried leaf | Spoken |
@@ -24,12 +24,13 @@ restates it.
 | How ordering works | About Us, "How ordering works." | Shown |
 | What is still to be confirmed (minimum orders, ports, terms, lead times, certifications) | About Us | Shown |
 | Rifat is AI; prices and lead times come from the team | Enquire (Ask Rifat) | Shown |
+| A container packed with bamboo: SB Trading's own photograph, behind the order section, credited in a line under the lede | Enquire (Ask Rifat) | Shown |
 | The footage is generated, not SB Trading's stock | The film label (each shot) and the footer | Shown (a truth label: kept on the surface it describes) |
 
 ## Deliberate second homes (a visitor on the direct path)
 
-- **The stories:** "Hear its story" in Explore, for a visitor who skips the film or has motion turned off. On the film path
-  they are on the showroom's rings. A visitor hears a story where they are, not twice in a row.
+- **The stories:** "Hear its story" in Explore, only when motion is turned off (the film is then a still poster with no
+  rings). With motion they are on the showroom's rings only, so a visitor never meets the same story twice.
 - **"Supplied from Bangladesh"** in the spec drawer: a field of the product's specification, not narration.
 
 ## Removed (17 Nov 2026)
@@ -46,3 +47,10 @@ The gate's map coordinates; the glass board's "Sizes, grades and treatment are c
 footage's own plinth labels ("03 / Banana bark" on a mixed case) and arrows, blurred; another product's photograph standing
 in for woven mats and banana bark. About's pending list now reads "ports of origin and export". The note that names and
 photographs are being confirmed is shown on phones too.
+
+## Removed (20 Nov 2026, the owner: "isn't this section repeated?")
+
+The glass board that a held ring opened in the film (it listed the family's products, which Explore lists), its "Hold for
+details" hints and spoken details (`detail-*.mp3`), and the showroom line's "Press and hold to see what it holds." (cut from
+the same Heart recording, not re-recorded). Explore's "Hear its story" with motion on (the ring told it). Explore is a
+shorter shelf, 300vh (was 420vh).
