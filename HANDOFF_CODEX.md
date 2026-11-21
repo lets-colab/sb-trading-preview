@@ -1,19 +1,20 @@
-# Handoff: SB Trading website (for Codex / ChatGPT), updated 12 Nov 2026
+# Handoff: SB Trading website (for Codex / ChatGPT), updated 21 Nov 2026
 
 Read this file, then `PRODUCT.md` (brand and product brief) and `README.md` (file map). This repo is the SB Trading client-review site.
 
-## Start here, Codex / ChatGPT (latest state, 12 Nov 2026)
-- **Preview:** `main` at merge `876d5df` (PR #15) is what Cloudflare Pages deploys to https://sb-trading.lastbenchbd.com, still behind the Cloudflare Access login. Nobody has confirmed the deployed page from inside this workflow (the login blocks it): NOT VERIFIED live.
-- **Merged since 10 Nov (PRs #10, #14, #15):** photographs in depth (`assets/photodepth.js`) replacing the procedural 3D; specimen-stage opening; film 460vh with a new ending; spec drawer (Motion spring in, eased exit) and enquiry tray; phone enquiry summary; opt-in generated score with note ripples and a live meter (`assets/sound.js`); caption contrast gate; Remotion film rebuilt from the site's design system (`video/`, `tests/film-sync.mjs`); `docs/SHOTLIST.md`.
-- **This branch (open PR, not merged):**
-  - the film label names the footage as generated (the owner's showroom reference clip; no stock footage);
-  - `tests/access.mjs`: reduced motion, keyboard path, axe-core WCAG A/AA scan (no serious or critical violations in five states, desktop and phone);
-  - staged frame loading and lazy 3D setup (simulated mid-range phone: main-thread blocking about 970 ms -> about 100 ms; Lighthouse mobile performance 42 -> 57, accessibility 100, best practices 100; SEO 63 only because the draft is `noindex`);
-  - the client brief's navigation (About Us, Products, Contact Us) with an About Us section built from facts already on the page;
-  - a shareable address for each of the nine products (`#p-<slug>`: title, Back/Forward, direct load, no-JavaScript note).
-- **Assessment:** about 8.5/10, not award level. What remains is content and owner decisions, listed under "Open items". Do not claim 10.5/10 or PASS without them.
-- **To switch Rifat's AI on (owner action):** Cloudflare dashboard → Pages project `sb-trading` → Settings → Variables and secrets → add encrypted `ANTHROPIC_API_KEY` for Production → redeploy. Never set `ANTHROPIC_BASE_URL` there (test only). AGENTS.md keeps paid AI off until the owner approves spend and rate limiting. A real conversation has not been proven yet.
-- **Rules that bind agents here:** AGENTS.md (no automatic merge, deploy, Access change, secret installation or publishing; failing test first; say NOT VERIFIED when evidence is missing).
+## Start here, Codex / ChatGPT (latest state, 21 Nov 2026)
+- **Live:** https://lets-colab.github.io/sb-trading-preview/, published by GitHub Pages from `main` (the owner's choice, 15 Nov: public, no login). The last merge is PR #26. The older Cloudflare Pages copy at sb-trading.lastbenchbd.com stays behind Cloudflare Access; leave Access on.
+- **Since 18 Nov (PRs #23 to #26):**
+  - sound is on by default, with a Sound switch that turns it off;
+  - Impeccable critique fixes;
+  - sharper phone film;
+  - every narrated line in Kokoro "Heart", the voice of the owner's approved sound preview;
+  - SB Trading's container photo behind the order section;
+  - "the film tells, Explore lists": each story is told once, by its ring in the film, and the products are listed once, in Explore.
+- **This branch (open PR, not merged; 21 Nov):** scene 1 keeps moving forward through the bamboo into the pavilion (clip 97f87dc2 to 2.95 s, the stands' drawn labels blurred), then pushes on into the showroom; the film is 239 frames. Also an audit of the owner's instructions: these docs brought up to date.
+- **Rifat:** guided mode on the live site. His free AI (Supabase Edge Function plus the free Gemini tier) is built and tested against a simulated API, but it waits for the owner to create the Supabase project and Gemini key (steps in `README.md`). Paid Claude stays off.
+- **Assessment:** the last Impeccable critique scored 25/40 (about 7/10). Its fixes are merged but not re-scored. Do not claim 10.5/10 or PASS.
+- **Rules that bind agents here:** AGENTS.md (no automatic merge, deploy, Access change, secret installation or publishing; failing test first; say NOT VERIFIED when evidence is missing). Merge or deploy only when the owner asks for it in so many words.
 
 ## State in one paragraph
 A cinematic scroll story for SB Trading (bamboo, banana fibre yarn, banana bark and leaves; nine products), rebuilt on 10 Nov 2026 after the owner rejected the previous version. Static HTML/CSS/JS plus one Cloudflare Pages Function. Five stages from the owner's proposal deck (Arrive, Discover, Transition, Explore, Enquire) in one continuous blue-hour palette: a scroll-scrubbed film (bamboo canopy → bamboo to fibre → banana leaves → hand-weaving; generated footage plus credited Pexels stock), a pinned Explore stage with real photographs in tilting arched windows and real-time 3D material studies (three.js) breaking out of the frames, "How ordering works" with a drawn fibre line, and **Rifat**, the enquiry assistant, with "Your enquiry" and a WhatsApp hand-off. Opt-in tactile sound. A Remotion brand film project lives in `video/`. It is a client-review draft, not a live commercial site.
@@ -60,7 +61,7 @@ docs/user-journey.md  buyer journey, moments of truth, gap analysis (assumptions
 ## Commands
 ```bash
 npm ci && npm run build                                   # rebuild assets/materials3d.js, assets/vendor/smooth.js, functions/api/rifat.js after editing src/
-CHROMIUM_PATH=<chrome> npm test                          # 363 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast of every line over the film, accessibility (axe), version tags, smoke on desktop + phone (incl. the gate, chapters, rings, film label, dust, spec drawer)
+CHROMIUM_PATH=<chrome> npm test                          # 388 checks: tokens, copy/nav, film sync, Rifat AI (simulated API), score, contrast of every line over the film, accessibility (axe), version tags, smoke on desktop + phone (incl. the gate, chapters, rings, film label, dust, spec drawer)
 node tools/stamp.mjs                                      # after changing any file the page loads: renews its ?v= version tag (npm run build runs it; npm test fails while a tag is stale)
 node <impeccable skill>/scripts/detect.mjs --json index.html   # Impeccable detector: 10 findings, all documented intent
 cd video && npm install && REMOTION_BROWSER=<chrome-headless-shell> npm run render   # writes video/out/*.mp4 (not committed)
