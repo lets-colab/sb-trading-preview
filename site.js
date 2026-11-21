@@ -150,7 +150,7 @@ if (gate && !reduced) {
   // if it cannot load, start or draw, it fails closed: the canvas goes, the line drawing and the title show at once,
   // and the film runs on
   gate3dFailed = () => { gate3d = null; cv.remove(); root.classList.remove('gate-live'); ended(); };
-  import('./assets/gate3d.js?v=ceca3f2a').then(({ createGate3D }) => {
+  import('./assets/gate3d.js?v=4851fe99').then(({ createGate3D }) => {
     gate.prepend(cv);
     const g3 = createGate3D(cv, { low: !fine || innerWidth < 700 || (navigator.hardwareConcurrency || 8) < 4, intro, onIntroEnd: ended });
     g3.size();

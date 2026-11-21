@@ -43,5 +43,11 @@ check(trace && Number(trace[2]) <= anchor.grove, `the opening's traced lines hav
 // the chapter bar and the sound's scene change where the chapters change, read from the chapters, not fixed numbers
 check(!/c = p < 0\.\d+ \? 0 : p < 0\.\d+/.test(site), 'the chapter bar and the sound\'s scene take their film boundaries from the chapters, not from fixed numbers');
 
+// the opening's live 3D is gone where the gate's beat ends, a few frames before the grove rests, so it is not still
+// drawing while the camera eases in (21.6 frames in, as before the longer film)
+const gateEnd = Number(read('assets/gate3d.js').match(/GATE_END = ([\d.]+)/)?.[1]);
+const gateBeat = Number(html.match(/class="beat beat-hero gate" data-at="0,([\d.]+)"/)?.[1]);
+check(gateEnd === gateBeat && (anchor.grove - gateEnd) * (film.frames - 1) >= 5, `the opening's 3D stops where the gate's beat ends, at least 5 frames before the grove rests (${gateEnd} vs beat ${gateBeat}, rest ${anchor.grove})`);
+
 if (failures) { console.error(`\n${failures} film continuity check(s) failed`); process.exit(1); }
 console.log('\nfilm continuity: all checks passed');
