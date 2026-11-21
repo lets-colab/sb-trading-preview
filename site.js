@@ -165,7 +165,7 @@ if (gate && !reduced) {
   // grove simply crossfades into the footage.
   const tcv = document.createElement('canvas');
   tcv.className = 'film-trace'; tcv.setAttribute('aria-hidden', 'true');
-  Promise.all([import('./assets/filmtrace.js?v=deb0ef7f'), fetch(filmFile('trace.bin')).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`trace ${r.status}`))))])
+  Promise.all([import('./assets/filmtrace.js?v=010bd523'), fetch(filmFile('trace.bin')).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`trace ${r.status}`))))])
     .then(([{ createFilmTrace }, bytes]) => {
       canvas.after(tcv);
       const t = createFilmTrace(tcv, bytes, { set: SET, frames: FRAMES });
@@ -248,6 +248,9 @@ function filmCues(i) {
   if (cueFrame >= 0 && i > cueFrame && i - cueFrame < 16) for (const [f, name] of FILM_CUES) if (cueFrame < f && i >= f && !sound.moment(f)) sound.cue(name);
   cueFrame = i;
 }
+// where each film chapter ends (film progress), read from its beat, so the chapter bar and the sound's scene change
+// exactly where the chapters do
+const chapterEnd = Object.fromEntries($$('.beat[data-ch]', film).map((el) => [el.dataset.ch, Number(el.dataset.at.split(',')[1])]));
 let heroO = 1; // the opening title's opacity: the dust is brightest in the grove's light shafts while it shows
 function beats(p) {
   for (const { el, at: [a, b] } of filmBeats) {
@@ -597,14 +600,14 @@ function tick(now = performance.now()) {
   if (line) line.style.setProperty('--draw', draw01.toFixed(3));
   steps.forEach((li, k) => li.classList.toggle('lit', draw01 > 0.12 + k * 0.33));
 
-  // chapters: 01 Grove, 02 Showroom, 03 Inside (film), 04 Explore, 05 Enquire
+  // chapters: 01 Grove, 02 Showroom, 03 Inside (film), 04 Explore, 05 Enquire; the film's are where its chapters end
   const mid = innerHeight / 2, fr = film.getBoundingClientRect(), er = explore.getBoundingClientRect();
   // header and chapter bar turn to ink while the lit showroom is behind them
   const lit = (er.bottom - er.top) > 0 && parseFloat(stage.style.getPropertyValue('--dark') || '0') < 0.5;
   root.classList.toggle('light-top', lit && er.top <= 0 && er.bottom > 72);
   root.classList.toggle('light-bottom', lit && er.top < innerHeight - 70 && er.bottom >= innerHeight);
   let c = 4;
-  if (fr.bottom > mid) c = p < 0.17 ? 0 : p < 0.34 ? 1 : 2; // the grove, the showroom, inside the material
+  if (fr.bottom > mid) c = p < chapterEnd.grove ? 0 : p < chapterEnd.showroom ? 1 : 2; // the grove, the showroom, inside the material
   else if (er.bottom > mid) c = 3;
   setChapter(c);
   root.classList.toggle('in-film', !reduced && fr.top <= 1 && fr.bottom >= innerHeight - 1); // the page's chrome steps back while the film fills the screen

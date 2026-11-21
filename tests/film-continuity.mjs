@@ -37,5 +37,11 @@ const bar = Object.fromEntries([...html.matchAll(/data-ch="(\d)" data-p="([\d.]+
 const anchor = Object.fromEntries(beats.map((b) => [b.ch, b.p]));
 check(bar[1] === anchor.showroom && bar[2] === anchor.open, `the chapter bar jumps to the chapters' own resting points (${JSON.stringify(bar)})`);
 
+// the opening's line drawing dissolves before the camera rests on the grove (Codex on #27)
+const trace = read('assets/filmtrace.js').match(/OUT = \[([\d.]+), ([\d.]+)\]/);
+check(trace && Number(trace[2]) <= anchor.grove, `the opening's traced lines have dissolved by the grove's resting point (fade ends ${trace?.[2]}, rests ${anchor.grove})`);
+// the chapter bar and the sound's scene change where the chapters change, read from the chapters, not fixed numbers
+check(!/c = p < 0\.\d+ \? 0 : p < 0\.\d+/.test(site), 'the chapter bar and the sound\'s scene take their film boundaries from the chapters, not from fixed numbers');
+
 if (failures) { console.error(`\n${failures} film continuity check(s) failed`); process.exit(1); }
 console.log('\nfilm continuity: all checks passed');
