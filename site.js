@@ -7,7 +7,7 @@ import { createRifat } from './assets/rifat.js?v=0e796418';
 
 // Every file is loaded at a versioned address (?v= and a hash of its contents, kept current by tools/stamp.mjs), so a
 // returning visitor's cache can never pair this page with an old file. The film's frames share one tag for the folder.
-const FILM = 'assets/film/?v=add0995b', filmFile = (p) => FILM.replace('?', `${p}?`);
+const FILM = 'assets/film/?v=5c584b12', filmFile = (p) => FILM.replace('?', `${p}?`);
 const root = document.documentElement;
 root.classList.add('js');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -127,7 +127,7 @@ const sound = (() => {
 })();
 
 // ------------------------------------------------------------------ film (stages 01–03)
-const FRAMES = 217; // tools/build-film.py (assets/film/film.json)
+const FRAMES = 239; // tools/build-film.py (assets/film/film.json)
 const SET = innerWidth / innerHeight < 0.9 ? 'm' : 'd';
 const film = $('#film'), canvas = $('.film-canvas'), ctx = canvas.getContext('2d');
 const frames = new Array(FRAMES);
@@ -238,11 +238,11 @@ function labelShot(i) { // i: the index of the loaded frame on the canvas (not t
   filmLabel.textContent = `This shot: ${shot.src}, not SB Trading's own.`;
 }
 // Film sound design (assets/sound.js), fired when scrolling forward crosses each moment, on the frame it happens
-// (assets/film/film.json: grove 0, showroom 33, hall 74, close 160, dome 182): leaves stirring in the grove, the culm
-// brushing past the lens, the glass cases, the glint as the camera passes into the hall, the beam's low hum, the
+// (assets/film/film.json: grove 0, showroom 55, hall 96, close 182, dome 204): leaves stirring in the grove, a culm
+// brushing past as the camera moves on through the bamboo, the glass cases, the glint as the camera passes into the hall, the beam's low hum, the
 // specimen splitting, the fibres swirling, the yarn drawing tight, the bark sheet's dry rustle and the dome's open air.
 // A jump past several moments plays none of them.
-const FILM_CUES = [[22, 'leaves'], [35, 'brush'], [42, 'glass'], [76, 'glint'], [83, 'beam'], [101, 'split'], [126, 'fibre'], [161, 'yarn'], [170, 'bark'], [185, 'dome']];
+const FILM_CUES = [[22, 'leaves'], [40, 'brush'], [64, 'glass'], [98, 'glint'], [105, 'beam'], [123, 'split'], [148, 'fibre'], [183, 'yarn'], [192, 'bark'], [207, 'dome']];
 let cueFrame = -1;
 function filmCues(i) {
   if (cueFrame >= 0 && i > cueFrame && i - cueFrame < 16) for (const [f, name] of FILM_CUES) if (cueFrame < f && i >= f && !sound.moment(f)) sound.cue(name);
