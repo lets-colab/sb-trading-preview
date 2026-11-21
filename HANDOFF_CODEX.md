@@ -1,9 +1,10 @@
-# Handoff: SB Trading website (for Codex / ChatGPT), updated 12 Nov 2026
+# Handoff: SB Trading website (for Codex / ChatGPT), updated 21 Nov 2026
 
 Read this file, then `PRODUCT.md` (brand and product brief) and `README.md` (file map). This repo is the SB Trading client-review site.
 
-## Start here, Codex / ChatGPT (latest state, 12 Nov 2026)
-- **Preview:** `main` at merge `876d5df` (PR #15) is what Cloudflare Pages deploys to https://sb-trading.lastbenchbd.com, still behind the Cloudflare Access login. Nobody has confirmed the deployed page from inside this workflow (the login blocks it): NOT VERIFIED live.
+## Start here, Codex / ChatGPT (latest state, 12 Nov 2026; Access line updated 21 Nov 2026)
+- **No login any more (observed 21 Nov 2026, 10:37 UTC, owner asked for the Cloudflare login to be removed):** unauthenticated requests to https://sb-trading.lastbenchbd.com/ and https://sb-trading.pages.dev/ return 200 with no Access redirect. `pages.dev` serves `main`'s `index.html` byte for byte. The custom domain serves the same page plus two scripts Cloudflare injects at the edge: a WebMCP bridge (`/.webmcp/bridge.js`) and the bot-detection snippet (`__CF$cv$params`). `/styles.css` and the logo return 200. `/api/rifat` returns `{"ai":false}` (guided mode, no paid AI). `noindex,nofollow` is still on the page. This session made no Cloudflare change; the Access change was made in the dashboard, so its exact configuration (bypass app or a narrowed "All Workers" app) is NOT VERIFIED from here. Before anyone sets `ANTHROPIC_API_KEY`, add the rate-limit rule on `/api/rifat` (open item 3): the endpoint is now reachable by anyone.
+- **Preview:** `main` at merge `876d5df` (PR #15) is what Cloudflare Pages deploys to https://sb-trading.lastbenchbd.com. (Superseded 21 Nov 2026: the login is gone; see the first line above.)
 - **Merged since 10 Nov (PRs #10, #14, #15):** photographs in depth (`assets/photodepth.js`) replacing the procedural 3D; specimen-stage opening; film 460vh with a new ending; spec drawer (Motion spring in, eased exit) and enquiry tray; phone enquiry summary; opt-in generated score with note ripples and a live meter (`assets/sound.js`); caption contrast gate; Remotion film rebuilt from the site's design system (`video/`, `tests/film-sync.mjs`); `docs/SHOTLIST.md`.
 - **This branch (open PR, not merged):**
   - the film label names the footage as generated (the owner's showroom reference clip; no stock footage);
@@ -18,7 +19,7 @@ Read this file, then `PRODUCT.md` (brand and product brief) and `README.md` (fil
 ## State in one paragraph
 A cinematic scroll story for SB Trading (bamboo, banana fibre yarn, banana bark and leaves; nine products), rebuilt on 10 Nov 2026 after the owner rejected the previous version. Static HTML/CSS/JS plus one Cloudflare Pages Function. Five stages from the owner's proposal deck (Arrive, Discover, Transition, Explore, Enquire) in one continuous blue-hour palette: a scroll-scrubbed film (bamboo canopy → bamboo to fibre → banana leaves → hand-weaving; generated footage plus credited Pexels stock), a pinned Explore stage with real photographs in tilting arched windows and real-time 3D material studies (three.js) breaking out of the frames, "How ordering works" with a drawn fibre line, and **Rifat**, the enquiry assistant, with "Your enquiry" and a WhatsApp hand-off. Opt-in tactile sound. A Remotion brand film project lives in `video/`. It is a client-review draft, not a live commercial site.
 
-- Live address (public, owner's decision 15 Nov 2026): https://lets-colab.github.io/sb-trading-preview/, served by GitHub Pages from `main` (`.nojekyll`: files are published as they are). GitHub Pages cannot run server code, so `/api/rifat` does not exist there and Rifat runs in guided mode (answering from `assets/rifat-knowledge.js`) until his AI endpoint moves to Supabase. The custom-domain file `CNAME` was removed, so github.io no longer forwards to sb-trading.lastbenchbd.com; that domain is still on Cloudflare Pages behind the Access login. `noindex` stays until a public launch is approved.
+- Live address (public, owner's decision 15 Nov 2026): https://lets-colab.github.io/sb-trading-preview/, served by GitHub Pages from `main` (`.nojekyll`: files are published as they are). GitHub Pages cannot run server code, so `/api/rifat` does not exist there and Rifat runs in guided mode (answering from `assets/rifat-knowledge.js`) until his AI endpoint moves to Supabase. The custom-domain file `CNAME` was removed, so github.io no longer forwards to sb-trading.lastbenchbd.com; that domain is on Cloudflare Pages and, since 21 Nov 2026, open without a login. `noindex` stays until a public launch is approved.
 - Branch for work: `claude/dreamy-turing-gwgukx`. After a PR merges, restart the branch from the latest `origin/main` before adding new commits.
 - Quality bar: Impeccable critique scored 22/40, then 28/40 ("Good", no P0 or P1), detector 0 findings. The six P2 findings from the second critique were fixed afterwards but not re-scored.
 
@@ -107,6 +108,8 @@ Cost: each message is one or two Claude calls (about 2-4k input tokens). Change 
 - No SB Trading enquiry recipient or contact details for the intended Rifat assistant were confirmed in the connected Gmail / Contacts searches. Do not invent an enquiry destination.
 
 ### Access decision gate — owner decision required
+**Decided 21 Nov 2026:** the owner asked for the Cloudflare login to be removed from sb-trading.lastbenchbd.com. Observed open at 10:37 UTC that day, `pages.dev` included (option 3's advice to keep `pages.dev` protected no longer holds). Rollback: in Cloudflare Zero Trust, Access, Applications, remove the exception that opened the host (or restore "All Workers" coverage) and check that an unauthenticated request gets a 302 to `lastbenchbd.cloudflareaccess.com` again. The original text below is kept as the record of the earlier gate.
+
 Keep the global `All Workers` policy intact. Choose the intended audience before changing Access:
 1. **Client review only:** create a hostname-specific Access application for `sb-trading.lastbenchbd.com` that allows only confirmed reviewer email addresses. Keep `sb-trading.pages.dev` and deployment URLs protected.
 2. **Public launch:** only after content and commercial readiness are approved, create a hostname-specific public/bypass application for `sb-trading.lastbenchbd.com` only. Keep the Pages platform hostname and previews protected.
@@ -145,7 +148,7 @@ No Access, DNS, credential, or production permission changes were made during th
    - Rifat: build an enquiry and press "Send on WhatsApp": the message arrives filled in on +880 1878-707910;
    - with a screen reader (TalkBack or VoiceOver) the page reads in order and Rifat's replies are announced.
 5. **Product pages:** each product has a shareable address that opens its drawer. The acceptance review also asks for core product information without JavaScript and a distinct title on first load; the no-JavaScript note is printed beside each product, but separate static product pages do not exist. Decide whether they are needed once specs are confirmed.
-6. **Public launch (owner decision):** removing Cloudflare Access, `noindex`, the "client review draft" wording and the Remotion film's draft notice all wait for items 1 to 4. Remotion licensing: free for individuals and companies of up to three people; larger companies need a company licence.
+6. **Public launch (owner decision):** Cloudflare Access is already removed (21 Nov 2026). `noindex`, the "client review draft" wording and the Remotion film's draft notice all wait for items 1 to 4. Remotion licensing: free for individuals and companies of up to three people; larger companies need a company licence.
 7. Keep DESIGN.md in step with styles.css (the token gate enforces values); re-run `/impeccable critique` after each design pass (detector: 10 findings, documented intent).
 
 ## Related project
