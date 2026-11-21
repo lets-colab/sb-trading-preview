@@ -8,21 +8,24 @@ known time) and assets/film/bed.mp3 (a seamless loop of the clips' steady shimme
 tools/trace-film.py and node tools/stamp.mjs.
 
 The journey, in order (clip times in seconds):
-  1. grove     97f87dc2 0.25-1.95  the bamboo grove in the first light, opening onto the pavilion
+  1. grove     97f87dc2 0.25-2.95  the bamboo grove in the first light; the camera keeps moving forward through the culms
+                                   to the pavilion's three stands, where the clip itself cuts away (the owner, 21 Nov 2026)
   2. showroom  97f87dc2 6.10-8.10  three glass cases: bamboo, banana fibre yarn, banana bark; the camera drifts in
   3. hall      6daa857f 0.40-4.30  the specimen in the cold beam, opening; its fibres swirl into a ball of yarn
   4. close     43a4edb4 13.0-15.6  the yarn and a sheet of banana bark in cyan and gold light (12 fps)
   5. dome      fa9b5fd6 10.35-13.2 pulling back: the same yarn among the whole range, in a glass dome in daylight
 Left out on purpose: the clips' drawn-in spec drawers and quote forms (invented minimum orders, "100% organic",
 "verified export manifest", a "Request a Quote" form in the showroom after 8.2 s; the site's real drawer and form take
-their place), the pavilion's misspelled drawn labels (after 1.95 s), the fibre macro shot between the pavilion and the
+their place), the fibre macro shot between the pavilion and the
 showroom (fibres over bamboo culms: the yarn is banana fibre, and bamboo is never shown becoming yarn) and the clips'
 AI-generated presenter. In the hall the drawn specimen card misspells its labels ("Banglies", "Dadoin"): it is
-blurred out frame by frame, as is the small "Macro" label; so are the dome's drawn labels ("01 Sambo", "Bamnoa"),
+blurred out frame by frame, as is the small "Macro" label; so are the pavilion's three drawn stand labels ("SBM TRADING",
+"BANANA BARK" and a blue one); so are the dome's drawn labels ("01 Sambo", "Bamnoa"),
 readouts and edge panel; so are the hall's "05mm" and ring prompt, and the studio shot's readout bar and ghost panel.
 
 No join is a cross-fade. Each is a camera move that carries the eye from one shot into the next:
-  grove > showroom  a bamboo culm passes close in front of the lens (a defocused occluder) and the showroom is behind it
+  grove > showroom  the camera keeps pushing forward into the pavilion, toward the bamboo inside its glass dome, and
+                    the showroom opens out of that point, still coming forward
   showroom > hall   the camera pushes into the third glass case; a glint sweeps across the glass and the hall is behind it
   hall > close      match cut on the ball of yarn: the new shot's yarn grows out of the old one as the camera moves in
   close > dome      the camera pulls back from that yarn: the dark space around it opens onto the dome first, then the
@@ -92,6 +95,18 @@ def along(keys, t):
     return keys[-1][1]
 
 
+# the pavilion's three stands carry drawn labels ("SBM TRADING", "BANANA BARK", a blue one): clip time -> box
+PAVILION = [
+    [(1.75, (0.37, 0.66, 0.53, 0.82)), (2.2, (0.36, 0.66, 0.60, 0.85)), (2.45, (0.35, 0.62, 0.53, 0.87)), (2.7, (0.34, 0.70, 0.52, 0.94)), (2.95, (0.32, 0.73, 0.52, 0.95))],
+    [(2.0, (0.21, 0.60, 0.32, 0.77)), (2.2, (0.21, 0.60, 0.32, 0.77)), (2.45, (0.17, 0.64, 0.31, 0.79)), (2.7, (0.14, 0.65, 0.30, 0.81)), (2.95, (0.11, 0.66, 0.29, 0.83))],
+    [(2.1, (0.68, 0.59, 0.81, 0.73)), (2.45, (0.69, 0.63, 0.87, 0.77)), (2.7, (0.70, 0.63, 0.90, 0.80)), (2.95, (0.74, 0.65, 0.93, 0.81))],
+]
+
+
+def grove_boxes(t):
+    return [b for b in (along(k, t) for k in PAVILION) if b]
+
+
 def hall_boxes(t):
     boxes = []
     c = card_at(t)
@@ -123,7 +138,7 @@ def close_boxes(t):
 
 
 SHOTS = [  # name, clip, start, end (clip seconds), fps, boxes(clip time)
-    ('grove', GROVE, 0.25, 1.95, 24, None),
+    ('grove', GROVE, 0.25, 2.95, 24, grove_boxes),
     ('showroom', GROVE, 6.10, 8.10, 24, showroom_boxes),
     ('hall', HALL, 0.40, 4.30, 24, hall_boxes),
     ('close', STUDIO, 13.0, 15.6, 12, close_boxes),
@@ -131,10 +146,11 @@ SHOTS = [  # name, clip, start, end (clip seconds), fps, boxes(clip time)
 ]
 
 
-def blur_out(im, boxes, darken=0.62):
-    """Blur (and darken) drawn text inside the boxes, with a feathered edge."""
+def blur_out(im, boxes, darken=0.62, grey=1.0):
+    """Blur (and darken) drawn text inside the boxes, with a feathered edge; grey < 1 also drains its colour, so a
+    tinted label (the pavilion's blue one) reads as part of the stand, not as a coloured smudge."""
     if not boxes: return im
-    soft = ImageEnhance.Brightness(im.filter(ImageFilter.GaussianBlur(22))).enhance(darken)
+    soft = ImageEnhance.Color(ImageEnhance.Brightness(im.filter(ImageFilter.GaussianBlur(22))).enhance(darken)).enhance(grey)
     mask = Image.new('L', im.size, 0)
     d = ImageDraw.Draw(mask)
     for x0, y0, x1, y1 in boxes:
@@ -179,24 +195,20 @@ def smoothstep(e0, e1, x):
     return t * t * (3 - 2 * t)
 
 
-def occluder_wipe(out, inc, n, culm):
-    """A bamboo culm passes close in front of the lens, right to left, and the next shot is behind it."""
-    band = culm.shape[1]
+def push_through(out, inc, n, focus):
+    """The camera keeps moving forward: it pushes on into the pavilion, toward the point focus (the bamboo inside its
+    glass dome), with the streaks of a fast push in, and the next shot opens out of that point, still coming forward.
+    A shot is shown only where it has picture, so a scaled-down frame never shows mirrored edges."""
     frames = []
+    reach = np.hypot(W, H) / 2
     for j in range(n):
-        u = (j + 1) / (n + 1)
-        x = W + band * 0.6 - ease(u) * (W + band * 1.2)  # the culm's centre crosses the frame
-        o = place(out[j], 1 + 0.06 * u, (W * 0.45, H * 0.45), (W * 0.45 - 40 * u, H * 0.45))  # still moving in, drifting
-        i = place(inc[j], 1.04 - 0.04 * u, (W * 0.5, H * 0.5), (W * 0.5 + 40 * (1 - u), H * 0.5))
-        seam = smoothstep(x - band * 0.15, x + band * 0.15, XX)[..., None]  # right of the culm: the new shot
-        f = o * (1 - seam) + i * seam
-        alpha = np.zeros((H, W, 1), np.float32); rgb = np.zeros((H, W, 3), np.float32)
-        x0 = int(round(x - band / 2))
-        a0, a1 = max(0, x0), min(W, x0 + band)
-        if a1 > a0:
-            alpha[:, a0:a1, 0] = culm[:, a0 - x0:a1 - x0, 3]
-            rgb[:, a0:a1] = culm[:, a0 - x0:a1 - x0, :3]
-        frames.append(f * (1 - alpha) + rgb * alpha)
+        u = (j + 1) / (n + 1); e = ease(u)
+        c = (W / 2 + (focus[0] - W / 2) * (1 - e), H / 2 + (focus[1] - H / 2) * (1 - e))  # the point, drawn to the centre
+        o = zoom_blur(place(out[j], 1 + 1.4 * e, focus, c), c, 0.08 * u)
+        i, iv = place(inc[j], 0.45 + 0.55 * e, (W / 2, H / 2), c, valid=True)
+        r = reach * (0.04 + 1.3 * e ** 1.25)  # the opening, growing from the point
+        new = (1 - smoothstep(r * 0.65, r, np.hypot(XX - c[0], YY - c[1])))[..., None] * iv
+        frames.append(o * (1 - new) + i * new)
     return frames
 
 
@@ -258,19 +270,9 @@ def ball(a, near):
     return (float(cen[k][0]), float(cen[k][1])), (w + h) / 4
 
 
-def culm_from(a):
-    """A defocused bamboo culm, cut from the grove's own foreground and widened, for the occluder wipe."""
-    strip = a[:, int(W * 0.115):int(W * 0.185)]  # a dark culm in the grove's left foreground
-    wide = cv2.resize(strip, (int(W * 0.34), H), interpolation=cv2.INTER_CUBIC)
-    wide = cv2.GaussianBlur(wide * np.float32([0.55, 0.62, 0.5]), (0, 0), 14)
-    xs = np.linspace(-1, 1, wide.shape[1], dtype=np.float32)
-    alpha = np.clip(1.15 - xs ** 6, 0, 1)[None, :].repeat(H, 0)
-    return np.dstack([wide, alpha])
-
-
 # ------------------------------------------------------------------ cut the journey
 JOINS = {  # into shot k: how, frames
-    1: ('occluder', 8), 2: ('glint', 8), 3: ('match', 8), 4: ('pull', 10),
+    1: ('push', 10), 2: ('glint', 8), 3: ('match', 8), 4: ('pull', 10),
 }
 SR = 48000
 
@@ -297,14 +299,12 @@ def mp3(x, path, kbps):
 frames, starts, joins = [], {}, {}
 track, times = np.zeros((0, 2), np.float32), []  # the soundtrack, and each frame's start time in it
 with tempfile.TemporaryDirectory() as tmp:
-    culm = None
     for k, (name, clip, a, b, fps, boxes) in enumerate(SHOTS):
         d = os.path.join(tmp, name); os.mkdir(d)
         seg = extract(clip, a, b, fps, d)
         clip_t = [a + i / fps for i in range(len(seg))]
-        if boxes: seg = [blur_out(im, boxes(t), 1.0 if name in ('dome', 'showroom') else 0.62) for im, t in zip(seg, clip_t)]
+        if boxes: seg = [blur_out(im, boxes(t), 1.0 if name in ('dome', 'showroom', 'grove') else 0.62, 0.15 if name == 'grove' else 1.0) for im, t in zip(seg, clip_t)]
         seg = [arr(im) for im in seg]
-        if name == 'grove': culm = culm_from(seg[-1])
         sound = audio(clip, a, b)
         if frames:  # the new shot's sound starts under the join, reaching its frame n as the join ends
             n = JOINS[k][1]
@@ -318,7 +318,7 @@ with tempfile.TemporaryDirectory() as tmp:
         if frames:
             how, n = JOINS[k]
             out, inc = frames[-n:], seg[:n]
-            if how == 'occluder': mixed = occluder_wipe(out, inc, n, culm)
+            if how == 'push': mixed = push_through(out, inc, n, focus=(W * 0.5, H * 0.40))
             elif how == 'glint': mixed = glint_wipe(out, inc, n, focus=(W * 0.75, H * 0.45))
             elif how == 'match':  # the hall's yarn ball (measured); the close shot's, found per frame (it drifts right)
                 mixed = match_cut(out, inc, n, fo=[(645 + 20 * k / (n - 1), 335 - 20 * k / (n - 1)) for k in range(n)], ro=[125 + 25 * k / (n - 1) for k in range(n)], fi=[ball(f, (300, 312)) [0] for f in inc], ri=[ball(f, (300, 312))[1] for f in inc])
@@ -355,6 +355,7 @@ u = np.linspace(0, 1, loop, dtype=np.float32)[:, None]
 bed = np.concatenate([bed[-loop:] * np.cos(u * np.pi / 2) + bed[:loop] * np.sin(u * np.pi / 2), bed[loop:-loop]])
 mp3(bed, os.path.join(ROOT, 'assets/film/bed.mp3'), 96)
 with open(os.path.join(ROOT, 'assets/film/film.json'), 'w') as f:
-    json.dump({'frames': len(frames), 'shots': starts, 'joins': joins, 'time': times, 'sound': round(len(track) / SR, 3)}, f, separators=(',', ':'))
+    json.dump({'frames': len(frames), 'shots': starts, 'joins': joins, 'how': {SHOTS[k][0]: JOINS[k][0] for k in JOINS},
+               'clips': {name: [a, b] for name, _, a, b, _, _ in SHOTS}, 'time': times, 'sound': round(len(track) / SR, 3)}, f, separators=(',', ':'))
 print(f'{len(frames)} frames; shots {starts}; joins {joins}; soundtrack {len(track) / SR:.2f} s; bed {len(bed) / SR:.2f} s')
 print('now run: python3 tools/trace-film.py, then node tools/stamp.mjs (a new film gets a new version tag)')

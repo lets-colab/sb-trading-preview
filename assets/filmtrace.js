@@ -10,7 +10,7 @@
 //     p: the film's progress. canvas.dataset: frame (the traced frame drawn), want (the frame the film shows).
 //     Throws on a file it cannot read; the caller then simply goes without the handover.
 
-const IN = [0.028, 0.062], OUT = [0.085, 0.128]; // film progress: the lines draw in, then dissolve
+const IN = [0.025, 0.056], OUT = [0.077, 0.11]; // film progress (239 frames): the lines draw in, then dissolve before the grove rests (0.1134)
 const clamp = (x) => Math.min(1, Math.max(0, x));
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
 
