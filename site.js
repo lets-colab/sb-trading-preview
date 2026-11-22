@@ -7,7 +7,7 @@ import { createRifat } from './assets/rifat.js?v=0e796418';
 
 // Every file is loaded at a versioned address (?v= and a hash of its contents, kept current by tools/stamp.mjs), so a
 // returning visitor's cache can never pair this page with an old file. The film's frames share one tag for the folder.
-const FILM = 'assets/film/?v=add0995b', filmFile = (p) => FILM.replace('?', `${p}?`);
+const FILM = 'assets/film/?v=5c584b12', filmFile = (p) => FILM.replace('?', `${p}?`);
 const root = document.documentElement;
 root.classList.add('js');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -127,7 +127,7 @@ const sound = (() => {
 })();
 
 // ------------------------------------------------------------------ film (stages 01–03)
-const FRAMES = 217; // tools/build-film.py (assets/film/film.json)
+const FRAMES = 239; // tools/build-film.py (assets/film/film.json)
 const SET = innerWidth / innerHeight < 0.9 ? 'm' : 'd';
 const film = $('#film'), canvas = $('.film-canvas'), ctx = canvas.getContext('2d');
 const frames = new Array(FRAMES);
@@ -150,7 +150,7 @@ if (gate && !reduced) {
   // if it cannot load, start or draw, it fails closed: the canvas goes, the line drawing and the title show at once,
   // and the film runs on
   gate3dFailed = () => { gate3d = null; cv.remove(); root.classList.remove('gate-live'); ended(); };
-  import('./assets/gate3d.js?v=ceca3f2a').then(({ createGate3D }) => {
+  import('./assets/gate3d.js?v=4851fe99').then(({ createGate3D }) => {
     gate.prepend(cv);
     const g3 = createGate3D(cv, { low: !fine || innerWidth < 700 || (navigator.hardwareConcurrency || 8) < 4, intro, onIntroEnd: ended });
     g3.size();
@@ -165,7 +165,7 @@ if (gate && !reduced) {
   // grove simply crossfades into the footage.
   const tcv = document.createElement('canvas');
   tcv.className = 'film-trace'; tcv.setAttribute('aria-hidden', 'true');
-  Promise.all([import('./assets/filmtrace.js?v=deb0ef7f'), fetch(filmFile('trace.bin')).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`trace ${r.status}`))))])
+  Promise.all([import('./assets/filmtrace.js?v=010bd523'), fetch(filmFile('trace.bin')).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`trace ${r.status}`))))])
     .then(([{ createFilmTrace }, bytes]) => {
       canvas.after(tcv);
       const t = createFilmTrace(tcv, bytes, { set: SET, frames: FRAMES });
@@ -238,16 +238,19 @@ function labelShot(i) { // i: the index of the loaded frame on the canvas (not t
   filmLabel.textContent = `This shot: ${shot.src}, not SB Trading's own.`;
 }
 // Film sound design (assets/sound.js), fired when scrolling forward crosses each moment, on the frame it happens
-// (assets/film/film.json: grove 0, showroom 33, hall 74, close 160, dome 182): leaves stirring in the grove, the culm
-// brushing past the lens, the glass cases, the glint as the camera passes into the hall, the beam's low hum, the
+// (assets/film/film.json: grove 0, showroom 55, hall 96, close 182, dome 204): leaves stirring in the grove, a culm
+// brushing past as the camera moves on through the bamboo, the glass cases, the glint as the camera passes into the hall, the beam's low hum, the
 // specimen splitting, the fibres swirling, the yarn drawing tight, the bark sheet's dry rustle and the dome's open air.
 // A jump past several moments plays none of them.
-const FILM_CUES = [[22, 'leaves'], [35, 'brush'], [42, 'glass'], [76, 'glint'], [83, 'beam'], [101, 'split'], [126, 'fibre'], [161, 'yarn'], [170, 'bark'], [185, 'dome']];
+const FILM_CUES = [[22, 'leaves'], [40, 'brush'], [64, 'glass'], [98, 'glint'], [105, 'beam'], [123, 'split'], [148, 'fibre'], [183, 'yarn'], [192, 'bark'], [207, 'dome']];
 let cueFrame = -1;
 function filmCues(i) {
   if (cueFrame >= 0 && i > cueFrame && i - cueFrame < 16) for (const [f, name] of FILM_CUES) if (cueFrame < f && i >= f && !sound.moment(f)) sound.cue(name);
   cueFrame = i;
 }
+// where each film chapter ends (film progress), read from its beat, so the chapter bar and the sound's scene change
+// exactly where the chapters do
+const chapterEnd = Object.fromEntries($$('.beat[data-ch]', film).map((el) => [el.dataset.ch, Number(el.dataset.at.split(',')[1])]));
 let heroO = 1; // the opening title's opacity: the dust is brightest in the grove's light shafts while it shows
 function beats(p) {
   for (const { el, at: [a, b] } of filmBeats) {
@@ -597,14 +600,14 @@ function tick(now = performance.now()) {
   if (line) line.style.setProperty('--draw', draw01.toFixed(3));
   steps.forEach((li, k) => li.classList.toggle('lit', draw01 > 0.12 + k * 0.33));
 
-  // chapters: 01 Grove, 02 Showroom, 03 Inside (film), 04 Explore, 05 Enquire
+  // chapters: 01 Grove, 02 Showroom, 03 Inside (film), 04 Explore, 05 Enquire; the film's are where its chapters end
   const mid = innerHeight / 2, fr = film.getBoundingClientRect(), er = explore.getBoundingClientRect();
   // header and chapter bar turn to ink while the lit showroom is behind them
   const lit = (er.bottom - er.top) > 0 && parseFloat(stage.style.getPropertyValue('--dark') || '0') < 0.5;
   root.classList.toggle('light-top', lit && er.top <= 0 && er.bottom > 72);
   root.classList.toggle('light-bottom', lit && er.top < innerHeight - 70 && er.bottom >= innerHeight);
   let c = 4;
-  if (fr.bottom > mid) c = p < 0.17 ? 0 : p < 0.34 ? 1 : 2; // the grove, the showroom, inside the material
+  if (fr.bottom > mid) c = p < chapterEnd.grove ? 0 : p < chapterEnd.showroom ? 1 : 2; // the grove, the showroom, inside the material
   else if (er.bottom > mid) c = 3;
   setChapter(c);
   root.classList.toggle('in-film', !reduced && fr.top <= 1 && fr.bottom >= innerHeight - 1); // the page's chrome steps back while the film fills the screen

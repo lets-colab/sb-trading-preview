@@ -9,7 +9,8 @@
 // the film's progress, so "Click to enter" and the visitor's own scroll move it the same way).
 //
 //   createGate3D(canvas, { low, intro, onIntroEnd }) -> { size(), draw(now, p, pointer) -> drew, skip(), get intro }
-//     p: the film's progress (0 at the gate; the gate has faded by 0.1). pointer: [x, y], each -0.5..0.5.
+//     p: the film's progress (0 at the gate; the gate has faded by GATE_END, where the gate's beat ends in index.html).
+//     pointer: [x, y], each -0.5..0.5.
 //     Past the gate draw() clears once and returns false. A scroll during the opening skips it.
 //     canvas.dataset: frames (frames drawn), phase (micro, macro, cross, grove), dist (the camera's distance).
 //     low: fewer wires and no glow pass (phones, low-power devices). intro: false starts at rest.
@@ -27,6 +28,10 @@ const T_PULL = 1.5, T_CROSS = 4, T_END = 6.6, GROVE = 3.4; // the opening's beat
 function rng(seed) {
   return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
+
+// film progress (239 frames): the film starts moving at GATE_MOVE, and the gate is gone by GATE_END, the end of the
+// gate's beat (index.html data-at), well before the grove rests (0.1134)
+export const GATE_MOVE = 0.011, GATE_END = 0.091;
 
 export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = () => {} } = {}) {
   const g = canvas.getContext('2d', { willReadFrequently: true });
@@ -216,7 +221,7 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
     },
     skip() { if (playing) finish(last || performance.now(), last && start ? (last - start) / 1000 : 0); },
     draw(now, p, pointer) {
-      if (p >= 0.1) { if (playing) finish(now, (now - start) / 1000); if (!cleared) { g.clearRect(0, 0, canvas.width, canvas.height); cleared = true; } return false; }
+      if (p >= GATE_END) { if (playing) finish(now, (now - start) / 1000); if (!cleared) { g.clearRect(0, 0, canvas.width, canvas.height); cleared = true; } return false; }
       cleared = false;
       if (!W) this.size();
       if (!start) start = now - (intro ? 0 : T_END * 1000);
@@ -228,7 +233,7 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
         if (slowFor > 800) { level--; slowFor = 0; ema = 16; if (level === 0) this.size(); }
       }
       last = now;
-      if (playing && (t >= T_END || p > 0.012)) finish(now, t);
+      if (playing && (t >= T_END || p > GATE_MOVE)) finish(now, t);
       if (level === 0 && !low && (skipFrame = !skipFrame)) return true; // the lightest detail on a large screen draws every other frame
       const tr = t + tShift; // the reveal clock
       // at rest the scene turns toward the pointer (eased), with a slow drift of its own; still during the opening
@@ -236,7 +241,7 @@ export function createGate3D(canvas, { low = false, intro = true, onIntroEnd = (
       turn[0] += ((pointer[0] * 0.55 + Math.sin(t * 0.11) * 0.07) * settle - turn[0]) * k;
       turn[1] += ((-pointer[1] * 0.18 + Math.sin(t * 0.07) * 0.02) * settle - turn[1]) * k;
       cam.sin = Math.sin(turn[0]); cam.cos = Math.cos(turn[0]); cam.ps = Math.sin(turn[1]); cam.pc = Math.cos(turn[1]);
-      const rest = restPose(smooth(0.012, 0.1, p));
+      const rest = restPose(smooth(GATE_MOVE, GATE_END, p));
       if (playing) current = introPose(t, rest);
       else if (skipFrom && now - skipAt < 900) current = mix(skipFrom, rest, ease((now - skipAt) / 900));
       else { current = rest; skipFrom = null; }

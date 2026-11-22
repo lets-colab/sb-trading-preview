@@ -62,7 +62,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const q = await ctx.newPage();
     await q.route(/\/assets\/film\/[dm]\/0(0[1-9]|[12][0-9]|30)\.webp(\?|$)/, (r) => r.abort());
     await q.goto(ORIGIN + '/'); await q.waitForTimeout(2500);
-    await q.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * (29 / 216)); });
+    await q.evaluate(() => { const f = document.getElementById('film'); scrollTo(0, f.offsetTop + (f.offsetHeight - innerHeight) * (29 / 238)); });
     await q.waitForFunction(() => /generated footage, not/i.test(document.querySelector('.film-label').textContent), null, { timeout: 15000 }).catch(() => {});
     const t = await q.evaluate(() => document.querySelector('.film-label').textContent.trim());
     check(/generated footage, not SB Trading's own/.test(t) && !/Pexels/.test(t), `${name}: the label follows the frame drawn, not the frame asked for (${t})`);
@@ -168,11 +168,11 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
       `${name}: nothing is laid over the picture: no card, no captions, no family cards, and the chapter bar and Ask Rifat step aside (${JSON.stringify(gate)})`);
     // "Click to enter" is the gesture that turns Sound on; the camera flies to the first chapter as the narrator speaks
     await q.click('.gate-enter');
-    await q.waitForFunction(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return Math.abs(-r.top / (r.height - innerHeight) - 0.125) < 0.004; }, null, { timeout: 8000 }).catch(() => {});
+    await q.waitForFunction(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return Math.abs(-r.top / (r.height - innerHeight) - 0.1134) < 0.004; }, null, { timeout: 8000 }).catch(() => {});
     await q.waitForFunction(() => document.querySelector('.hud-name').textContent !== '', null, { timeout: 5000 }).catch(() => {}); // the film eases in after the scroll
     const grove = await q.evaluate(() => ({ ac: window.__ac, sound: document.getElementById('soundToggle').getAttribute('aria-pressed'), sub: document.querySelector('.subtitle').textContent.trim(), on: document.querySelector('.subtitle').classList.contains('on'),
       voice: window.__story?.src.includes('/assets/voice/ch-grove.mp3') && !window.__story.paused, idx: document.querySelector('.hud-name').textContent }));
-    check(grove.ac === 1 && grove.sound === 'true' && (await prog()) > 0.12 && grove.on && /^Everything SB Trading supplies begins as a living plant/.test(grove.sub) && grove.voice && grove.idx === 'The grove',
+    check(grove.ac === 1 && grove.sound === 'true' && (await prog()) > 0.11 && grove.on && /^Everything SB Trading supplies begins as a living plant/.test(grove.sub) && grove.voice && grove.idx === 'The grove',
       `${name}: "Click to enter" turns Sound on and flies to the grove as the narrator speaks it, with its subtitle (${JSON.stringify(grove)})`);
     { // once the film is under way the gate's 3D stops drawing (it costs nothing while the footage plays)
       const frames = () => q.evaluate(() => Number(document.querySelector('.gate-3d')?.dataset.frames || 0));
@@ -186,7 +186,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     const room = await q.evaluate(() => ({ idx: document.querySelector('.hud-n').textContent, sub: document.querySelector('.subtitle').textContent.trim(), rings: [...document.querySelectorAll('.spot.on .spot-name')].map((e) => e.textContent),
       tabbable: [...document.querySelectorAll('.spot.on')].every((s) => s.tabIndex === 0) && [...document.querySelectorAll('.spot:not(.on)')].every((s) => s.tabIndex === -1) }));
     room.p = await prog();
-    check(Math.abs(room.p - 0.2315) < 0.004 && room.idx === '02' && /^Behind the glass, nine products in three families/.test(room.sub) && ['Bamboo', 'Banana fibre', 'Bark and leaves'].every((w) => room.rings.includes(w)) && room.rings.length === 3 && room.tabbable,
+    check(Math.abs(room.p - 0.3025) < 0.004 && room.idx === '02' && /^Behind the glass, nine products in three families/.test(room.sub) && ['Bamboo', 'Banana fibre', 'Bark and leaves'].every((w) => room.rings.includes(w)) && room.rings.length === 3 && room.tabbable,
       `${name}: "Click to continue" rests on the showroom, the products behind glass, a ring on each family's case, reachable by keyboard only while shown (${JSON.stringify(room)})`);
     { // every case's ring tells its own story, from its own recording, with its own subtitles; the stories are told
       // here only (Explore lists the products and has no story button: the owner, 20 Nov 2026)
@@ -223,7 +223,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.waitForTimeout(2600);
     const inside = await q.evaluate(() => { const s = document.querySelector('.spot.on'); return { idx: document.querySelector('.hud-n').textContent, plate: s?.classList.contains('cover') && s.textContent.trim(), rings: document.querySelectorAll('.spot.on').length }; });
     inside.p = await prog();
-    check(Math.abs(inside.p - 0.407) < 0.004 && inside.idx === '03' && new RegExp(`${touch ? 'Tap' : 'Click'} to open`).test(inside.plate || '') && inside.rings === 1,
+    check(Math.abs(inside.p - 0.4622) < 0.004 && inside.idx === '03' && new RegExp(`${touch ? 'Tap' : 'Click'} to open`).test(inside.plate || '') && inside.rings === 1,
       `${name}: inside, a plate over the footage's own prompt says "Click to open", and no family ring repeats (${JSON.stringify(inside)})`);
     // the plate opens it: the camera flies through the opening to the fibres twisting into yarn
     // a flight recorder for the longest flight: the scroll each frame and anything that could stop it (shown on a failure)
@@ -239,14 +239,14 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     await q.click('.spot.on.cover');
     await q.waitForFunction(() => document.querySelector('.hud-name').textContent === 'Fibre to yarn', null, { timeout: 8000 }).catch(() => {});
     // the longest flight in the film: a slow machine is still in the air after the usual pause, so wait for it to land
-    await q.waitForFunction(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return Math.abs(-r.top / (r.height - innerHeight) - 0.727) < 0.004; }, null, { timeout: 12000 }).catch(() => {});
+    await q.waitForFunction(() => { const f = document.getElementById('film'), r = f.getBoundingClientRect(); return Math.abs(-r.top / (r.height - innerHeight) - 0.7521) < 0.004; }, null, { timeout: 12000 }).catch(() => {});
     await q.waitForTimeout(600);
     const yarn = { p: await prog(), rings: await q.evaluate(() => document.querySelectorAll('.spot.on').length) };
-    const flight = Math.abs(yarn.p - 0.727) < 0.004 ? '' : ' flight: ' + JSON.stringify(await q.evaluate(() => ({ frames: window.__flight.ys.length, ys: window.__flight.ys.slice(0, 6).concat(window.__flight.ys.slice(-6)), ev: window.__flight.ev.slice(0, 12) })).catch((e) => String(e))) + ' errors: ' + JSON.stringify(qErrors.slice(0, 3));
-    check(Math.abs(yarn.p - 0.727) < 0.004 && yarn.rings === 0, `${name}: opening it flies through the split to the fibres twisting into yarn, with no ring repeated (${JSON.stringify(yarn)})${flight}`);
+    const flight = Math.abs(yarn.p - 0.7521) < 0.004 ? '' : ' flight: ' + JSON.stringify(await q.evaluate(() => ({ frames: window.__flight.ys.length, ys: window.__flight.ys.slice(0, 6).concat(window.__flight.ys.slice(-6)), ev: window.__flight.ev.slice(0, 12) })).catch((e) => String(e))) + ' errors: ' + JSON.stringify(qErrors.slice(0, 3));
+    check(Math.abs(yarn.p - 0.7521) < 0.004 && yarn.rings === 0, `${name}: opening it flies through the split to the fibres twisting into yarn, with no ring repeated (${JSON.stringify(yarn)})${flight}`);
     { // Explore's 3D studies (a module, a WebGL context, shader compiles) are heavy to start: they wait for the page to be
       // still, so they never freeze the camera in the air (they begin to load as this flight nears Explore)
-      const when = await q.evaluate(() => { const L = window.__flight, landed = L.ys.find((y) => Math.abs(y[1] - 0.727) < 0.004)?.[0];
+      const when = await q.evaluate(() => { const L = window.__flight, landed = L.ys.find((y) => Math.abs(y[1] - 0.7521) < 0.004)?.[0];
         const r = performance.getEntriesByType('resource').find((e) => e.name.includes('/specimens.js')); return { landed, requested: r ? Math.round(r.startTime - L.t0) : null }; });
       check(when.landed != null && (when.requested == null || when.requested >= when.landed), `${name}: the 3D studies do not start loading while the camera is in flight (${JSON.stringify(when)})`);
     }
@@ -255,7 +255,7 @@ for (const [name, viewport, touch] of [['desktop 1440', { width: 1440, height: 9
     if (touch) await q.touchscreen.tap(stage.x, stage.y); else await q.mouse.click(stage.x, stage.y);
     await q.waitForFunction(() => document.querySelector('.hud-name').textContent === 'A dried leaf', null, { timeout: 8000 }).catch(() => {});
     await q.waitForTimeout(2600);
-    check(Math.abs((await prog()) - 0.787) < 0.004, `${name}: a click on the picture flies to the next chapter (${await prog()})`);
+    check(Math.abs((await prog()) - 0.8067) < 0.004, `${name}: a click on the picture flies to the next chapter (${await prog()})`);
     // after the last chapter, "Continue to the materials" leaves the film for Explore, and stays there
     for (const ch of ['All together']) { await q.click('.hud-next'); await q.waitForFunction((c) => document.querySelector('.hud-name').textContent === c, ch, { timeout: 8000 }).catch(() => {}); await q.waitForTimeout(2600); }
     const last = await q.evaluate(() => document.querySelector('.hud-next').textContent.trim());
